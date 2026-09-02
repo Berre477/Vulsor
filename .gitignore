@@ -1,0 +1,71 @@
+# ── Dependencies ──────────────────────────────────────────────────────────
+node_modules/
+
+# ── Packaged application output ───────────────────────────────────────────
+# `npm run build` writes "<ProductName>-<platform>-<arch>" into the repo root.
+Vulsor Browser-*/
+Verso-*/
+dist/
+out/
+*.asar
+*.asar.unpacked/
+app_new.asar.unpacked/
+
+# ── Release archives & installers ─────────────────────────────────────────
+*.zip
+*.dmg
+*.exe
+*.AppImage
+*.deb
+
+# ── Large binary assets not needed to build ───────────────────────────────
+*.glb
+*.gguf
+*.bin
+# js/wasm/*.wasm IS committed on purpose: rebuilding it needs an emscripten
+# toolchain (`npm run build-wasm`), and the two modules are ~11 KB each, so a
+# plain `git clone` should just run.
+
+# ── Editor / IDE ──────────────────────────────────────────────────────────
+.idea/
+.vscode/
+*.iml
+
+# ── Sibling applications ──────────────────────────────────────────────────
+# These live in this working tree but are separate apps, each with its own
+# package.json and entry point, and each ships on its own. They are excluded so
+# this repository stays "Vulsor Browser". To publish one, give it its own repo
+# (or drop the matching line here to fold it in).
+VulsorMind/
+VulsorPlay/
+VulsoriOS/
+Norsklab/
+SpaceVoyage/
+trip-planner/
+
+# ── Local agent & tooling state ───────────────────────────────────────────
+.claude/
+.mcp.json
+.evs-venv/
+
+# Finder duplicate of icon.icns ("icon 2.icns"), referenced by nothing.
+icon [0-9].icns
+
+# ── OS noise ──────────────────────────────────────────────────────────────
+.DS_Store
+.metadata_never_index
+Thumbs.db
+
+# ── Runtime / user data (never belongs in the repo) ───────────────────────
+*.log
+npm-debug.log*
+vulsor-config.local.json
+# Points the updater and relay at your own server. Copy
+# vulsor-config.example.json to vulsor-config.json and fill in your host.
+vulsor-config.json
+wa-session/
+
+# Release payloads served by the update server (server/files/version.json,
+# the manifest, is tracked; the binaries beside it are not).
+server/files/*
+!server/files/version.json

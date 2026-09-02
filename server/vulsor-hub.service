@@ -1,0 +1,19 @@
+[Unit]
+Description=Vulsor always-on hub (headless via Xvfb)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+# Edit User and the path to the unpacked Linux build:
+User=USER
+WorkingDirectory=/home/USER/Vulsor-linux-x64
+# xvfb-run gives Electron a virtual display so it runs without a monitor.
+# --no-sandbox / --disable-gpu are required when running as a service.
+ExecStart=/usr/bin/xvfb-run -a /home/USER/Vulsor-linux-x64/Vulsor --no-sandbox --disable-gpu
+Restart=always
+RestartSec=5
+Environment=ELECTRON_DISABLE_SECURITY_WARNINGS=1
+
+[Install]
+WantedBy=multi-user.target

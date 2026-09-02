@@ -1,0 +1,6 @@
+{
+  "serverHost": "CHANGE-ME.example.com",
+  "updatePort": 8479,
+  "relayPort": 8480,
+  "useHttps": false
+}

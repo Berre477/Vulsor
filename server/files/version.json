@@ -1,0 +1,10 @@
+{
+  "version": "1.0.0",
+  "notes": "Bump version, rebuild each platform, drop the archives in this folder, then update version + URLs here.",
+  "platforms": {
+    "darwin-arm64": "http://YOUR-SERVER-HERE.example.com:8479/Vulsor-darwin-arm64.zip",
+    "darwin-x64":   "http://YOUR-SERVER-HERE.example.com:8479/Vulsor-darwin-x64.zip",
+    "win32-x64":    "http://YOUR-SERVER-HERE.example.com:8479/Vulsor-win32-x64.zip",
+    "linux-x64":    "http://YOUR-SERVER-HERE.example.com:8479/Vulsor-linux-x64.tar.gz"
+  }
+}

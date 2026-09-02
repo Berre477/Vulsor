@@ -1,0 +1,18 @@
+[Unit]
+Description=Vulsor update server (serves version.json + build archives)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+# Edit User and the two paths to match your machine:
+User=USER
+WorkingDirectory=/home/USER/vulsor-server
+ExecStart=/usr/bin/node /home/USER/vulsor-server/update-server.js
+Environment=PORT=8479
+Environment=FILES_DIR=/home/USER/vulsor-server/files
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target

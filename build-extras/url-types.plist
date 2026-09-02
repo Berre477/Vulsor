@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <!-- Declares Vulsor as an editor for Markdown files, which is what puts it in
+       Finder's "Open With" list and lets it be picked as the default .md app
+       (see build-extras/set-default-markdown.swift, which sets that default
+       directly — ad-hoc-signed apps are unreliable in Finder's Info panel).
+       Files opened this way land in the Vault: main.js 'open-file' →
+       renderer 'open-external-file' → appOpenVaultExternalFile (js/vault.js). -->
+  <key>CFBundleDocumentTypes</key>
+  <array>
+    <dict>
+      <key>CFBundleTypeName</key>
+      <string>Markdown Document</string>
+      <key>CFBundleTypeRole</key>
+      <string>Editor</string>
+      <key>LSHandlerRank</key>
+      <string>Alternate</string>
+      <key>CFBundleTypeExtensions</key>
+      <array>
+        <string>md</string>
+        <string>markdown</string>
+        <string>mdown</string>
+        <string>mkd</string>
+      </array>
+      <key>LSItemContentTypes</key>
+      <array>
+        <string>net.daringfireball.markdown</string>
+      </array>
+    </dict>
+  </array>
+
+  <!-- Declares Vulsor as an http/https handler with a handler rank, which is
+       what makes macOS list it in System Settings → Default web browser.
+       Merged into Info.plist at build time via @electron/packager --extend-info.
+       (The plain --protocol flag omits LSHandlerRank, so the app registers as a
+       URL handler but never shows up in the browser picker.) -->
+  <key>CFBundleURLTypes</key>
+  <array>
+    <dict>
+      <key>CFBundleURLName</key>
+      <string>Web site URL</string>
+      <key>LSHandlerRank</key>
+      <string>Default</string>
+      <key>CFBundleURLSchemes</key>
+      <array>
+        <string>http</string>
+        <string>https</string>
+      </array>
+    </dict>
+  </array>
+</dict>
+</plist>

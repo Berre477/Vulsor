@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<link rel="stylesheet" href="css/font-awesome.min.css">
+<style>
+* { margin:0; padding:0; box-sizing:border-box; -webkit-app-region:no-drag; user-select:none; }
+html, body { background:transparent; overflow:hidden; width:100%; height:100%; }
+
+.tab {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 0 10px 0 9px;
+    height: 34px;
+    max-width: 210px;
+    min-width: 90px;
+
+    /* Identical to .browser-tab.active but fully rounded (not open-bottom) */
+    background: var(--bg-surface, #161f2e);
+    border: 1px solid rgba(255,255,255,0.14);
+    border-radius: 9px;
+    color: #e2e8f0;
+
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    font-size: 12px;
+    font-weight: 500;
+    white-space: nowrap;
+    cursor: grabbing;
+
+    box-shadow:
+        0 2px  6px rgba(0,0,0,0.35),
+        0 8px 24px rgba(0,0,0,0.55),
+        0 0   0 1px rgba(255,255,255,0.04) inset;
+
+    animation: lift 0.08s ease-out both;
+}
+@keyframes lift {
+    from { opacity: 0.6; transform: scale(0.96); }
+    to   { opacity: 1;   transform: scale(1);    }
+}
+
+.favicon {
+    width: 18px; height: 18px;
+    border-radius: 4px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    font-size: 9px;
+}
+
+.label {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    min-width: 0;
+    font-size: 12px;
+}
+
+.close {
+    width: 16px; height: 16px;
+    border-radius: 4px;
+    display: flex; align-items: center; justify-content: center;
+    color: #475569;
+    font-size: 8px;
+    flex-shrink: 0;
+    background: transparent;
+    border: none;
+    margin-left: 2px;
+}
+</style>
+</head>
+<body>
+<script>
+    const p       = new URLSearchParams(window.location.search);
+    const label   = decodeURIComponent(p.get('label')   || 'Tab');
+    const color   = decodeURIComponent(p.get('color')   || '#475569');
+    const icon    = decodeURIComponent(p.get('icon')    || 'fa-circle');
+    const favicon = decodeURIComponent(p.get('favicon') || '');
+
+    const tab = document.createElement('div');
+    tab.className = 'tab';
+
+    // Favicon: show the page's real favicon for web tabs (Brave-style), falling
+    // back to the app's icon glyph if it's missing or fails to load.
+    const fav = document.createElement('span');
+    fav.className = 'favicon';
+    fav.style.background = color + '22';
+    fav.style.color = color;
+    if (favicon) {
+        const img = document.createElement('img');
+        img.src = favicon;
+        img.style.cssText = 'width:15px;height:15px;border-radius:3px;object-fit:cover';
+        img.onerror = () => { fav.innerHTML = '<i class="fas ' + icon + '"></i>'; };
+        fav.appendChild(img);
+    } else {
+        fav.innerHTML = '<i class="fas ' + icon + '"></i>';
+    }
+
+    const lab = document.createElement('span');
+    lab.className = 'label';
+    lab.textContent = label;   // page titles are untrusted → set as text
+
+    const close = document.createElement('span');
+    close.className = 'close';
+    close.innerHTML = '<i class="fas fa-times"></i>';
+
+    tab.append(fav, lab, close);
+    document.body.appendChild(tab);
+</script>
+</body>
+</html>

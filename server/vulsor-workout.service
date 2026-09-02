@@ -1,0 +1,24 @@
+[Unit]
+Description=Vulsor workout server (hosts the daily workout page over HTTPS for offline install)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+# Edit User, the paths, and TOKEN to match your machine:
+User=USER
+WorkingDirectory=/home/USER/vulsor-server
+ExecStart=/usr/bin/node /home/USER/vulsor-server/workout-server.js
+Environment=PORT=8478
+Environment=DATA_DIR=/home/USER/vulsor-server/workout-data
+# Must match the token Vulsor shows you in Workouts -> To phone:
+Environment=TOKEN=PASTE-TOKEN-FROM-VULSOR
+# Let's Encrypt paths (see README-workout.md). Without these it serves plain
+# HTTP, and the phone cannot install the page offline.
+Environment=TLS_CERT=/etc/letsencrypt/live/YOUR-SERVER-HERE.example.com/fullchain.pem
+Environment=TLS_KEY=/etc/letsencrypt/live/YOUR-SERVER-HERE.example.com/privkey.pem
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target

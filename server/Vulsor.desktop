@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=Vulsor
+Comment=My Private Local AI
+# Replace USER with your Ubuntu username in both paths below:
+Exec=/home/USER/Vulsor-linux-x64/Vulsor --no-sandbox
+Icon=/home/USER/Vulsor-linux-x64/icon.png
+Terminal=false
+Categories=Utility;Network;
+StartupWMClass=Vulsor
