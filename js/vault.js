@@ -1397,6 +1397,7 @@ function deleteVaultFile(id) {
             if (fs.existsSync(p)) fs.unlinkSync(p);
         } catch(_) {}
     }
+    vaultThumbDelete(id);
     vaultData.files = vaultData.files.filter(f => f.id !== id);
     saveVaultData();
     if (vaultOpenFileId === id) closeVaultViewer();
@@ -3544,6 +3545,206 @@ function filteredVaultFiles() {
     });
 }
 
+// ── Card previews: the first page instead of a file-type icon ──────
+// A grid of identical red PDF icons tells you nothing about which document
+// is which, so every card that *can* show its own first page does.
+//   pdf    → page 1 rendered with pdf.js, cached on disk as a JPEG
+//   image  → the image itself
+//   paper  → docs/notes/markdown/text laid out as a miniature white page
+//   code   → same, on the dark background the code viewer uses
+// Anything else (notebooks, molecules, videos, …) keeps its icon.
+//
+// PDF renders are cached under VAULT_DIR/.thumbs keyed by file id: rendering
+// a folder full of big documents on every grid repaint would stall the UI.
+const VAULT_THUMB_DIR   = path.join(VAULT_DIR, '.thumbs');
+const VAULT_THUMB_WIDTH = 320;          // px wide the PDF page is rendered at
+const _vaultThumbCache  = new Map();    // file id → data URL
+const _vaultThumbFailed = new Set();    // file ids whose render already failed
+const _vaultThumbQueue  = [];           // file ids waiting to be rendered
+let   _vaultThumbBusy   = false;
+
+const VAULT_PAPER_EXTS = ['vulsor','verso','md','markdown','txt','text','log','csv','tsv'];
+const VAULT_IMAGE_EXTS = ['png','jpg','jpeg','gif','webp','svg','bmp','avif'];
+
+// Which kind of preview a file can produce, or null to keep the icon.
+function vaultThumbKind(file) {
+    if (!file || !file.storedName)  return null;
+    if (file.isProject || file.isWebLink || file.isNotebook) return null;
+    if (file.isMolecule || file.isPeriodic || file.isDna ||
+        file.isAnatomy  || file.isChessStrategy || file.isGraph) return null;
+
+    const ext = vaultExt(file.storedName);
+    if (ext === 'pdf')                    return 'pdf';
+    if (VAULT_IMAGE_EXTS.includes(ext))   return 'image';
+    if (file.isDoc || file.isCustomNote)  return 'paper';
+    if (VAULT_PAPER_EXTS.includes(ext))   return 'paper';
+    if (file.isCode || (typeof isCodeFile === 'function' && isCodeFile(file.originalName)))
+                                          return 'code';
+    return null;
+}
+
+function vaultThumbSrc(file) { return path.join(VAULT_DIR, file.storedName); }
+
+function vaultFileURL(p) {
+    try { return pathToFileURL(p).href; } catch(_) { return 'file://' + p; }
+}
+
+// First few hundred characters of a text-ish file. Reads only the head of the
+// file so a 40 MB log costs the same as a two-line note.
+function vaultThumbText(file) {
+    let raw = '';
+    try {
+        const fd  = fs.openSync(vaultThumbSrc(file), 'r');
+        const buf = Buffer.alloc(4096);
+        const n   = fs.readSync(fd, buf, 0, 4096, 0);
+        fs.closeSync(fd);
+        raw = buf.subarray(0, n).toString('utf8');
+    } catch(_) { return ''; }
+
+    // Docs and notes are stored as HTML — show what the page reads like,
+    // not its markup.
+    if (file.isDoc || file.isCustomNote || /\.(vulsor|verso|html?)$/i.test(file.storedName)) {
+        raw = raw.replace(/<(script|style)[\s\S]*?(<\/\1>|$)/gi, '')
+                 .replace(/<br\s*\/?>/gi, '\n')
+                 .replace(/<\/(p|div|h[1-6]|li|tr|blockquote|pre)>/gi, '\n')
+                 .replace(/<[^>]*>/g, '')
+                 .replace(/&nbsp;/g, ' ').replace(/&lt;/g, '<').replace(/&gt;/g, '>')
+                 .replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&amp;/g, '&');
+    }
+    return raw.replace(/\r/g, '').replace(/�/g, '').replace(/\n{3,}/g, '\n\n').trim();
+}
+
+// A miniature page of text: first line as the title, the rest as body copy.
+function vaultThumbPaperHTML(file, kind) {
+    const text = vaultThumbText(file);
+    if (!text) return '';
+    const lines = text.split('\n');
+    const title = (lines.shift() || '').replace(/^#{1,6}\s+/, '').trim().slice(0, 80);
+    const body  = lines.join('\n').replace(/^\n+/, '').slice(0, 1400);
+    return `<div class="vault-thumb ${kind === 'code' ? 'vault-thumb-code' : 'vault-thumb-paper'}">
+        <div class="vault-thumb-title">${_vaultEsc(title)}</div>
+        <div class="vault-thumb-body">${_vaultEsc(body)}</div>
+    </div>`;
+}
+
+// Cached PDF thumbnail, from memory or from disk. Returns '' if there isn't
+// one yet or the document has changed since it was made.
+function vaultThumbCached(file) {
+    if (_vaultThumbCache.has(file.id)) return _vaultThumbCache.get(file.id);
+    const dest = path.join(VAULT_THUMB_DIR, file.id + '.jpg');
+    try {
+        if (fs.statSync(dest).mtimeMs < fs.statSync(vaultThumbSrc(file)).mtimeMs) return '';
+        const url = 'data:image/jpeg;base64,' + fs.readFileSync(dest).toString('base64');
+        _vaultThumbCache.set(file.id, url);
+        return url;
+    } catch(_) { return ''; }
+}
+
+// Render page 1 of a PDF to a JPEG data URL and cache it on disk.
+async function vaultRenderPDFThumb(file) {
+    if (typeof pdfjsLib === 'undefined') return '';
+    const doc = await pdfjsLib.getDocument(vaultFileURL(vaultThumbSrc(file))).promise;
+    try {
+        const page   = await doc.getPage(1);
+        const scale  = VAULT_THUMB_WIDTH / page.getViewport({ scale: 1 }).width;
+        const vp     = page.getViewport({ scale });
+        const canvas = document.createElement('canvas');
+        canvas.width  = Math.max(1, Math.round(vp.width));
+        canvas.height = Math.max(1, Math.round(vp.height));
+        const ctx = canvas.getContext('2d');
+        // Pages are drawn without a background — paint the paper ourselves,
+        // or the thumbnail comes out as black text on transparency.
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        await page.render({ canvasContext: ctx, viewport: vp }).promise;
+        const url = canvas.toDataURL('image/jpeg', 0.82);
+        try {
+            fs.mkdirSync(VAULT_THUMB_DIR, { recursive: true });
+            vaultWriteFile(path.join(VAULT_THUMB_DIR, file.id + '.jpg'),
+                           Buffer.from(url.split(',')[1], 'base64'));
+        } catch(_) {}
+        _vaultThumbCache.set(file.id, url);
+        return url;
+    } finally {
+        try { doc.destroy(); } catch(_) {}
+    }
+}
+
+function vaultThumbDelete(id) {
+    _vaultThumbCache.delete(id);
+    _vaultThumbFailed.delete(id);
+    try { fs.unlinkSync(path.join(VAULT_THUMB_DIR, id + '.jpg')); } catch(_) {}
+}
+
+function vaultApplyThumb(box, url) {
+    box.style.background = '';
+    box.classList.add('vault-thumb-img');
+    box.innerHTML = `<img src="${url}" alt="" draggable="false">`;
+}
+
+// One PDF at a time: pdf.js shares a single worker, and a slow render must
+// never hold up the rest of the grid.
+async function _vaultThumbPump() {
+    if (_vaultThumbBusy) return;
+    _vaultThumbBusy = true;
+    try {
+        while (_vaultThumbQueue.length) {
+            const id   = _vaultThumbQueue.shift();
+            const file = vaultData.files.find(f => f.id === id);
+            if (!file) continue;
+            let url = '';
+            try { url = await vaultRenderPDFThumb(file); }
+            catch (e) { console.warn('[vault] thumbnail failed:', file.originalName, e.message); }
+            if (!url) { _vaultThumbFailed.add(id); continue; }
+            document.querySelectorAll(`.vault-thumb[data-thumb-id="${id}"]`)
+                    .forEach(box => vaultApplyThumb(box, url));
+        }
+    } finally { _vaultThumbBusy = false; }
+}
+
+// The preview block for a card: a finished preview where we have one, the
+// icon otherwise (queued for rendering if it's a PDF we haven't done yet).
+function vaultCardPreviewHTML(file, icon, color) {
+    const kind = vaultThumbKind(file);
+
+    if (kind === 'image') {
+        return `<div class="vault-thumb vault-thumb-img">
+            <img src="${_vaultEsc(vaultFileURL(vaultThumbSrc(file)))}" alt="" draggable="false"
+                 onerror="this.parentElement.className='vault-thumb vault-thumb-icon vault-thumb-plate';this.parentElement.innerHTML='<i class=&quot;fas ${icon}&quot; style=&quot;color:${color}&quot;></i>'">
+        </div>`;
+    }
+    if (kind === 'paper' || kind === 'code') {
+        const html = vaultThumbPaperHTML(file, kind);
+        if (html) return html;
+    }
+    if (kind === 'pdf') {
+        const cached = vaultThumbCached(file);
+        if (cached) {
+            return `<div class="vault-thumb vault-thumb-img">
+                <img src="${cached}" alt="" draggable="false">
+            </div>`;
+        }
+        if (!_vaultThumbFailed.has(file.id)) {
+            return `<div class="vault-thumb vault-thumb-icon vault-thumb-plate" data-thumb-id="${file.id}">
+                <i class="fas ${icon}" style="color:${color}"></i>
+            </div>`;
+        }
+    }
+    return `<div class="vault-thumb vault-thumb-icon vault-thumb-plate">
+        <i class="fas ${icon}" style="color:${color}"></i>
+    </div>`;
+}
+
+// Queue every card still showing a placeholder icon for a PDF render.
+function vaultHydrateThumbs(gridEl) {
+    gridEl.querySelectorAll('.vault-thumb[data-thumb-id]').forEach(box => {
+        const id = box.dataset.thumbId;
+        if (_vaultThumbFailed.has(id) || _vaultThumbQueue.includes(id)) return;
+        _vaultThumbQueue.push(id);
+    });
+    if (_vaultThumbQueue.length) _vaultThumbPump();
+}
+
 function renderVaultGrid() {
     const gridEl  = document.getElementById('vault-files-grid');
     const countEl = document.getElementById('vault-file-count');
@@ -3595,12 +3796,12 @@ function renderVaultGrid() {
             childCount ? `${childCount} folder${childCount !== 1 ? 's' : ''}` : '',
         ].filter(Boolean).join(', ') || 'Empty';
 
-        return `<div class="vault-subfolder-card group relative bg-slate-900/40 border border-slate-800/60 rounded-2xl p-4 cursor-pointer hover:border-slate-600/60 hover:bg-slate-900/70 transition-all" data-folder-id="${f.id}">
-            <div class="w-full flex items-center justify-center rounded-xl mb-3 py-4" style="background:${f.color}10">
-                <i class="fas fa-folder text-4xl" style="color:${f.color}"></i>
+        return `<div class="vault-subfolder-card group relative cursor-pointer" data-folder-id="${f.id}">
+            <div class="vault-thumb vault-thumb-icon" style="background:${f.color}0e">
+                <i class="fas fa-folder" style="color:${f.color}"></i>
             </div>
-            <p class="text-slate-200 text-xs font-medium truncate mb-1">${f.name}</p>
-            <p class="text-slate-600 text-[10px]">${subLabel}</p>
+            <p class="vault-card-name">${f.name}</p>
+            <div class="vault-card-meta"><span>${subLabel}</span></div>
             <!-- Hover: add subfolder + delete -->
             <div class="absolute top-2 right-2 hidden group-hover:flex items-center gap-1">
                 <button class="vault-subfolder-add w-6 h-6 bg-slate-700 hover:bg-green-600/20 text-slate-400 hover:text-green-400 rounded-lg flex items-center justify-center transition-colors" data-parent="${f.id}" title="New subfolder">
@@ -3636,15 +3837,15 @@ function renderVaultGrid() {
         if (file.isProject) {
             const pt = PROJECT_TYPES[file.projectType] || PROJECT_TYPES.build;
             const ps = PROJECT_STATUSES[file.projectStatus] || PROJECT_STATUSES.idea;
-            return `<div class="vault-card group relative border rounded-2xl p-4 cursor-pointer transition-all hover:brightness-110" data-id="${file.id}" style="background:${pt.color}08;border-color:${pt.color}30">
-                <div class="w-full flex items-center justify-center rounded-xl mb-3 py-5" style="background:${pt.color}15">
-                    <i class="fas ${pt.icon} text-4xl" style="color:${pt.color}"></i>
+            return `<div class="vault-card group relative cursor-pointer" data-id="${file.id}">
+                <div class="vault-thumb vault-thumb-icon" style="background:${pt.color}0e">
+                    <i class="fas ${pt.icon}" style="color:${pt.color}"></i>
                 </div>
-                <p class="text-slate-200 text-xs font-medium truncate mb-1.5" title="${file.originalName}">${file.originalName}</p>
-                <div class="flex items-center gap-1.5 flex-wrap">
-                    <span class="text-[9px] font-bold px-1.5 py-0.5 rounded" style="background:${pt.color}20;color:${pt.color}">${pt.name}</span>
-                    <span class="text-[9px] px-1.5 py-0.5 rounded" style="background:${ps.color}20;color:${ps.color}">${ps.label}</span>
-                    <span class="text-slate-700 text-[10px] ml-auto">${date}</span>
+                <p class="vault-card-name" title="${file.originalName}">${file.originalName}</p>
+                <div class="vault-card-meta">
+                    <span class="vault-card-kind" style="color:${pt.color}">${pt.name}</span>
+                    <span><i class="fas fa-circle" style="font-size:4px;vertical-align:middle;margin-right:3px;color:${ps.color}"></i>${ps.label}</span>
+                    <span class="vault-card-date">${date}</span>
                 </div>
                 ${folderTag}
                 ${deleteBtn}
@@ -3653,6 +3854,7 @@ function renderVaultGrid() {
         }
 
         const { icon, color } = vaultIcon(file.originalName, file.isDoc, file.isCode, file.isNotebook, file);
+        const preview = vaultCardPreviewHTML(file, icon, color);
         const ext = file.isCustomNote ? 'NOTE'
                   : file.isDoc ? 'DOC'
                   : file.isNotebook ? 'NB'
@@ -3663,15 +3865,13 @@ function renderVaultGrid() {
                   : file.isChessStrategy ? 'CHESS'
                   : file.isGraph ? 'GRAPH'
                   : vaultExt(file.originalName).toUpperCase();
-        return `<div class="vault-card group relative bg-slate-900/60 border border-slate-800/80 rounded-2xl p-4 cursor-pointer hover:border-slate-600/60 hover:bg-slate-900 transition-all" data-id="${file.id}">
-            <div class="w-full flex items-center justify-center rounded-xl mb-3 py-5" style="background:${color}12">
-                <i class="fas ${icon} text-4xl" style="color:${color}"></i>
-            </div>
-            <p class="text-slate-200 text-xs font-medium truncate mb-1.5" title="${file.originalName}">${file.originalName}</p>
-            <div class="flex items-center gap-1.5 flex-wrap">
-                <span class="text-[9px] font-bold px-1.5 py-0.5 rounded" style="background:${color}20;color:${color}">${ext}</span>
-                <span class="text-slate-600 text-[10px]">${vaultFmtSize(file.size)}</span>
-                <span class="text-slate-700 text-[10px] ml-auto">${date}</span>
+        return `<div class="vault-card group relative cursor-pointer" data-id="${file.id}">
+            ${preview}
+            <p class="vault-card-name" title="${file.originalName}">${file.originalName}</p>
+            <div class="vault-card-meta">
+                <span class="vault-card-kind" style="color:${color}">${ext}</span>
+                <span>${vaultFmtSize(file.size)}</span>
+                <span class="vault-card-date">${date}</span>
             </div>
             ${folderTag}
             ${file.notes ? `<div class="absolute top-2.5 right-2.5"><i class="fas fa-sticky-note text-amber-400 text-[10px]" title="Has notes"></i></div>` : ''}
@@ -3681,6 +3881,7 @@ function renderVaultGrid() {
     }).join('');
 
     gridEl.innerHTML = subfolderHTML + fileHTML;
+    vaultHydrateThumbs(gridEl);
 
     // Wire subfolder card clicks
     gridEl.querySelectorAll('.vault-subfolder-card').forEach(card => {
