@@ -1210,25 +1210,41 @@ document.addEventListener('DOMContentLoaded', () => {
             _buildArchived();
         }
 
-        // ── Archived categories: collapsible section below the grid ────
+        // ── Archived shortcuts: opened from the button in the page's corner ────
         function _buildArchived() {
             const wrap = document.getElementById('home-archived');
+            const btn  = document.getElementById('home-archive-btn');
             if (!wrap) return;
             const arch = _archived();
             const items = _homeItems().filter(it => arch.includes(it.t === 'app' ? it.k : it.id));
+            if (btn) {
+                btn.style.display = items.length ? '' : 'none';
+                btn.classList.toggle('is-open', _archivedOpen && items.length > 0);
+                btn.title = `${items.length} archived shortcut${items.length !== 1 ? 's' : ''}`;
+                const count = document.getElementById('home-archive-count');
+                if (count) count.textContent = items.length;
+                if (!btn._wired) {
+                    btn._wired = true;
+                    btn.addEventListener('click', e => {
+                        e.stopPropagation();
+                        _archivedOpen = !_archivedOpen;
+                        _buildArchived();
+                    });
+                    // Clicking anywhere else puts the drawer away again
+                    document.addEventListener('click', e => {
+                        if (!_archivedOpen) return;
+                        if (e.target.closest('#home-archived') || e.target.closest('#home-archive-btn')) return;
+                        _archivedOpen = false;
+                        _buildArchived();
+                    });
+                }
+            }
             if (!items.length) { wrap.style.display = 'none'; wrap.innerHTML = ''; return; }
 
-            wrap.style.display = 'block';
-            wrap.innerHTML = `
-                <div class="home-archived-header" id="home-archived-toggle">
-                    <i class="fas fa-chevron-${_archivedOpen ? 'down' : 'right'}" style="font-size:9px; width:9px"></i>
-                    <i class="fas fa-box-archive" style="font-size:11px"></i>
-                    <span>Archived (${items.length})</span>
-                </div>
-                <div class="home-archived-grid" style="display:${_archivedOpen ? 'flex' : 'none'}"></div>`;
-            wrap.querySelector('#home-archived-toggle').addEventListener('click', () => {
-                _archivedOpen = !_archivedOpen; _buildArchived();
-            });
+            wrap.style.display = _archivedOpen ? 'block' : 'none';
+            wrap.innerHTML =
+                '<div class="home-archived-title">Archived<em>click to restore</em></div>' +
+                '<div class="home-archived-grid"></div>';
 
             const g = wrap.querySelector('.home-archived-grid');
             const customColors = settingsData.categoryColors || {};

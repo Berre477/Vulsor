@@ -923,9 +923,14 @@ let pptxSlides      = [];
 let pptxCurrentSlide = 0;
 let pptxTmpDir      = null;
 
+// Four rows of five, warm to cool, each row a step darker in tone. New folders
+// take the first colour nobody is using, so a vault of twenty folders is
+// twenty distinguishable colours before anything repeats.
 const VAULT_FOLDER_COLORS = [
-    '#f87171','#fb923c','#fbbf24','#34d399',
-    '#22d3ee','#60a5fa','#a78bfa','#f472b6',
+    '#f87171','#fb923c','#fbbf24','#a3e635','#34d399',
+    '#2dd4bf','#22d3ee','#60a5fa','#818cf8','#a78bfa',
+    '#e879f9','#f472b6','#fb7185','#dc2626','#ea580c',
+    '#ca8a04','#16a34a','#0891b2','#4f46e5','#9333ea',
 ];
 
 function pickFolderColor() {
@@ -3262,6 +3267,7 @@ function renderVaultFolders() {
                 { label: 'Open',          icon: 'fa-folder-open',  color: '#3b82f6', action: () => { if (vaultOpenFileId) closeVaultViewer(); setVaultFolder(fid); } },
                 { label: 'New Subfolder', icon: 'fa-folder-plus',  color: '#94a3b8', action: () => openVaultFolderModal(fid) },
                 { label: 'Rename',        icon: 'fa-pen',          color: '#94a3b8', action: () => renameVaultFolder(fid) },
+                { label: 'Change Colour', icon: 'fa-palette',      color: '#94a3b8', action: () => openVaultFolderColorMenu(fid, e.clientX, e.clientY) },
                 { label: 'Move to…',      icon: 'fa-arrow-right-arrow-left', color: '#94a3b8', action: () => moveVaultFolderPicker(fid) },
                 { separator: true },
                 { label: 'Delete Folder', icon: 'fa-trash',        danger: true,     action: () => deleteVaultFolder(fid) },
@@ -3553,7 +3559,6 @@ const _vaultThumbCache  = new Map();    // file id → data URL
 const _vaultThumbFailed = new Set();    // file ids whose render already failed
 const _vaultThumbQueue  = [];           // file ids waiting to be rendered
 let   _vaultThumbBusy   = false;
-let   _vaultThumbForFolders = false;    // a queued render will fill a folder card
 
 const VAULT_PAPER_EXTS = ['vulsor','verso','md','markdown','txt','text','log','csv','tsv'];
 const VAULT_IMAGE_EXTS = ['png','jpg','jpeg','gif','webp','svg','bmp','avif'];
@@ -3692,12 +3697,6 @@ async function _vaultThumbPump() {
                     .forEach(box => vaultApplyThumb(box, url));
         }
     } finally { _vaultThumbBusy = false; }
-    // Folder cards read the cache when they're built, so they need one repaint
-    // once the pages they were waiting for exist.
-    if (_vaultThumbForFolders) {
-        _vaultThumbForFolders = false;
-        renderVaultGrid();
-    }
 }
 
 // The preview block for a card: a finished preview where we have one, the
@@ -3733,72 +3732,13 @@ function vaultCardPreviewHTML(file, icon, color) {
     </div>`;
 }
 
-// Files inside a folder, its subfolders included — a folder of folders should
-// still show what's at the bottom of it. Bounded so a deep tree stays cheap.
-function _vaultFolderContents(folderId, out, depth) {
-    if (out.length >= 24 || depth > 3) return out;
-    for (const f of vaultData.files) {
-        if (f.folderId === folderId) { out.push(f); if (out.length >= 24) return out; }
-    }
-    for (const c of vaultData.folders) {
-        if ((c.parentId || null) === folderId) _vaultFolderContents(c.id, out, depth + 1);
-    }
-    return out;
-}
-
-// A folder card shows the documents it holds, fanned like sheets in a tray —
-// a folder with lecture notes in it should look different from an empty one.
-// Only pages we already have (a cached PDF render, an image) are used: opening
-// a folder list must never kick off a batch of renders.
-function vaultFolderPreviewHTML(folder) {
-    const sheets = [];
-    for (const file of _vaultFolderContents(folder.id, [], 0)) {
-        if (sheets.length === 3) break;
-        const kind = vaultThumbKind(file);
-        if (kind === 'pdf') {
-            const url = vaultThumbCached(file);
-            if (url) sheets.push(url);
-        } else if (kind === 'image') {
-            sheets.push(vaultFileURL(vaultThumbSrc(file)));
-        }
-    }
-    const badge = `<i class="fas fa-folder vault-thumb-badge" style="color:${folder.color}"></i>`;
-    if (!sheets.length) {
-        return `<div class="vault-thumb vault-thumb-icon" data-folder-thumb="${folder.id}" style="background:${folder.color}0e">
-            <i class="fas fa-folder" style="color:${folder.color}"></i>
-        </div>`;
-    }
-    // Middle sheet first in the DOM so it can sit on top of the fanned pair
-    const order = sheets.length === 3 ? [sheets[1], sheets[0], sheets[2]] : sheets;
-    const cls   = ['vault-sheet-mid', 'vault-sheet-left', 'vault-sheet-right'];
-    return `<div class="vault-thumb vault-thumb-fan" style="background:${folder.color}0e">
-        ${order.map((url, i) => `<div class="vault-sheet ${sheets.length === 1 ? 'vault-sheet-mid' : cls[i]}">
-            <img src="${_vaultEsc(url)}" alt="" draggable="false">
-        </div>`).join('')}
-        ${badge}
-    </div>`;
-}
-
 // Queue every card still showing a placeholder icon for a PDF render.
 function vaultHydrateThumbs(gridEl) {
-    const queue = id => {
-        if (_vaultThumbFailed.has(id) || _vaultThumbQueue.includes(id)) return false;
+    gridEl.querySelectorAll('.vault-thumb[data-thumb-id]').forEach(box => {
+        const id = box.dataset.thumbId;
+        if (_vaultThumbFailed.has(id) || _vaultThumbQueue.includes(id)) return;
         _vaultThumbQueue.push(id);
-        return true;
-    };
-    gridEl.querySelectorAll('.vault-thumb[data-thumb-id]').forEach(box => queue(box.dataset.thumbId));
-
-    // A folder with nothing to show yet gets one page rendered on its behalf, so
-    // it stops looking empty after the first visit. One per folder, three per
-    // repaint — enough to fill the view without a render storm.
-    let budget = 3;
-    gridEl.querySelectorAll('.vault-thumb[data-folder-thumb]').forEach(box => {
-        if (budget <= 0) return;
-        const first = _vaultFolderContents(box.dataset.folderThumb, [], 0)
-            .find(f => vaultThumbKind(f) === 'pdf' && !_vaultThumbFailed.has(f.id) && !vaultThumbCached(f));
-        if (first && queue(first.id)) { budget--; _vaultThumbForFolders = true; }
     });
-
     if (_vaultThumbQueue.length) _vaultThumbPump();
 }
 
@@ -3854,7 +3794,9 @@ function renderVaultGrid() {
         ].filter(Boolean).join(', ') || 'Empty';
 
         return `<div class="vault-subfolder-card group relative cursor-pointer" data-folder-id="${f.id}">
-            ${vaultFolderPreviewHTML(f)}
+            <div class="vault-thumb vault-thumb-icon" style="background:${f.color}0e">
+                <i class="fas fa-folder" style="color:${f.color}"></i>
+            </div>
             <p class="vault-card-name">${f.name}</p>
             <div class="vault-card-meta"><span>${subLabel}</span></div>
             <!-- Hover: add subfolder + delete -->
@@ -3965,6 +3907,7 @@ function renderVaultGrid() {
                 { label: 'Open',          icon: 'fa-folder-open',  color: '#3b82f6', action: () => setVaultFolder(fid) },
                 { label: 'New Subfolder', icon: 'fa-folder-plus',  color: '#94a3b8', action: () => openVaultFolderModal(fid) },
                 { label: 'Rename',        icon: 'fa-pen',          color: '#94a3b8', action: () => renameVaultFolder(fid) },
+                { label: 'Change Colour', icon: 'fa-palette',      color: '#94a3b8', action: () => openVaultFolderColorMenu(fid, e.clientX, e.clientY) },
                 { label: 'Move to…',      icon: 'fa-arrow-right-arrow-left', color: '#94a3b8', action: () => moveVaultFolderPicker(fid) },
                 { separator: true },
                 { label: 'Delete Folder', icon: 'fa-trash',        danger: true,     action: () => deleteVaultFolder(fid) },
@@ -4145,6 +4088,44 @@ function renderVaultGrid() {
     // A file revealed from outside the Vault (downloads bar) may have been added
     // while this grid was hidden — flash it once its card actually exists.
     if (_vaultHighlightId) _vaultFlashCard(_vaultHighlightId);
+}
+
+// Recolour a folder in place. The palette is the same one new folders draw
+// from, shown as a grid you click once — no modal, no confirm step.
+function openVaultFolderColorMenu(folderId, x, y) {
+    const folder = vaultData.folders.find(f => f.id === folderId);
+    if (!folder) return;
+    _closeVaultCtxMenu();
+
+    const menu = document.createElement('div');
+    menu.className = 'vault-ctx-menu vault-color-menu';
+    menu.innerHTML = VAULT_FOLDER_COLORS.map(hex =>
+        `<button class="vault-color-dot${hex === folder.color ? ' is-current' : ''}" ` +
+        `style="background:${hex}" data-color="${hex}" title="${hex}"></button>`
+    ).join('');
+
+    menu.querySelectorAll('.vault-color-dot').forEach(dot => {
+        dot.onclick = e => {
+            e.stopPropagation();
+            folder.color = dot.dataset.color;
+            saveVaultData();
+            _closeVaultCtxMenu();
+            renderVaultFolders();
+            renderVaultGrid();
+        };
+    });
+
+    document.body.appendChild(menu);
+    const rect = menu.getBoundingClientRect();
+    menu.style.left = Math.max(8, Math.min(x, window.innerWidth  - rect.width  - 8)) + 'px';
+    menu.style.top  = Math.max(8, Math.min(y, window.innerHeight - rect.height - 8)) + 'px';
+    _vaultCtxMenuEl = menu;
+
+    setTimeout(() => {
+        document.addEventListener('click', _closeVaultCtxMenu);
+        document.addEventListener('scroll', _closeVaultCtxMenu, true);
+        window.addEventListener('blur', _closeVaultCtxMenu);
+    }, 0);
 }
 
 // ── New / sub folder modal ─────────────────────────────────────────

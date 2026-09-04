@@ -223,6 +223,11 @@
         <!-- HOME / NEW TAB VIEW                              -->
         <!-- ════════════════════════════════════════════════ -->
         <div id="view-home" class="app-view flex-1 overflow-y-auto chat-scroll">
+            <!-- Archived shortcuts live behind this button, out of the way of the grid -->
+            <button id="home-archive-btn" class="home-archive-btn" title="Archived shortcuts" style="display:none">
+                <i class="fas fa-box-archive"></i>
+                <span id="home-archive-count">0</span>
+            </button>
             <div class="home-page-inner">
                 <!-- Greeting -->
                 <div class="home-greeting">
