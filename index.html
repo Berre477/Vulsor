@@ -722,24 +722,24 @@
                 <div id="vault-sidebar" class="w-52 border-r border-slate-800/80 flex flex-col bg-slate-900/30 shrink-0">
 
                     <!-- Header -->
-                    <div class="px-3 pt-4 pb-2 shrink-0 flex items-center justify-between">
-                        <span class="text-[10px] font-semibold text-slate-500 uppercase tracking-widest">Documents</span>
-                        <div class="flex items-center gap-1">
-                            <button id="vault-new-doc-sidebar-btn" title="New Document" class="w-6 h-6 flex items-center justify-center rounded-lg text-slate-500 hover:text-slate-200 hover:bg-slate-800 transition-colors">
-                                <i class="fas fa-file-alt text-[9px]"></i>
+                    <div class="vault-side-head shrink-0">
+                        <span class="vault-side-label">Library</span>
+                        <div class="flex items-center gap-0.5">
+                            <button id="vault-new-doc-sidebar-btn" title="New Document" class="vault-icon-btn">
+                                <i class="fas fa-file-circle-plus"></i>
                             </button>
-                            <button id="vault-new-folder-btn" title="New Folder" class="w-6 h-6 flex items-center justify-center rounded-lg text-slate-500 hover:text-slate-200 hover:bg-slate-800 transition-colors">
-                                <i class="fas fa-folder-plus text-[9px]"></i>
+                            <button id="vault-new-folder-btn" title="New Folder" class="vault-icon-btn">
+                                <i class="fas fa-folder-plus"></i>
                             </button>
                         </div>
                     </div>
 
                     <!-- All Files button -->
-                    <div class="px-3 pb-1 shrink-0">
-                        <button id="vault-all-btn" class="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-left transition-all text-xs font-medium text-slate-400 hover:text-slate-200 hover:bg-slate-800/60">
-                            <i class="fas fa-layer-group text-[10px] shrink-0" style="color:var(--accent-light)"></i>
+                    <div class="px-2 pb-1 shrink-0">
+                        <button id="vault-all-btn" class="vault-side-row">
+                            <i class="fas fa-layer-group" style="color:var(--accent-light)"></i>
                             <span class="flex-1">All Files</span>
-                            <span class="vault-all-count text-[10px] text-slate-600">0</span>
+                            <span class="vault-all-count">0</span>
                         </button>
                     </div>
 
@@ -747,9 +747,9 @@
                     <div id="vault-folders-list" class="flex-1 overflow-y-auto chat-scroll px-2 pb-2"></div>
 
                     <!-- Storage path -->
-                    <div class="px-3 pt-2 pb-3 border-t border-slate-800/60 shrink-0 flex items-start gap-1.5">
-                        <i class="fas fa-shield-alt text-[9px] text-slate-700 mt-0.5 shrink-0"></i>
-                        <p id="vault-storage-path" class="text-[9px] text-slate-700 leading-tight break-all">~/Documents/Vulsor_Memories/vault</p>
+                    <div class="vault-side-foot shrink-0" title="Everything here is stored locally on this Mac">
+                        <i class="fas fa-shield-halved"></i>
+                        <p id="vault-storage-path">~/Documents/Vulsor_Memories/vault</p>
                     </div>
                 </div>
 
@@ -763,128 +763,127 @@
 
                     <!-- FILE GRID VIEW -->
                     <div id="vault-grid-view" class="flex flex-col flex-1 overflow-hidden">
-                        <!-- Header -->
-                        <div class="px-5 py-4 border-b border-slate-800/80 shrink-0">
-                            <div class="flex items-start justify-between gap-3 flex-wrap">
-                                <div class="min-w-0">
-                                    <h2 id="vault-header-title" class="text-lg font-bold text-white flex items-center gap-2">
-                                        <i class="fas fa-folder-open text-red-500 text-base"></i> All Files
-                                    </h2>
-                                    <p id="vault-file-count" class="text-slate-500 text-xs mt-0.5">No files</p>
+                        <!-- Toolbar: identity on the left, one row of controls on the right.
+                             Everything that creates something lives in the New menu, so the
+                             bar stays a single line at any window width. -->
+                        <div class="vault-toolbar shrink-0">
+                            <div class="vault-toolbar-id">
+                                <h2 id="vault-header-title" class="vault-toolbar-title">
+                                    <i class="fas fa-folder-open"></i> All Files
+                                </h2>
+                                <p id="vault-file-count" class="vault-toolbar-sub">No files</p>
+                            </div>
+
+                            <div class="vault-toolbar-actions">
+                                <div class="vault-search">
+                                    <i class="fas fa-search"></i>
+                                    <input id="vault-search" type="search" placeholder="Search files…">
                                 </div>
-                                <div class="flex items-center gap-2 flex-wrap justify-end">
-                                    <select id="vault-sort-select" class="bg-slate-800/80 text-slate-400 text-xs border border-slate-700/60 rounded-xl px-2 py-2 outline-none focus:border-red-600/70 transition-all cursor-pointer shrink-0" style="color-scheme:dark" title="Sort files">
-                                        <option value="date-desc">Newest first</option>
-                                        <option value="date-asc">Oldest first</option>
-                                        <option value="name-asc">Name A–Z</option>
-                                        <option value="name-desc">Name Z–A</option>
-                                        <option value="size-desc">Largest first</option>
-                                        <option value="size-asc">Smallest first</option>
-                                        <option value="custom">Custom order</option>
-                                    </select>
-                                    <div class="relative">
-                                        <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-[10px] pointer-events-none"></i>
-                                        <input id="vault-search" type="search" placeholder="Search…" class="bg-slate-800/80 text-white text-xs border border-slate-700/60 rounded-xl pl-8 pr-3 py-2 outline-none focus:border-red-600/70 transition-all placeholder-slate-500 w-40">
-                                    </div>
-                                    <button id="vault-new-doc-btn" class="bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-medium py-2 px-4 rounded-xl transition-colors flex items-center gap-1.5 shrink-0 border border-slate-700/60">
-                                        <i class="fas fa-file-alt text-[10px]"></i> New Doc
-                                    </button>
-                                    <button id="vault-new-note-btn" class="bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-medium py-2 px-4 rounded-xl transition-colors flex items-center gap-1.5 shrink-0 border border-slate-700/60" title="New Custom Note — a note you can fully re-style (background, font colour, size & more)">
-                                        <i class="fas fa-note-sticky text-[10px] text-yellow-400"></i> Custom Note
-                                    </button>
-                                    <button id="vault-import-docx-btn" class="bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-medium py-2 px-4 rounded-xl transition-colors flex items-center gap-1.5 shrink-0 border border-slate-700/60" title="Import a Word / Google Docs .docx file">
-                                        <i class="fas fa-file-import text-[10px] text-blue-400"></i> Import Docs
-                                    </button>
-                                    <input id="vault-docx-input" type="file" accept=".docx" multiple class="hidden">
 
+                                <select id="vault-sort-select" class="vault-field" style="color-scheme:dark" title="Sort files">
+                                    <option value="date-desc">Newest first</option>
+                                    <option value="date-asc">Oldest first</option>
+                                    <option value="name-asc">Name A–Z</option>
+                                    <option value="name-desc">Name Z–A</option>
+                                    <option value="size-desc">Largest first</option>
+                                    <option value="size-asc">Smallest first</option>
+                                    <option value="custom">Custom order</option>
+                                </select>
 
-                                    <button id="vault-new-code-btn" class="bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-medium py-2 px-4 rounded-xl transition-colors flex items-center gap-1.5 shrink-0 border border-slate-700/60" title="New Code File">
-                                        <i class="fas fa-code text-[10px]"></i> New Code
+                                <span class="vault-toolbar-sep"></span>
+
+                                <button id="vault-ask-btn" class="vault-btn vault-btn-accent" title="Ask your whole vault — the answer cites the files it came from">
+                                    <i class="fas fa-wand-magic-sparkles"></i> Ask Vault
+                                </button>
+
+                                <div class="vault-menu-wrap">
+                                    <button id="vault-new-btn" class="vault-btn" aria-haspopup="true" aria-expanded="false" title="Create something new">
+                                        <i class="fas fa-plus"></i> New
+                                        <i class="fas fa-chevron-down vault-btn-caret"></i>
                                     </button>
-                                    <button id="vault-new-notebook-btn" class="bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-medium py-2 px-4 rounded-xl transition-colors flex items-center gap-1.5 shrink-0 border border-slate-700/60" title="New Notebook">
-                                        <i class="fas fa-book-open text-[10px] text-orange-400"></i> Notebook
-                                    </button>
-                                    <button id="vault-new-website-btn" class="bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-medium py-2 px-4 rounded-xl transition-colors flex items-center gap-1.5 shrink-0 border border-slate-700/60" title="Add a website link — opens in the built-in browser">
-                                        <i class="fas fa-globe text-[10px] text-blue-400"></i> Website
-                                    </button>
-                                    <div class="relative shrink-0">
-                                        <button id="vault-new-project-btn" class="bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-medium py-2 px-4 rounded-xl transition-colors flex items-center gap-1.5 border border-slate-700/60" title="New Project / Science Tool">
-                                            <i class="fas fa-cube text-[10px] text-purple-400"></i> Project
-                                            <i class="fas fa-chevron-down text-[8px] text-slate-500 ml-0.5"></i>
+                                    <div id="vault-new-menu" class="vault-menu hidden">
+                                        <div class="vault-menu-label">Create</div>
+                                        <button id="vault-new-doc-btn" class="vault-menu-item">
+                                            <i class="fas fa-file-alt" style="color:#f87171"></i>
+                                            <span>Document</span><em>Rich text</em>
                                         </button>
-                                        <div id="vault-project-menu" class="absolute right-0 top-full mt-1 bg-slate-800 border border-slate-700/60 rounded-xl shadow-2xl py-1.5 hidden z-50" style="min-width:200px">
-                                            <button data-act="project"  class="vault-project-sub w-full text-left px-3 py-2 text-xs text-slate-300 hover:bg-slate-700/70 flex items-center gap-2">
-                                                <i class="fas fa-cube text-[10px] text-purple-400 w-3.5 text-center"></i>
-                                                <span class="flex-1">Project</span>
-                                                <span class="text-[9px] text-slate-500">Code workspace</span>
-                                            </button>
-                                            <div class="border-t border-slate-700/60 my-1 mx-2"></div>
-                                            <div class="px-3 py-1 text-[9px] uppercase tracking-wide text-slate-500">Science</div>
-                                            <button data-act="molecule" class="vault-project-sub w-full text-left px-3 py-2 text-xs text-slate-300 hover:bg-slate-700/70 flex items-center gap-2">
-                                                <i class="fas fa-atom text-[10px] text-emerald-400 w-3.5 text-center"></i>
-                                                <span class="flex-1">Molecule</span>
-                                                <span class="text-[9px] text-slate-500">2D builder</span>
-                                            </button>
-                                            <button data-act="periodic" class="vault-project-sub w-full text-left px-3 py-2 text-xs text-slate-300 hover:bg-slate-700/70 flex items-center gap-2">
-                                                <i class="fas fa-th text-[10px] text-yellow-400 w-3.5 text-center"></i>
-                                                <span class="flex-1">Periodic Table</span>
-                                                <span class="text-[9px] text-slate-500">All 118 elements</span>
-                                            </button>
-                                            <button data-act="dna" class="vault-project-sub w-full text-left px-3 py-2 text-xs text-slate-300 hover:bg-slate-700/70 flex items-center gap-2">
-                                                <i class="fas fa-dna text-[10px] text-pink-400 w-3.5 text-center"></i>
-                                                <span class="flex-1">DNA / RNA</span>
-                                                <span class="text-[9px] text-slate-500">Sequence tool</span>
-                                            </button>
-                                            <button data-act="anatomy" class="vault-project-sub w-full text-left px-3 py-2 text-xs text-slate-300 hover:bg-slate-700/70 flex items-center gap-2">
-                                                <i class="fas fa-heartbeat text-[10px] text-red-400 w-3.5 text-center"></i>
-                                                <span class="flex-1">Anatomy Atlas</span>
-                                                <span class="text-[9px] text-slate-500">Body explorer</span>
-                                            </button>
-                                            <div class="border-t border-slate-700/60 my-1 mx-2"></div>
-                                            <div class="px-3 py-1 text-[9px] uppercase tracking-wide text-slate-500">Chess</div>
-                                            <button data-act="chessstrategy" class="vault-project-sub w-full text-left px-3 py-2 text-xs text-slate-300 hover:bg-slate-700/70 flex items-center gap-2">
-                                                <i class="fas fa-chess text-[10px] text-amber-400 w-3.5 text-center"></i>
-                                                <span class="flex-1">Strategy Board</span>
-                                                <span class="text-[9px] text-slate-500">Arrows & analysis</span>
-                                            </button>
-                                            <div class="border-t border-slate-700/60 my-1 mx-2"></div>
-                                            <div class="px-3 py-1 text-[9px] uppercase tracking-wide text-slate-500">Math</div>
-                                            <button data-act="graph" class="vault-project-sub w-full text-left px-3 py-2 text-xs text-slate-300 hover:bg-slate-700/70 flex items-center gap-2">
-                                                <i class="fas fa-chart-line text-[10px] text-sky-400 w-3.5 text-center"></i>
-                                                <span class="flex-1">Graph / Plotter</span>
-                                                <span class="text-[9px] text-slate-500">2D &amp; 3D graphs</span>
-                                            </button>
-                                        </div>
+                                        <button id="vault-new-note-btn" class="vault-menu-item" title="A note you can fully re-style — background, font colour, size &amp; more">
+                                            <i class="fas fa-note-sticky" style="color:#eab308"></i>
+                                            <span>Custom Note</span><em>Styleable</em>
+                                        </button>
+                                        <button id="vault-new-code-btn" class="vault-menu-item">
+                                            <i class="fas fa-code" style="color:#22d3ee"></i>
+                                            <span>Code File</span><em>Editor &amp; run</em>
+                                        </button>
+                                        <button id="vault-new-notebook-btn" class="vault-menu-item">
+                                            <i class="fas fa-book-open" style="color:#fb923c"></i>
+                                            <span>Notebook</span><em>Cells &amp; output</em>
+                                        </button>
+
+                                        <div class="vault-menu-sep"></div>
+                                        <div class="vault-menu-label">Bring in</div>
+                                        <button id="vault-import-docx-btn" class="vault-menu-item" title="Import a Word / Google Docs .docx file">
+                                            <i class="fas fa-file-import" style="color:#60a5fa"></i>
+                                            <span>Word Document</span><em>.docx</em>
+                                        </button>
+                                        <button id="vault-new-website-btn" class="vault-menu-item" title="Add a website link — opens in the built-in browser">
+                                            <i class="fas fa-globe" style="color:#60a5fa"></i>
+                                            <span>Website Link</span><em>Opens in browser</em>
+                                        </button>
+
+                                        <div class="vault-menu-sep"></div>
+                                        <div class="vault-menu-label">Tools</div>
+                                        <button id="vault-new-project-btn" class="vault-menu-item">
+                                            <i class="fas fa-cube" style="color:#a855f7"></i>
+                                            <span>Project</span><em>Code workspace</em>
+                                        </button>
+                                        <button id="vault-new-molecule-btn" class="vault-menu-item"
+                                                onclick="_sciCreateFile('New Molecule','isMolecule','.mol.json',{atoms:[],bonds:[],nextId:1})">
+                                            <i class="fas fa-atom" style="color:#34d399"></i>
+                                            <span>Molecule</span><em>2D builder</em>
+                                        </button>
+                                        <button id="vault-new-periodic-btn" class="vault-menu-item"
+                                                onclick="_sciCreateFile('New Periodic Table','isPeriodic','.pt.json',{notes:{}})">
+                                            <i class="fas fa-th" style="color:#fbbf24"></i>
+                                            <span>Periodic Table</span><em>118 elements</em>
+                                        </button>
+                                        <button id="vault-new-dna-btn" class="vault-menu-item"
+                                                onclick="_sciCreateFile('New Sequence','isDna','.dna.json',{type:'dna',seq:''})">
+                                            <i class="fas fa-dna" style="color:#f472b6"></i>
+                                            <span>DNA / RNA</span><em>Sequence tool</em>
+                                        </button>
+                                        <button id="vault-new-anatomy-btn" class="vault-menu-item"
+                                                onclick="_sciCreateFile('New Anatomy Atlas','isAnatomy','.anat.json',{notes:{}})">
+                                            <i class="fas fa-heartbeat" style="color:#f87171"></i>
+                                            <span>Anatomy Atlas</span><em>Body explorer</em>
+                                        </button>
+                                        <button id="vault-new-chessstrategy-btn" class="vault-menu-item"
+                                                onclick="_sciCreateFile('New Strategy Board','isChessStrategy','.chess.json',{pieces:{},arrows:[],highlights:{},notes:''})">
+                                            <i class="fas fa-chess" style="color:#f59e0b"></i>
+                                            <span>Strategy Board</span><em>Arrows &amp; analysis</em>
+                                        </button>
+                                        <button id="vault-new-graph-btn" class="vault-menu-item"
+                                                onclick="_sciCreateFile('New Graph','isGraph','.graph.json',{mode:'2d',graphs:[],view2d:{},view3d:{}})">
+                                            <i class="fas fa-chart-line" style="color:#38bdf8"></i>
+                                            <span>Graph / Plotter</span><em>2D &amp; 3D</em>
+                                        </button>
                                     </div>
-                                    <!-- Periodic Table stays in the toolbar; Molecule, DNA, Anatomy live under the Project dropdown -->
-                                    <button id="vault-new-periodic-btn" onclick="_sciCreateFile('New Periodic Table','isPeriodic','.pt.json',{notes:{}})" class="bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-medium py-2 px-4 rounded-xl transition-colors flex items-center gap-1.5 shrink-0 border border-slate-700/60" title="New Periodic Table">
-                                        <i class="fas fa-th text-[10px] text-yellow-400"></i> Periodic
-                                    </button>
-                                    <!-- Hidden launcher buttons used by the Project dropdown -->
-                                    <button id="vault-new-molecule-btn"       onclick="_sciCreateFile('New Molecule','isMolecule','.mol.json',{atoms:[],bonds:[],nextId:1})" class="hidden" aria-hidden="true"></button>
-                                    <button id="vault-new-dna-btn"            onclick="_sciCreateFile('New Sequence','isDna','.dna.json',{type:'dna',seq:''})" class="hidden" aria-hidden="true"></button>
-                                    <button id="vault-new-anatomy-btn"        onclick="_sciCreateFile('New Anatomy Atlas','isAnatomy','.anat.json',{notes:{}})" class="hidden" aria-hidden="true"></button>
-                                    <button id="vault-new-chessstrategy-btn"  onclick="_sciCreateFile('New Strategy Board','isChessStrategy','.chess.json',{pieces:{},arrows:[],highlights:{},notes:''})" class="hidden" aria-hidden="true"></button>
-                                    <button id="vault-new-graph-btn"          onclick="_sciCreateFile('New Graph','isGraph','.graph.json',{mode:'2d',graphs:[],view2d:{},view3d:{}})" class="hidden" aria-hidden="true"></button>
-                                    <button id="vault-ask-btn" title="Ask your whole vault — the answer cites the files it came from" class="bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-medium py-2 px-4 rounded-xl transition-colors flex items-center gap-1.5 shrink-0 border border-slate-700/60">
-                                        <i class="fas fa-wand-magic-sparkles text-[10px]" style="color:var(--accent-light)"></i> Ask Vault
-                                    </button>
-                                    <button id="vault-add-btn" class="bg-red-600 hover:bg-red-700 text-white text-xs font-medium py-2 px-4 rounded-xl transition-colors shadow-lg shadow-red-600/20 flex items-center gap-1.5 shrink-0">
-                                        <i class="fas fa-plus text-[10px]"></i> Add File
-                                    </button>
                                 </div>
+
+                                <button id="vault-add-btn" class="vault-btn vault-btn-primary">
+                                    <i class="fas fa-arrow-up-from-bracket"></i> Add Files
+                                </button>
+                                <input id="vault-docx-input" type="file" accept=".docx" multiple class="hidden">
                             </div>
                         </div>
                         <!-- Drop zone + file grid -->
                         <div id="vault-drop-zone" class="flex-1 overflow-y-auto chat-scroll p-5 relative transition-all">
                             <div id="vault-files-grid" class="grid gap-3" style="grid-template-columns:repeat(auto-fill,minmax(155px,1fr))"></div>
                             <!-- Empty / drop hint -->
-                            <div id="vault-empty-state" class="absolute inset-0 flex flex-col items-center justify-center text-center pointer-events-none">
-                                <div class="w-16 h-16 bg-slate-800/60 rounded-2xl flex items-center justify-center mb-4">
-                                    <i class="fas fa-cloud-upload-alt text-2xl text-slate-600"></i>
-                                </div>
-                                <p class="text-slate-400 text-sm font-medium mb-1">No files here yet</p>
-                                <p class="text-slate-600 text-xs">Click <span class="text-slate-500">+ Add File</span> or drag & drop files</p>
+                            <div id="vault-empty-state" class="vault-empty">
+                                <div class="vault-empty-art"><span></span><span></span><span></span></div>
+                                <p class="vault-empty-title">Nothing here yet</p>
+                                <p class="vault-empty-hint">Drop files anywhere in this panel, or use <b>Add Files</b></p>
                             </div>
                         </div>
                     </div>

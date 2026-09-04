@@ -2061,9 +2061,9 @@ function flush3DSave() {
 // Init
 // ──────────────────────────────────────────────────────────────
 function initStudio() {
-    // NOTE: the click handler for #vault-new-project-btn is owned by vault.js
-    // (it toggles the Project ▾ dropdown). The dropdown's "Project" item calls
-    // openStudioEditor() directly, so no listener is attached here.
+    // NOTE: the click handler for #vault-new-project-btn is owned by vault.js —
+    // it's the "Project" row of the vault's New menu and calls openStudioEditor()
+    // directly, so no listener is attached here.
     document.getElementById('studio-editor-close').onclick = closeStudioEditor;
     document.getElementById('studio-save-btn').onclick     = saveStudioFromEditor;
     document.getElementById('studio-delete-btn').onclick   = closeStudioEditor;   // not used now

@@ -3191,16 +3191,7 @@ function renderVaultFolders() {
     // All Files button state
     if (allBtn) {
         const isAll = vaultActiveFolderId === null;
-        allBtn.className = `w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-left transition-all text-xs font-medium ${
-            isAll ? 'border' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
-        }`;
-        if (isAll) {
-            allBtn.style.background   = 'rgba(var(--accent-rgb),0.12)';
-            allBtn.style.color        = 'var(--accent-light)';
-            allBtn.style.borderColor  = 'rgba(var(--accent-rgb),0.25)';
-        } else {
-            allBtn.style.cssText = '';
-        }
+        allBtn.className = 'vault-side-row' + (isAll ? ' vault-side-row-active' : '');
         allBtn.querySelector('.vault-all-count').textContent = vaultData.files.length;
     }
 
@@ -3562,6 +3553,7 @@ const _vaultThumbCache  = new Map();    // file id → data URL
 const _vaultThumbFailed = new Set();    // file ids whose render already failed
 const _vaultThumbQueue  = [];           // file ids waiting to be rendered
 let   _vaultThumbBusy   = false;
+let   _vaultThumbForFolders = false;    // a queued render will fill a folder card
 
 const VAULT_PAPER_EXTS = ['vulsor','verso','md','markdown','txt','text','log','csv','tsv'];
 const VAULT_IMAGE_EXTS = ['png','jpg','jpeg','gif','webp','svg','bmp','avif'];
@@ -3700,6 +3692,12 @@ async function _vaultThumbPump() {
                     .forEach(box => vaultApplyThumb(box, url));
         }
     } finally { _vaultThumbBusy = false; }
+    // Folder cards read the cache when they're built, so they need one repaint
+    // once the pages they were waiting for exist.
+    if (_vaultThumbForFolders) {
+        _vaultThumbForFolders = false;
+        renderVaultGrid();
+    }
 }
 
 // The preview block for a card: a finished preview where we have one, the
@@ -3735,13 +3733,72 @@ function vaultCardPreviewHTML(file, icon, color) {
     </div>`;
 }
 
+// Files inside a folder, its subfolders included — a folder of folders should
+// still show what's at the bottom of it. Bounded so a deep tree stays cheap.
+function _vaultFolderContents(folderId, out, depth) {
+    if (out.length >= 24 || depth > 3) return out;
+    for (const f of vaultData.files) {
+        if (f.folderId === folderId) { out.push(f); if (out.length >= 24) return out; }
+    }
+    for (const c of vaultData.folders) {
+        if ((c.parentId || null) === folderId) _vaultFolderContents(c.id, out, depth + 1);
+    }
+    return out;
+}
+
+// A folder card shows the documents it holds, fanned like sheets in a tray —
+// a folder with lecture notes in it should look different from an empty one.
+// Only pages we already have (a cached PDF render, an image) are used: opening
+// a folder list must never kick off a batch of renders.
+function vaultFolderPreviewHTML(folder) {
+    const sheets = [];
+    for (const file of _vaultFolderContents(folder.id, [], 0)) {
+        if (sheets.length === 3) break;
+        const kind = vaultThumbKind(file);
+        if (kind === 'pdf') {
+            const url = vaultThumbCached(file);
+            if (url) sheets.push(url);
+        } else if (kind === 'image') {
+            sheets.push(vaultFileURL(vaultThumbSrc(file)));
+        }
+    }
+    const badge = `<i class="fas fa-folder vault-thumb-badge" style="color:${folder.color}"></i>`;
+    if (!sheets.length) {
+        return `<div class="vault-thumb vault-thumb-icon" data-folder-thumb="${folder.id}" style="background:${folder.color}0e">
+            <i class="fas fa-folder" style="color:${folder.color}"></i>
+        </div>`;
+    }
+    // Middle sheet first in the DOM so it can sit on top of the fanned pair
+    const order = sheets.length === 3 ? [sheets[1], sheets[0], sheets[2]] : sheets;
+    const cls   = ['vault-sheet-mid', 'vault-sheet-left', 'vault-sheet-right'];
+    return `<div class="vault-thumb vault-thumb-fan" style="background:${folder.color}0e">
+        ${order.map((url, i) => `<div class="vault-sheet ${sheets.length === 1 ? 'vault-sheet-mid' : cls[i]}">
+            <img src="${_vaultEsc(url)}" alt="" draggable="false">
+        </div>`).join('')}
+        ${badge}
+    </div>`;
+}
+
 // Queue every card still showing a placeholder icon for a PDF render.
 function vaultHydrateThumbs(gridEl) {
-    gridEl.querySelectorAll('.vault-thumb[data-thumb-id]').forEach(box => {
-        const id = box.dataset.thumbId;
-        if (_vaultThumbFailed.has(id) || _vaultThumbQueue.includes(id)) return;
+    const queue = id => {
+        if (_vaultThumbFailed.has(id) || _vaultThumbQueue.includes(id)) return false;
         _vaultThumbQueue.push(id);
+        return true;
+    };
+    gridEl.querySelectorAll('.vault-thumb[data-thumb-id]').forEach(box => queue(box.dataset.thumbId));
+
+    // A folder with nothing to show yet gets one page rendered on its behalf, so
+    // it stops looking empty after the first visit. One per folder, three per
+    // repaint — enough to fill the view without a render storm.
+    let budget = 3;
+    gridEl.querySelectorAll('.vault-thumb[data-folder-thumb]').forEach(box => {
+        if (budget <= 0) return;
+        const first = _vaultFolderContents(box.dataset.folderThumb, [], 0)
+            .find(f => vaultThumbKind(f) === 'pdf' && !_vaultThumbFailed.has(f.id) && !vaultThumbCached(f));
+        if (first && queue(first.id)) { budget--; _vaultThumbForFolders = true; }
     });
+
     if (_vaultThumbQueue.length) _vaultThumbPump();
 }
 
@@ -3797,9 +3854,7 @@ function renderVaultGrid() {
         ].filter(Boolean).join(', ') || 'Empty';
 
         return `<div class="vault-subfolder-card group relative cursor-pointer" data-folder-id="${f.id}">
-            <div class="vault-thumb vault-thumb-icon" style="background:${f.color}0e">
-                <i class="fas fa-folder" style="color:${f.color}"></i>
-            </div>
+            ${vaultFolderPreviewHTML(f)}
             <p class="vault-card-name">${f.name}</p>
             <div class="vault-card-meta"><span>${subLabel}</span></div>
             <!-- Hover: add subfolder + delete -->
@@ -4636,33 +4691,33 @@ function initVault() {
         };
     }
 
-    // ── Project dropdown (Project + science tools) ──
-    const projBtn  = document.getElementById('vault-new-project-btn');
-    const projMenu = document.getElementById('vault-project-menu');
-    if (projBtn && projMenu) {
-        projBtn.onclick = e => {
-            e.stopPropagation();
-            projMenu.classList.toggle('hidden');
+    // ── New menu (everything that creates a file lives here) ──
+    // The items are the same buttons other modules bind by id — code.js,
+    // notebook.js and science.js each own their own click handler — so this
+    // only opens and closes the menu.
+    const newBtn  = document.getElementById('vault-new-btn');
+    const newMenu = document.getElementById('vault-new-menu');
+    if (newBtn && newMenu) {
+        const closeMenu = () => {
+            newMenu.classList.add('hidden');
+            newBtn.setAttribute('aria-expanded', 'false');
         };
+        newBtn.onclick = e => {
+            e.stopPropagation();
+            const open = newMenu.classList.toggle('hidden') === false;
+            newBtn.setAttribute('aria-expanded', String(open));
+        };
+        // Picking an item runs its own handler, then the menu gets out of the way
+        newMenu.querySelectorAll('.vault-menu-item').forEach(item => item.addEventListener('click', closeMenu));
         document.addEventListener('click', e => {
-            if (!projMenu.contains(e.target) && e.target !== projBtn) projMenu.classList.add('hidden');
+            if (!newMenu.contains(e.target) && !newBtn.contains(e.target)) closeMenu();
         });
-        projMenu.querySelectorAll('.vault-project-sub').forEach(b => {
-            b.onclick = (e) => {
-                e.stopPropagation();
-                projMenu.classList.add('hidden');
-                const act = b.dataset.act;
-                console.log('[Project menu] clicked act=', act);
-                if      (act === 'project')      openStudioEditor();
-                else if (act === 'molecule')      _sciCreateFile('New Molecule',       'isMolecule',      '.mol.json',   { atoms: [], bonds: [], nextId: 1 });
-                else if (act === 'periodic')      _sciCreateFile('New Periodic Table', 'isPeriodic',      '.pt.json',    { notes: {} });
-                else if (act === 'dna')           _sciCreateFile('New Sequence',       'isDna',           '.dna.json',   { type: 'dna', seq: '' });
-                else if (act === 'anatomy')       _sciCreateFile('New Anatomy Atlas',  'isAnatomy',       '.anat.json',  { notes: {} });
-                else if (act === 'chessstrategy') _sciCreateFile('New Strategy Board', 'isChessStrategy', '.chess.json', { pieces: {}, arrows: [], highlights: {}, notes: '' });
-                else if (act === 'graph')         _sciCreateFile('New Graph', 'isGraph', '.graph.json', { mode: '2d', graphs: [], view2d: {}, view3d: {} });
-            };
-        });
+        document.addEventListener('keydown', e => { if (e.key === 'Escape') closeMenu(); });
     }
+
+    // ── Project (code workspace) — a New-menu item now, not a dropdown ──
+    const projBtn = document.getElementById('vault-new-project-btn');
+    if (projBtn) projBtn.onclick = () => openStudioEditor();
 
     // ── Doc title input ──
     const docTitleInput = document.getElementById('vault-doc-title-input');
@@ -4678,7 +4733,6 @@ function initVault() {
         const paths = Array.from(e.target.files).map(vaultFilePath).filter(Boolean);
         e.target.value = '';
         if (!paths.length) return;
-        const r = document.getElementById('vault-add-btn').getBoundingClientRect();
         vaultAddFilesWithDestination(paths);
     };
 
