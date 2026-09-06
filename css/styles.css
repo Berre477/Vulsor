@@ -3699,7 +3699,15 @@ html[data-theme="light"] .home-omnibox {
             backdrop-filter: blur(20px) saturate(140%);
 }
 html[data-theme="light"] .home-omnibox:focus-within { box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.28) !important; }
-html[data-theme="light"] #home-omnibox-input       { color: var(--lm-tb) !important; }
+/* The input sits inside the omnibox pill, so it has to stay transparent —
+   light mode's blanket input background painted a grey bar inside it. */
+html[data-theme="light"] #home-omnibox-input,
+html[data-theme="light"] input.bg-transparent {
+    color: var(--lm-tb) !important;
+    background: transparent !important;
+    box-shadow: none !important;
+}
+html[data-theme="light"] #home-omnibox-input { border: none !important; }
 html[data-theme="light"] #home-omnibox-input::placeholder,
 html[data-theme="light"] .home-omnibox-icon        { color: var(--lm-tm) !important; }
 
