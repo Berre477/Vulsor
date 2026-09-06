@@ -3512,7 +3512,9 @@ body.browser-fullscreen #music-player-bar { display: none !important; }
 #view-home { position: relative; isolation: isolate; }
 #view-home::before {
     content: '';
-    position: absolute;
+    /* Fixed, like the canvas behind it — an absolute layer stops at the first
+       viewport and leaves a seam once the shortcuts scroll past it. */
+    position: fixed;
     inset: 0;
     z-index: -1;
     pointer-events: none;

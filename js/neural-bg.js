@@ -514,8 +514,12 @@
     }
 
     function frame(t) {
-        // Idle cheaply whenever the home view is hidden or the window is not visible
-        if (!canvas || canvas.offsetParent === null || document.hidden || !style) {
+        // Idle cheaply whenever the home view is hidden or the window is not
+        // visible. The check is on the view, not the canvas: a fixed-position
+        // element always reports offsetParent === null, which would idle the
+        // loop forever and leave the background blank.
+        const host = document.getElementById(HOME_ID);
+        if (!canvas || !style || document.hidden || !host || host.offsetParent === null) {
             setTimeout(() => requestAnimationFrame(frame), 600);
             return;
         }
@@ -543,7 +547,7 @@
         if (!home) return;
         canvas = document.createElement('canvas');
         canvas.id = 'home-neural-bg';
-        canvas.style.cssText = 'position:absolute;inset:0;z-index:-1;pointer-events:none';
+        canvas.style.cssText = 'position:fixed;inset:0;z-index:-1;pointer-events:none';
         home.prepend(canvas);
         ctx = canvas.getContext('2d');
 
