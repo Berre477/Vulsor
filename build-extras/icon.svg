@@ -1,0 +1,48 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <defs>
+    <!-- Paper-white face with just enough gradient to keep it from looking flat -->
+    <linearGradient id="face" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0"   stop-color="#ffffff"/>
+      <stop offset="0.62" stop-color="#fbfcfe"/>
+      <stop offset="1"   stop-color="#e9edf4"/>
+    </linearGradient>
+    <linearGradient id="iris" x1="0.2" y1="0" x2="0.8" y2="1">
+      <stop offset="0"   stop-color="#60a5fa"/>
+      <stop offset="0.55" stop-color="#2563eb"/>
+      <stop offset="1"   stop-color="#1e3a8a"/>
+    </linearGradient>
+    <radialGradient id="irisDepth" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0.55" stop-color="#000000" stop-opacity="0"/>
+      <stop offset="1"    stop-color="#000000" stop-opacity="0.35"/>
+    </radialGradient>
+
+    <!-- The eye opening, reused to clip the iris and to draw the lid -->
+    <path id="lids" d="M 196 512
+                       C 296 322, 416 258, 512 258
+                       C 608 258, 728 322, 828 512
+                       C 736 646, 620 768, 512 768
+                       C 404 768, 288 646, 196 512 Z"/>
+    <clipPath id="eyeClip"><use href="#lids"/></clipPath>
+  </defs>
+
+  <!-- Face -->
+  <rect x="0" y="0" width="1024" height="1024" rx="226" ry="226" fill="url(#face)"/>
+
+  <!-- The old mark's web, kept as a whisper so the icon still reads as Vulsor -->
+  <g stroke="#0f172a" stroke-opacity="0.055" stroke-width="3" fill="none">
+    <path d="M512 96 L873 260 L946 620 L731 900 L293 900 L78 620 L151 260 Z"/>
+    <path d="M512 240 L760 353 L810 600 L662 793 L362 793 L214 600 L264 353 Z"/>
+    <path d="M512 96 V900 M78 620 L946 620 M151 260 L873 900 M873 260 L151 900"/>
+  </g>
+
+  <!-- Eye -->
+  <g clip-path="url(#eyeClip)">
+    <circle cx="512" cy="516" r="158" fill="url(#iris)"/>
+    <circle cx="512" cy="516" r="158" fill="url(#irisDepth)"/>
+    <circle cx="512" cy="516" r="70"  fill="#0b1220"/>
+    <!-- Catchlight clear of the pupil, so it reads as a highlight at 16px too -->
+    <circle cx="440" cy="450" r="34"  fill="#ffffff" fill-opacity="0.9"/>
+    <circle cx="580" cy="586" r="15"  fill="#ffffff" fill-opacity="0.28"/>
+  </g>
+  <use href="#lids" fill="none" stroke="#0f172a" stroke-width="30" stroke-linejoin="round"/>
+</svg>
