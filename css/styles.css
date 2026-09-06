@@ -3726,3 +3726,18 @@ html[data-theme="light"] .home-add-icon {
     border: 1.5px dashed var(--lm-borderh) !important;
     box-shadow: none !important;
 }
+
+/* ── Sheets never grow past the window ────────────────────────────
+   A modal panel with more content than the screen was simply clipped:
+   no max height, no scroll. Cap every panel and let the settings body
+   scroll inside its header. */
+#settings-modal > div,
+[id$="-modal"] > div,
+.settings-backdrop > div,
+.study-settings-backdrop > div { max-height: 86vh; }
+
+#settings-modal-body {
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    min-height: 0;
+}
