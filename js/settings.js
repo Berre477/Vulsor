@@ -16,15 +16,26 @@ const ACCENT_PRESETS = [
 ];
 
 const BG_THEMES = [
+    // ── Dark ──
     { id: 'slate',    name: 'Slate',     preview: '#020617', base: '#020617', surface: '#0f172a', elevated: '#1e293b', border: '#1e293b', borderHi: '#334155', inputBg: '#1e293b', dark: true  },
     { id: 'black',    name: 'Black',     preview: '#000000', base: '#000000', surface: '#0c0c0c', elevated: '#161616', border: '#202020', borderHi: '#2a2a2a', inputBg: '#141414', dark: true  },
+    { id: 'midnight', name: 'Midnight',  preview: '#0a0e1a', base: '#0a0e1a', surface: '#111827', elevated: '#1b2436', border: '#1f2a3d', borderHi: '#2e3b54', inputBg: '#161f30', dark: true  },
     { id: 'deepblue', name: 'Deep Blue', preview: '#03071e', base: '#03071e', surface: '#060d28', elevated: '#0d1639', border: '#1a2550', borderHi: '#263a72', inputBg: '#0d1639', dark: true  },
+    { id: 'ocean',    name: 'Ocean',     preview: '#04151f', base: '#04151f', surface: '#08202e', elevated: '#0d2c3e', border: '#12384c', borderHi: '#1b5069', inputBg: '#0a2734', dark: true  },
+    { id: 'forest',   name: 'Forest',    preview: '#0a140f', base: '#0a140f', surface: '#101e17', elevated: '#17291f', border: '#1d3527', borderHi: '#2a4a37', inputBg: '#13241b', dark: true  },
+    { id: 'plum',     name: 'Plum',      preview: '#150c1d', base: '#150c1d', surface: '#1e1229', elevated: '#281937', border: '#342145', borderHi: '#472e5e', inputBg: '#231530', dark: true  },
     { id: 'charcoal', name: 'Charcoal',  preview: '#111111', base: '#111111', surface: '#1c1c1c', elevated: '#272727', border: '#303030', borderHi: '#3a3a3a', inputBg: '#222222', dark: true  },
+    { id: 'nord',     name: 'Nord',      preview: '#2e3440', base: '#2e3440', surface: '#353d4b', elevated: '#3b4252', border: '#434c5e', borderHi: '#4c566a', inputBg: '#3b4252', dark: true  },
     { id: 'mocha',    name: 'Mocha',     preview: '#14100c', base: '#14100c', surface: '#1c1713', elevated: '#26201a', border: '#352b22', borderHi: '#4a3c2e', inputBg: '#221c16', dark: true  },
     { id: 'dim',      name: 'Dim',       preview: '#1a1f2e', base: '#1a1f2e', surface: '#242b3d', elevated: '#2e3854', border: '#3a4668', borderHi: '#4d5e88', inputBg: '#2a3050', dark: true  },
     { id: 'metallic', name: 'Metallic',  preview: '#3a3f4b', base: '#1c1f26', surface: '#262a33', elevated: '#323845', border: '#3c4350', borderHi: '#525b6b', inputBg: '#2a2f3a', dark: true, gradient: 'linear-gradient(135deg, #2a2f38 0%, #1a1d23 45%, #20242c 70%, #2e333d 100%)' },
-    { id: 'silver',   name: 'Silver',    preview: '#d1d9e6', base: '#cdd5e0', surface: '#dde4ef', elevated: '#edf1f8', border: '#b8c4d4', borderHi: '#96a6bc', inputBg: '#e8edf5', dark: false },
-    { id: 'white',    name: 'White',     preview: '#ffffff', base: '#f0f4fa', surface: '#ffffff', elevated: '#f8fafc', border: '#dde3ef', borderHi: '#c4cedf', inputBg: '#ffffff', dark: false },
+
+    // ── Light. Apple's neutrals: near-white surfaces, hairline dividers, and
+    //    no blue cast — the old silver/white pair was a muddy blue-grey. ──
+    { id: 'white',    name: 'White',     preview: '#ffffff', base: '#ffffff', surface: '#fbfbfd', elevated: '#f5f5f7', border: '#e4e4e7', borderHi: '#d2d2d7', inputBg: '#ffffff', dark: false },
+    { id: 'silver',   name: 'Silver',    preview: '#f0f0f2', base: '#f5f5f7', surface: '#ffffff', elevated: '#fbfbfd', border: '#dcdce0', borderHi: '#c6c6cc', inputBg: '#ffffff', dark: false },
+    { id: 'mist',     name: 'Mist',      preview: '#eef1f6', base: '#eef1f6', surface: '#fafbfd', elevated: '#ffffff', border: '#dde2ea', borderHi: '#c5ccd8', inputBg: '#ffffff', dark: false },
+    { id: 'paper',    name: 'Paper',     preview: '#faf7f2', base: '#f7f4ee', surface: '#fffdf9', elevated: '#fbf8f2', border: '#e6e0d5', borderHi: '#d3cabb', inputBg: '#fffdf9', dark: false },
 ];
 
 let settingsData = { accentIndex: 0, customAccent: null, bgTheme: 'slate', customBg: null, wallpaper: null, wallpaperFit: 'fill', homeBg: 'plexus', categoryColors: {}, categoryIcons: {}, categoryTileColor: null, homeItems: null, homeSites: [], archived: [] };
@@ -147,7 +158,8 @@ function applyBackground(theme) {
     }
     el.textContent = generateBackgroundCSS(theme);
     // Store on root for other uses
-    document.documentElement.dataset.bg = theme.id;
+    document.documentElement.dataset.bg    = theme.id;
+    document.documentElement.dataset.theme = theme.dark ? 'dark' : 'light';
 }
 
 function generateBackgroundCSS(t) {
@@ -320,9 +332,9 @@ body { background-color: ${t.base} !important; ${t.gradient ? `background-image:
     if (!light) return base + extra;
 
     // ── Light mode: comprehensive text + surface overrides ──
-    const tb = '#1e293b'; // base text (dark)
-    const ts = '#475569'; // secondary text
-    const tm = '#94a3b8'; // muted text
+    const tb = '#1d1d1f'; // base text (near-black)
+    const ts = '#424245'; // secondary text
+    const tm = '#6e6e73'; // muted text — light enough to recede, dark enough to read
     const bg = t.base;
     const su = t.surface;
     const el = t.elevated;

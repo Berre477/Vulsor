@@ -1852,127 +1852,184 @@ body.vault-resizing { cursor: col-resize !important; user-select: none !importan
 .accent-swatch.active { border-color: white; transform: scale(1.1); }
 
 /* ══════════════════════════════════════════════════════════════
-   LIGHT MODE  (html[data-bg="silver"] and html[data-bg="white"])
+   LIGHT MODE  (html[data-theme="light"] — set for any theme whose
+   palette is light, so a new light background needs no CSS here)
    ══════════════════════════════════════════════════════════════ */
-html[data-bg="silver"], html[data-bg="white"] {
-    --lm-base:    var(--bg-base,    #cdd5e0);
-    --lm-surface: var(--bg-surface, #dde4ef);
-    --lm-elev:    var(--bg-elev,    #edf1f8);
-    --lm-border:  var(--bg-border,  #b8c4d4);
-    --lm-borderh: var(--bg-borderh, #96a6bc);
-    --lm-tb: #1e293b;
-    --lm-ts: #475569;
-    --lm-tm: #94a3b8;
+html[data-theme="light"] {
+    --lm-base:    var(--bg-base,    #f5f5f7);
+    --lm-surface: var(--bg-surface, #ffffff);
+    --lm-elev:    var(--bg-elev,    #fbfbfd);
+    --lm-border:  var(--bg-border,  #dcdce0);
+    --lm-borderh: var(--bg-borderh, #c6c6cc);
+    /* Near-black on near-white, with one muted grey for everything secondary —
+       the old #94a3b8 muted tone was barely legible on a light surface. */
+    --lm-tb: #1d1d1f;
+    --lm-ts: #424245;
+    --lm-tm: #6e6e73;
 }
 
 /* ── Global ── */
-html[data-bg="silver"] body,
-html[data-bg="white"]  body {
+html[data-theme="light"] body {
     color: var(--lm-tb) !important;
 }
 
 /* ── Text classes ── */
-html[data-bg="silver"] .text-white,  html[data-bg="white"] .text-white,
-html[data-bg="silver"] .text-slate-100, html[data-bg="white"] .text-slate-100,
-html[data-bg="silver"] .text-slate-200, html[data-bg="white"] .text-slate-200 { color: var(--lm-tb) !important; }
+html[data-theme="light"] .text-white,
+html[data-theme="light"] .text-slate-100,
+html[data-theme="light"] .text-slate-200 { color: var(--lm-tb) !important; }
 
-html[data-bg="silver"] .text-slate-300, html[data-bg="white"] .text-slate-300,
-html[data-bg="silver"] .text-slate-400, html[data-bg="white"] .text-slate-400 { color: var(--lm-ts) !important; }
+html[data-theme="light"] .text-slate-300,
+html[data-theme="light"] .text-slate-400 { color: var(--lm-ts) !important; }
 
-html[data-bg="silver"] .text-slate-500, html[data-bg="white"] .text-slate-500,
-html[data-bg="silver"] .text-slate-600, html[data-bg="white"] .text-slate-600,
-html[data-bg="silver"] .text-slate-700, html[data-bg="white"] .text-slate-700 { color: var(--lm-tm) !important; }
+html[data-theme="light"] .text-slate-500,
+html[data-theme="light"] .text-slate-600,
+html[data-theme="light"] .text-slate-700 { color: var(--lm-tm) !important; }
 
 /* ── All dark bg classes → light equivalents ── */
-html[data-bg="silver"] .bg-slate-950, html[data-bg="white"] .bg-slate-950 { background-color: var(--lm-base)    !important; }
-html[data-bg="silver"] .bg-slate-900, html[data-bg="white"] .bg-slate-900 { background-color: var(--lm-surface) !important; }
-html[data-bg="silver"] .bg-slate-800, html[data-bg="white"] .bg-slate-800 { background-color: var(--lm-elev)    !important; }
-html[data-bg="silver"] .bg-slate-700, html[data-bg="white"] .bg-slate-700 { background-color: var(--lm-border)  !important; }
+html[data-theme="light"] .bg-slate-950 { background-color: var(--lm-base)    !important; }
+html[data-theme="light"] .bg-slate-900 { background-color: var(--lm-surface) !important; }
+html[data-theme="light"] .bg-slate-800 { background-color: var(--lm-elev)    !important; }
+html[data-theme="light"] .bg-slate-700 { background-color: var(--lm-border)  !important; }
 
 /* Opacity variants – target by escaped class name */
-html[data-bg="silver"] .bg-slate-950\/95, html[data-bg="white"] .bg-slate-950\/95 { background-color: var(--lm-base)    !important; }
-html[data-bg="silver"] .bg-slate-900\/30, html[data-bg="white"] .bg-slate-900\/30 { background-color: var(--lm-surface) !important; }
-html[data-bg="silver"] .bg-slate-900\/40, html[data-bg="white"] .bg-slate-900\/40 { background-color: var(--lm-surface) !important; }
-html[data-bg="silver"] .bg-slate-900\/60, html[data-bg="white"] .bg-slate-900\/60 { background-color: var(--lm-surface) !important; }
-html[data-bg="silver"] .bg-slate-900\/80, html[data-bg="white"] .bg-slate-900\/80 { background-color: var(--lm-surface) !important; }
-html[data-bg="silver"] .bg-slate-800\/60, html[data-bg="white"] .bg-slate-800\/60 { background-color: var(--lm-elev)    !important; }
-html[data-bg="silver"] .bg-slate-800\/80, html[data-bg="white"] .bg-slate-800\/80 { background-color: var(--lm-elev)    !important; }
-html[data-bg="silver"] .bg-slate-800\/40, html[data-bg="white"] .bg-slate-800\/40 { background-color: var(--lm-elev)    !important; }
+html[data-theme="light"] .bg-slate-950\/95 { background-color: var(--lm-base)    !important; }
+html[data-theme="light"] .bg-slate-900\/30 { background-color: var(--lm-surface) !important; }
+html[data-theme="light"] .bg-slate-900\/40 { background-color: var(--lm-surface) !important; }
+html[data-theme="light"] .bg-slate-900\/60 { background-color: var(--lm-surface) !important; }
+html[data-theme="light"] .bg-slate-900\/80 { background-color: var(--lm-surface) !important; }
+html[data-theme="light"] .bg-slate-800\/60 { background-color: var(--lm-elev)    !important; }
+html[data-theme="light"] .bg-slate-800\/80 { background-color: var(--lm-elev)    !important; }
+html[data-theme="light"] .bg-slate-800\/40 { background-color: var(--lm-elev)    !important; }
 
 /* ── Borders ── */
-html[data-bg="silver"] .border-slate-800,    html[data-bg="white"] .border-slate-800    { border-color: var(--lm-border)  !important; }
-html[data-bg="silver"] .border-slate-700,    html[data-bg="white"] .border-slate-700    { border-color: var(--lm-borderh) !important; }
-html[data-bg="silver"] .border-slate-800\/80,html[data-bg="white"] .border-slate-800\/80 { border-color: var(--lm-border) !important; }
-html[data-bg="silver"] .border-slate-800\/60,html[data-bg="white"] .border-slate-800\/60 { border-color: var(--lm-border) !important; }
-html[data-bg="silver"] .border-slate-700\/60,html[data-bg="white"] .border-slate-700\/60 { border-color: var(--lm-borderh) !important; }
+html[data-theme="light"] .border-slate-800 { border-color: var(--lm-border)  !important; }
+html[data-theme="light"] .border-slate-700 { border-color: var(--lm-borderh) !important; }
+html[data-theme="light"] .border-slate-800\/80 { border-color: var(--lm-border) !important; }
+html[data-theme="light"] .border-slate-800\/60 { border-color: var(--lm-border) !important; }
+html[data-theme="light"] .border-slate-700\/60 { border-color: var(--lm-borderh) !important; }
 
 /* ── Structural IDs ── */
-html[data-bg="silver"] #chat-input-row,  html[data-bg="white"] #chat-input-row  { background-color: var(--lm-base)    !important; border-color: var(--lm-border) !important; }
-html[data-bg="silver"] #chat-tab-strip,  html[data-bg="white"] #chat-tab-strip  { background-color: var(--lm-surface) !important; border-color: var(--lm-border) !important; }
-html[data-bg="silver"] #chat-box,        html[data-bg="white"] #chat-box        { background-color: var(--lm-base)    !important; }
+html[data-theme="light"] #chat-input-row { background-color: var(--lm-base)    !important; border-color: var(--lm-border) !important; }
+html[data-theme="light"] #chat-tab-strip { background-color: var(--lm-surface) !important; border-color: var(--lm-border) !important; }
+html[data-theme="light"] #chat-box { background-color: var(--lm-base)    !important; }
 
 /* ── Inputs / textarea / select ── */
-html[data-bg="silver"] input,    html[data-bg="white"] input,
-html[data-bg="silver"] textarea, html[data-bg="white"] textarea,
-html[data-bg="silver"] select,   html[data-bg="white"] select {
+html[data-theme="light"] input,
+html[data-theme="light"] textarea,
+html[data-theme="light"] select {
     background-color: var(--lm-elev) !important;
     color: var(--lm-tb) !important;
     border-color: var(--lm-borderh) !important;
     color-scheme: light !important;
 }
-html[data-bg="silver"] input::placeholder, html[data-bg="white"] input::placeholder,
-html[data-bg="silver"] textarea::placeholder, html[data-bg="white"] textarea::placeholder { color: var(--lm-tm) !important; }
+html[data-theme="light"] input::placeholder,
+html[data-theme="light"] textarea::placeholder { color: var(--lm-tm) !important; }
 
 /* ── Buttons (non-accent) ── */
-html[data-bg="silver"] .tab-btn,     html[data-bg="white"] .tab-btn     { color: var(--lm-ts) !important; }
-html[data-bg="silver"] .tab-btn:hover,html[data-bg="white"] .tab-btn:hover { color: var(--lm-tb) !important; background: rgba(0,0,0,0.07) !important; }
+html[data-theme="light"] .tab-btn { color: var(--lm-ts) !important; }
+html[data-theme="light"] .tab-btn:hover { color: var(--lm-tb) !important; background: rgba(0,0,0,0.07) !important; }
 
 /* ── Chat messages ── */
-html[data-bg="silver"] .chat-msg,     html[data-bg="white"] .chat-msg     { color: var(--lm-tb) !important; }
-html[data-bg="silver"] .ai-row,       html[data-bg="white"] .ai-row       { background-color: var(--lm-surface) !important; border-color: var(--lm-border) !important; }
-html[data-bg="silver"] .chat-msg code,html[data-bg="white"] .chat-msg code { background-color: var(--lm-elev) !important; color: var(--lm-tb) !important; border-color: var(--lm-borderh) !important; }
-html[data-bg="silver"] .chat-msg pre, html[data-bg="white"] .chat-msg pre  { background-color: var(--lm-elev) !important; border-color: var(--lm-borderh) !important; }
+html[data-theme="light"] .chat-msg { color: var(--lm-tb) !important; }
+html[data-theme="light"] .ai-row { background-color: var(--lm-surface) !important; border-color: var(--lm-border) !important; }
+html[data-theme="light"] .chat-msg code { background-color: var(--lm-elev) !important; color: var(--lm-tb) !important; border-color: var(--lm-borderh) !important; }
+html[data-theme="light"] .chat-msg pre { background-color: var(--lm-elev) !important; border-color: var(--lm-borderh) !important; }
 
 /* ── Vault grid ── */
-html[data-bg="silver"] .vault-card,         html[data-bg="white"] .vault-card         { background-color: var(--lm-surface) !important; border-color: var(--lm-border) !important; }
-html[data-bg="silver"] .vault-subfolder-card, html[data-bg="white"] .vault-subfolder-card { background-color: var(--lm-surface) !important; border-color: var(--lm-border) !important; }
-html[data-bg="silver"] .vault-card-name,      html[data-bg="white"] .vault-card-name      { color: var(--lm-tb) !important; }
-html[data-bg="silver"] .vault-card-meta,      html[data-bg="white"] .vault-card-meta      { color: var(--lm-tm) !important; }
+html[data-theme="light"] .vault-card { background-color: var(--lm-surface) !important; border-color: var(--lm-border) !important; }
+html[data-theme="light"] .vault-subfolder-card { background-color: var(--lm-surface) !important; border-color: var(--lm-border) !important; }
+html[data-theme="light"] .vault-card-name { color: var(--lm-tb) !important; }
+html[data-theme="light"] .vault-card-meta { color: var(--lm-tm) !important; }
 
 /* Vault chrome in light mode */
-html[data-bg="silver"] .vault-btn,           html[data-bg="white"] .vault-btn           { background: var(--lm-elev) !important; border-color: var(--lm-border) !important; color: var(--lm-ts) !important; }
-html[data-bg="silver"] .vault-btn:hover,     html[data-bg="white"] .vault-btn:hover     { background: var(--lm-surface) !important; border-color: var(--lm-borderh) !important; color: var(--lm-tb) !important; }
-html[data-bg="silver"] .vault-btn-primary,   html[data-bg="white"] .vault-btn-primary   { color: #fff !important; border-color: transparent !important; }
-html[data-bg="silver"] .vault-field,         html[data-bg="white"] .vault-field,
-html[data-bg="silver"] .vault-search input,  html[data-bg="white"] .vault-search input  { background: var(--lm-elev) !important; border-color: var(--lm-border) !important; color: var(--lm-tb) !important; }
-html[data-bg="silver"] .vault-menu,          html[data-bg="white"] .vault-menu          { background: var(--lm-elev) !important; border-color: var(--lm-border) !important; }
-html[data-bg="silver"] .vault-menu-item,     html[data-bg="white"] .vault-menu-item     { color: var(--lm-ts) !important; }
-html[data-bg="silver"] .vault-menu-item:hover, html[data-bg="white"] .vault-menu-item:hover { background: var(--lm-surface) !important; color: var(--lm-tb) !important; }
-html[data-bg="silver"] .vault-menu-sep,      html[data-bg="white"] .vault-menu-sep      { background: var(--lm-border) !important; }
-html[data-bg="silver"] .vault-toolbar,       html[data-bg="white"] .vault-toolbar       { border-color: var(--lm-border) !important; }
-html[data-bg="silver"] .vault-toolbar-title, html[data-bg="white"] .vault-toolbar-title { color: var(--lm-tb) !important; }
-html[data-bg="silver"] .vault-side-row:hover,html[data-bg="white"] .vault-side-row:hover{ background: var(--lm-surface) !important; color: var(--lm-tb) !important; }
-html[data-bg="silver"] .vault-icon-btn:hover,html[data-bg="white"] .vault-icon-btn:hover{ background: var(--lm-surface) !important; color: var(--lm-tb) !important; }
-html[data-bg="silver"] .vault-empty-art span,html[data-bg="white"] .vault-empty-art span{ background: var(--lm-surface) !important; border-color: var(--lm-border) !important; }
-html[data-bg="silver"] .vault-subfolder-card,html[data-bg="white"] .vault-subfolder-card { background-color: var(--lm-surface) !important; border-color: var(--lm-border) !important; }
-html[data-bg="silver"] .vault-folder-row:hover,html[data-bg="white"] .vault-folder-row:hover { background-color: rgba(0,0,0,0.06) !important; }
-html[data-bg="silver"] .vault-sidebar-file:hover,html[data-bg="white"] .vault-sidebar-file:hover { background-color: rgba(0,0,0,0.06) !important; }
+html[data-theme="light"] .vault-btn { background: var(--lm-elev) !important; border-color: var(--lm-border) !important; color: var(--lm-ts) !important; }
+html[data-theme="light"] .vault-btn:hover { background: var(--lm-surface) !important; border-color: var(--lm-borderh) !important; color: var(--lm-tb) !important; }
+html[data-theme="light"] .vault-btn-primary { color: #fff !important; border-color: transparent !important; }
+html[data-theme="light"] .vault-field,
+html[data-theme="light"] .vault-search input { background: var(--lm-elev) !important; border-color: var(--lm-border) !important; color: var(--lm-tb) !important; }
+html[data-theme="light"] .vault-menu { background: var(--lm-elev) !important; border-color: var(--lm-border) !important; }
+html[data-theme="light"] .vault-menu-item { color: var(--lm-ts) !important; }
+html[data-theme="light"] .vault-menu-item:hover { background: var(--lm-surface) !important; color: var(--lm-tb) !important; }
+html[data-theme="light"] .vault-menu-sep { background: var(--lm-border) !important; }
+html[data-theme="light"] .vault-toolbar { border-color: var(--lm-border) !important; }
+html[data-theme="light"] .vault-toolbar-title { color: var(--lm-tb) !important; }
+html[data-theme="light"] .vault-side-row:hover { background: var(--lm-surface) !important; color: var(--lm-tb) !important; }
+html[data-theme="light"] .vault-icon-btn:hover { background: var(--lm-surface) !important; color: var(--lm-tb) !important; }
+html[data-theme="light"] .vault-empty-art span { background: var(--lm-surface) !important; border-color: var(--lm-border) !important; }
+html[data-theme="light"] .vault-subfolder-card { background-color: var(--lm-surface) !important; border-color: var(--lm-border) !important; }
+html[data-theme="light"] .vault-folder-row:hover { background-color: rgba(0,0,0,0.06) !important; }
+html[data-theme="light"] .vault-sidebar-file:hover { background-color: rgba(0,0,0,0.06) !important; }
 
 /* ── Scrollbar ── */
-html[data-bg="silver"] .chat-scroll::-webkit-scrollbar-thumb,
-html[data-bg="white"]  .chat-scroll::-webkit-scrollbar-thumb { background: var(--lm-borderh) !important; }
+html[data-theme="light"] .chat-scroll::-webkit-scrollbar-thumb { background: var(--lm-borderh) !important; }
 
 /* ── Hover backgrounds ── */
-html[data-bg="silver"] .hover\:bg-slate-700:hover, html[data-bg="white"] .hover\:bg-slate-700:hover { background-color: var(--lm-border) !important; }
-html[data-bg="silver"] .hover\:bg-slate-800:hover, html[data-bg="white"] .hover\:bg-slate-800:hover { background-color: var(--lm-elev)   !important; }
-html[data-bg="silver"] .hover\:text-white:hover,   html[data-bg="white"] .hover\:text-white:hover   { color: var(--lm-tb) !important; }
-html[data-bg="silver"] .hover\:text-slate-200:hover,html[data-bg="white"] .hover\:text-slate-200:hover { color: var(--lm-tb) !important; }
+html[data-theme="light"] .hover\:bg-slate-700:hover { background-color: var(--lm-border) !important; }
+html[data-theme="light"] .hover\:bg-slate-800:hover { background-color: var(--lm-elev)   !important; }
+html[data-theme="light"] .hover\:text-white:hover { color: var(--lm-tb) !important; }
+html[data-theme="light"] .hover\:text-slate-200:hover { color: var(--lm-tb) !important; }
 
 /* ── Vault doc editor stays white ── */
-html[data-bg="silver"] #vault-doc-editor, html[data-bg="white"] #vault-doc-editor { background-color: #ffffff !important; color: #1e293b !important; }
+html[data-theme="light"] #vault-doc-editor { background-color: #ffffff !important; color: #1e293b !important; }
 
 /* ── Modals backdrop stays dark ── */
-html[data-bg="silver"] .settings-backdrop, html[data-bg="white"] .settings-backdrop { background: rgba(0,0,0,0.4) !important; }
+html[data-theme="light"] .settings-backdrop { background: rgba(0,0,0,0.4) !important; }
+
+/* ── Light mode, Apple-website register ──────────────────────────
+   Near-white surfaces, hairline dividers, soft shadows instead of the
+   heavy black ones the dark themes use, and popovers that stay light. */
+html[data-theme="light"] .shadow-2xl,
+html[data-theme="light"] .shadow-xl,
+html[data-theme="light"] .shadow-lg { box-shadow: 0 6px 20px rgba(0,0,0,0.07) !important; }
+
+html[data-theme="light"] .vault-card:hover,
+html[data-theme="light"] .vault-subfolder-card:hover { box-shadow: 0 6px 18px -8px rgba(0,0,0,0.25) !important; }
+
+/* Popovers and menus built in JS with dark inline styles */
+html[data-theme="light"] .vault-ctx-menu,
+html[data-theme="light"] .vault-color-menu,
+html[data-theme="light"] #home-archived,
+html[data-theme="light"] #home-suggest {
+    background: #ffffff !important;
+    border-color: var(--lm-border) !important;
+    box-shadow: 0 12px 32px rgba(0,0,0,0.12) !important;
+    color: var(--lm-tb) !important;
+}
+html[data-theme="light"] .vault-ctx-menu button { color: var(--lm-tb) !important; }
+html[data-theme="light"] .vault-color-dot.is-current { box-shadow: 0 0 0 2px #fff, 0 0 0 3.5px var(--lm-tb) !important; }
+html[data-theme="light"] .home-archive-btn {
+    color: var(--lm-ts) !important;
+    background: rgba(0,0,0,0.045) !important;
+    border-color: var(--lm-border) !important;
+}
+html[data-theme="light"] .home-archive-btn:hover,
+html[data-theme="light"] .home-archive-btn.is-open { background: rgba(0,0,0,0.08) !important; color: var(--lm-tb) !important; }
+html[data-theme="light"] .home-archived-title,
+html[data-theme="light"] .home-archived-title em { color: var(--lm-tm) !important; }
+
+/* Vault chrome */
+html[data-theme="light"] .vault-thumb-icon { background: rgba(0,0,0,0.035) !important; }
+html[data-theme="light"] .vault-thumb-img  { background: rgba(0,0,0,0.03) !important; }
+html[data-theme="light"] .vault-thumb-img img { filter: drop-shadow(0 2px 5px rgba(0,0,0,0.18)) !important; }
+html[data-theme="light"] .vault-thumb-plate::before { background: rgba(0,0,0,0.04) !important; box-shadow: inset 0 0 0 1px rgba(0,0,0,0.07) !important; }
+html[data-theme="light"] .vault-side-label,
+html[data-theme="light"] .vault-menu-label,
+html[data-theme="light"] .vault-side-foot { color: var(--lm-tm) !important; }
+html[data-theme="light"] .vault-menu-item em { color: var(--lm-tm) !important; }
+html[data-theme="light"] .vault-card-meta > span + span::before { color: var(--lm-borderh) !important; }
+html[data-theme="light"] .vault-toolbar-sep { background: var(--lm-border) !important; }
+html[data-theme="light"] .vault-empty-title { color: var(--lm-ts) !important; }
+html[data-theme="light"] .vault-empty-hint  { color: var(--lm-tm) !important; }
+
+/* Hairline dividers rather than the dark themes' heavier borders */
+html[data-theme="light"] .border-b, html[data-theme="light"] .border-t,
+html[data-theme="light"] .border-l, html[data-theme="light"] .border-r { border-color: var(--lm-border) !important; }
+
+/* Scrollbars */
+html[data-theme="light"] ::-webkit-scrollbar-thumb { background: #c9c9ce !important; }
+html[data-theme="light"] ::-webkit-scrollbar-thumb:hover { background: #b0b0b8 !important; }
+html[data-theme="light"] ::-webkit-scrollbar-track { background: transparent !important; }
+
 
 /* ── Ace Autocomplete Popup (VS Code style) ─────────────────── */
 .ace_autocomplete {
@@ -3514,4 +3571,150 @@ body.browser-fullscreen #music-player-bar { display: none !important; }
 .karaoke-ctrl-btn.k-on {
     background: rgba(99,102,241,0.25) !important;
     color: #a5b4fc !important;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   APP SHELL — the Apple register, applied to the primitives every
+   view already uses rather than to each view in turn: type, radii,
+   controls, sheets, scrollbars. Kept at the end of the file so it
+   wins where it needs to; component rules still set their own
+   colours and spacing.
+   ══════════════════════════════════════════════════════════════ */
+:root {
+    --r-md: 10px;
+    --r-lg: 12px;
+    --r-xl: 18px;
+    --hairline:     rgba(148, 163, 184, 0.16);
+    --shadow-sheet: 0 24px 64px -16px rgba(0, 0, 0, 0.6);
+    --shadow-pop:   0 14px 34px -10px rgba(0, 0, 0, 0.5);
+}
+html[data-theme="light"] {
+    --hairline:     rgba(0, 0, 0, 0.10);
+    --shadow-sheet: 0 24px 60px -20px rgba(0, 0, 0, 0.22);
+    --shadow-pop:   0 12px 30px -12px rgba(0, 0, 0, 0.18);
+}
+
+/* ── Type: SF where it exists, with the tight tracking Apple sets on
+   anything display-sized. Small text keeps normal tracking so it stays
+   readable at 10–11px. ── */
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'SF Pro Display',
+                 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    letter-spacing: -0.01em;
+}
+h1, h2, h3,
+.text-3xl, .text-2xl, .text-xl, .text-lg { letter-spacing: -0.022em; }
+h1, h2, h3 { font-weight: 650; }
+.text-\[9px\], .text-\[10px\], .text-\[11px\], .text-xs { letter-spacing: 0; }
+
+/* ── Radii: 10 / 12 / 18, the scale Apple uses for controls, cards and
+   sheets. !important because Tailwind's utilities are injected after
+   this file at runtime. ── */
+.rounded-lg  { border-radius: var(--r-md) !important; }
+.rounded-xl  { border-radius: var(--r-lg) !important; }
+.rounded-2xl { border-radius: var(--r-xl) !important; }
+
+/* ── Controls ── */
+input:not([type="range"]):not([type="checkbox"]):not([type="radio"]):not([type="color"]),
+select,
+textarea {
+    border-radius: var(--r-md) !important;
+    transition: border-color .15s ease, box-shadow .15s ease, background-color .15s ease;
+}
+input:not([type="range"]):not([type="checkbox"]):not([type="radio"]):not([type="color"]):focus,
+select:focus,
+textarea:focus {
+    outline: none;
+    border-color: rgba(var(--accent-rgb), 0.55) !important;
+    box-shadow: 0 0 0 3.5px rgba(var(--accent-rgb), 0.18);
+}
+
+button { transition: background-color .15s ease, color .15s ease, border-color .15s ease,
+                     box-shadow .15s ease, transform .1s ease; }
+button:active:not(:disabled) { transform: translateY(0.5px); }
+button:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 3.5px rgba(var(--accent-rgb), 0.28);
+}
+
+/* ── Sheets: one radius, one shadow, and a blurred ground behind them ── */
+#settings-modal > div,
+[id$="-modal"] > div,
+.settings-backdrop > div,
+.study-settings-backdrop > div {
+    border-radius: var(--r-xl) !important;
+    box-shadow: var(--shadow-sheet) !important;
+}
+#settings-modal,
+[id$="-modal"],
+.settings-backdrop,
+.study-settings-backdrop {
+    -webkit-backdrop-filter: blur(20px) saturate(115%);
+            backdrop-filter: blur(20px) saturate(115%);
+}
+
+/* ── Scrollbars: thin, inset, no track ── */
+::-webkit-scrollbar { width: 11px; height: 11px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+    background: rgba(148, 163, 184, 0.3);
+    border: 3px solid transparent;
+    background-clip: padding-box;
+    border-radius: 8px;
+}
+::-webkit-scrollbar-thumb:hover {
+    background: rgba(148, 163, 184, 0.5);
+    background-clip: padding-box;
+}
+
+/* ── Selection + hairlines ── */
+::selection { background: rgba(var(--accent-rgb), 0.24); }
+hr { border-color: var(--hairline); }
+
+/* ── Home page in a light theme ───────────────────────────────────
+   The greeting, omnibox and tiles were built for a dark ground: on a
+   white one the greeting vanished and the omnibox read as a black pill.
+   Inverting the animated canvas turns its light-on-dark plexus into
+   dark-on-light, so the same background works in both. */
+html[data-theme="light"] #home-neural-bg {
+    filter: invert(1) hue-rotate(180deg);
+    opacity: 0.4;
+}
+/* The greeting is a gradient fill, so the light version needs its own
+   gradient — a plain colour is painted over by the transparent text fill. */
+html[data-theme="light"] .home-greeting-title {
+    background: linear-gradient(180deg, #1d1d1f 30%, #55555c) !important;
+    -webkit-background-clip: text !important;
+            background-clip: text !important;
+    -webkit-text-fill-color: transparent !important;
+}
+html[data-theme="light"] .home-tips,
+html[data-theme="light"] .home-tips span     { color: var(--lm-tm) !important; }
+
+html[data-theme="light"] .home-omnibox {
+    background: rgba(255, 255, 255, 0.92) !important;
+    border-color: var(--lm-border) !important;
+    box-shadow: 0 8px 28px -10px rgba(0, 0, 0, 0.22) !important;
+    -webkit-backdrop-filter: blur(20px) saturate(140%);
+            backdrop-filter: blur(20px) saturate(140%);
+}
+html[data-theme="light"] .home-omnibox:focus-within { box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.28) !important; }
+html[data-theme="light"] #home-omnibox-input       { color: var(--lm-tb) !important; }
+html[data-theme="light"] #home-omnibox-input::placeholder,
+html[data-theme="light"] .home-omnibox-icon        { color: var(--lm-tm) !important; }
+
+/* Tiles: white with a hairline and a soft lift, the way a light app does it */
+html[data-theme="light"] .home-shortcut-icon {
+    background: rgba(255, 255, 255, 0.96) !important;
+    border: 1px solid var(--lm-border) !important;
+    box-shadow: 0 2px 8px -2px rgba(0, 0, 0, 0.12) !important;
+}
+html[data-theme="light"] .home-shortcut-tile:hover .home-shortcut-icon {
+    box-shadow: 0 10px 22px -8px rgba(0, 0, 0, 0.25) !important;
+}
+html[data-theme="light"] .home-shortcut-label { color: var(--lm-ts) !important; }
+html[data-theme="light"] .home-add-icon {
+    background: rgba(255, 255, 255, 0.5) !important;
+    border: 1.5px dashed var(--lm-borderh) !important;
+    box-shadow: none !important;
 }
