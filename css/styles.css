@@ -365,7 +365,7 @@ code  { font-family: 'Fira Code', 'JetBrains Mono', monospace; }
     transition: border-color 0.15s, box-shadow 0.15s;
 }
 .home-omnibox:focus-within {
-    border-color: var(--accent, #dc2626);
+    border-color: rgba(148,163,184,0.32);
     box-shadow: 0 8px 26px rgba(0,0,0,0.45);
 }
 .home-omnibox-icon { color: #64748b; font-size: 14px; flex: none; }
@@ -3702,12 +3702,8 @@ html[data-theme="light"] .home-omnibox:focus-within { box-shadow: 0 10px 30px -1
 /* The input sits inside the omnibox pill, so it has to stay transparent —
    light mode's blanket input background painted a grey bar inside it. */
 html[data-theme="light"] #home-omnibox-input,
-html[data-theme="light"] input.bg-transparent {
-    color: var(--lm-tb) !important;
-    background: transparent !important;
-    box-shadow: none !important;
-}
-html[data-theme="light"] #home-omnibox-input { border: none !important; }
+html[data-theme="light"] input.bg-transparent { color: var(--lm-tb) !important; }
+html[data-theme="light"] .home-omnibox:focus-within { border-color: var(--lm-borderh) !important; }
 html[data-theme="light"] #home-omnibox-input::placeholder,
 html[data-theme="light"] .home-omnibox-icon        { color: var(--lm-tm) !important; }
 
@@ -3740,4 +3736,19 @@ html[data-theme="light"] .home-add-icon {
     overflow-y: auto;
     overscroll-behavior: contain;
     min-height: 0;
+}
+
+/* ── The omnibox pill is the control ──────────────────────────────
+   Its input must never paint a background, border, radius or focus
+   ring of its own — those drew a second box inside the pill. */
+#home-omnibox-input,
+#home-omnibox-input:focus,
+#home-omnibox-input:focus-visible,
+input.bg-transparent,
+input.bg-transparent:focus {
+    background: transparent !important;
+    border: none !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    outline: none !important;
 }
