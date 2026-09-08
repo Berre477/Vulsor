@@ -2081,7 +2081,16 @@ function loadVaultPDF(filePath) {
     }).catch(err => {
         console.error('[vault] PDF load failed:', filePath, err);
         altEl.style.display = '';
-        altEl.innerHTML = `<div class="flex items-center justify-center h-full"><p class="text-red-400 text-sm p-6">Could not load PDF: ${err.message}</p></div>`;
+        // Offer the retry rather than leaving a dead end: most load failures
+        // here are a worker that died, and opening the file again gets a new one.
+        altEl.innerHTML =
+            `<div class="flex flex-col items-center justify-center h-full gap-3">
+                <p class="text-red-400 text-sm">Could not load PDF: ${_vaultEsc(err.message)}</p>
+                <button onclick="openVaultFile(vaultOpenFileId)"
+                    class="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700/50 text-slate-300 hover:text-white text-xs font-medium transition-colors flex items-center gap-1.5">
+                    <i class="fas fa-rotate-right text-[10px]"></i> Try again
+                </button>
+            </div>`;
     });
 }
 
