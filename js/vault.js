@@ -1748,7 +1748,20 @@ function buildPDFScrollView(keepScale) {
         if (vaultPendingScrollPage && vaultPendingScrollPage > 1) {
             const pending = vaultPendingScrollPage;
             vaultPendingScrollPage = null;
-            setTimeout(() => scrollToPage(pending), 60);
+            _pdfRestoring = true;
+            pdfPageNum = pending;
+            updateVaultPDFControls();
+            if (vaultNotesMode === 'page') updateNotesForCurrentPage();
+            // The placeholders are laid out already, so land on the page now —
+            // before anything is painted — and again once the lazy renders have
+            // settled, in case a page above resized in the meantime.
+            scrollToPage(pending, false);
+            requestAnimationFrame(() => requestAnimationFrame(() => {
+                scrollToPage(pending, false);
+                pdfPageNum = pending;
+                updateVaultPDFControls();
+                setTimeout(() => { _pdfRestoring = false; }, 200);
+            }));
         } else if (restorePos) {
             vaultPendingScrollPage = null;
             _pdfRestoring = true;
@@ -1767,10 +1780,18 @@ function buildPDFScrollView(keepScale) {
     });
 }
 
-// Scroll to a specific page (scroll mode only)
-function scrollToPage(num) {
+// Scroll to a specific page (scroll mode only). Smooth when the user asked to
+// go somewhere — jumping is for restoring a position they were already at, where
+// an animation just makes them watch the document travel back to where it was.
+function scrollToPage(num, smooth = true) {
     const target = document.querySelector(`#vault-pdf-pages [data-page-num="${num}"]`);
-    if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    if (!target) return;
+    if (smooth) { target.scrollIntoView({ behavior: 'smooth', block: 'start' }); return; }
+    // Move the pages container itself rather than scrollIntoView, so nothing
+    // else on the page scrolls along with it.
+    const scrollEl = getPDFScrollEl();
+    if (!scrollEl) { target.scrollIntoView({ block: 'start' }); return; }
+    scrollEl.scrollTop += target.getBoundingClientRect().top - scrollEl.getBoundingClientRect().top;
 }
 
 // Jump to a page, respecting the current view mode

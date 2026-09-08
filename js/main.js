@@ -83,14 +83,22 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!vaultIsPDF && !vaultIsPPTX) {
                 try {
                     const altEl = document.getElementById('vault-content-alt');
-                    const inner = altEl && altEl.querySelector('.overflow-y-auto, .overflow-auto');
+                    const inner = altEl && altEl.querySelector('.overflow-y-auto, .overflow-auto, textarea');
                     if (inner) altScrollTop = inner.scrollTop || null;
                 } catch(_) {}
+            }
+            // The page number alone puts you back at the top of that page. Keep
+            // the exact spot inside it too, so coming back looks like nothing
+            // ever moved.
+            let pdfPos = null;
+            if (vaultIsPDF) {
+                try { pdfPos = _pdfCapturePosition(getPDFScrollEl()); } catch(_) {}
             }
             tab.instanceData = {
                 activeFolderId: vaultActiveFolderId,
                 openFileId:     vaultOpenFileId,   // null means no file open
                 pdfPage:        vaultIsPDF  ? pdfPageNum       : null,
+                pdfPos,
                 pptxSlide:      vaultIsPPTX ? pptxCurrentSlide : null,
                 altScrollTop,
             };
@@ -106,15 +114,20 @@ document.addEventListener('DOMContentLoaded', () => {
             if (wantFileId && wantFileId === vaultOpenFileId) {
                 vaultActiveFolderId = d.activeFolderId ?? null;
                 try { renderVaultFolders(); renderVaultGrid(); } catch(_) {}
-                // Restore scroll/slide for the already-open file
-                if (d.pdfPage && d.pdfPage > 1) {
-                    try { scrollToPage(d.pdfPage); } catch(_) {}
+                // Restore scroll/slide for the already-open file. Hiding the
+                // view drops the container's scroll offset, so this runs on
+                // every switch back — jump straight to the spot rather than
+                // animating there while the user waits.
+                if (d.pdfPos) {
+                    try { _pdfRestorePosition(getPDFScrollEl(), d.pdfPos); } catch(_) {}
+                } else if (d.pdfPage && d.pdfPage > 1) {
+                    try { scrollToPage(d.pdfPage, false); } catch(_) {}
                 } else if (d.pptxSlide) {
                     try { pptxGoTo(d.pptxSlide); } catch(_) {}
                 } else if (d.altScrollTop) {
                     try {
                         const altEl = document.getElementById('vault-content-alt');
-                        const inner = altEl && altEl.querySelector('.overflow-y-auto, .overflow-auto');
+                        const inner = altEl && altEl.querySelector('.overflow-y-auto, .overflow-auto, textarea');
                         if (inner) inner.scrollTop = d.altScrollTop;
                     } catch(_) {}
                 }
@@ -136,15 +149,20 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (d.pdfPage  && d.pdfPage > 1)  vaultPendingScrollPage = d.pdfPage;
                 if (d.pptxSlide != null)            vaultPendingPPTXSlide  = d.pptxSlide;
                 try { openVaultFile(wantFileId); } catch(_) {}
-                // For text/image files the DOM is ready synchronously; restore scroll next tick
+                // Text and markdown are in the DOM already, so put the scroll
+                // back now — before the first paint, with no jump to watch.
+                // Viewers that lay out asynchronously (images) get a second go
+                // on the next tick.
                 if (d.altScrollTop) {
-                    setTimeout(() => {
+                    const putBack = () => {
                         try {
                             const altEl = document.getElementById('vault-content-alt');
-                            const inner = altEl && altEl.querySelector('.overflow-y-auto, .overflow-auto');
+                            const inner = altEl && altEl.querySelector('.overflow-y-auto, .overflow-auto, textarea');
                             if (inner) inner.scrollTop = d.altScrollTop;
                         } catch(_) {}
-                    }, 0);
+                    };
+                    putBack();
+                    setTimeout(putBack, 0);
                 }
             } else {
                 const vv = document.getElementById('vault-viewer-view');
