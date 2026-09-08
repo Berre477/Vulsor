@@ -850,10 +850,28 @@ function _vaultEsc(s) {
         .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
-// Re-render the markdown viewer in place, keeping the scroll position. Edit
-// mode is left alone: the textarea may hold keystrokes not yet saved.
+// Re-render the markdown viewer in place, keeping the scroll position, after
+// the file changed underneath us. A note being typed in is left alone: the
+// editor may hold keystrokes not yet written to disk.
 function vaultRefreshOpenMarkdown(file) {
-    if (!vaultIsMd || vaultMdEditMode) return;
+    if (!vaultIsMd) return;
+    // Live preview: only take the new text when the user is not typing in it,
+    // otherwise their keystrokes would be replaced by what is on disk.
+    if (vaultMdMode === 'live') {
+        const ed = document.getElementById('vault-live-editor');
+        if (!ed || ed.contains(document.activeElement) || ed === document.activeElement) return;
+        try {
+            const text = fs.readFileSync(path.join(VAULT_DIR, file.storedName), 'utf8');
+            if (typeof vaultLiveGetText === 'function' && vaultLiveGetText() !== text) {
+                const top = ed.parentElement ? ed.parentElement.scrollTop : 0;
+                vaultMdRender(file, false);
+                const host = document.getElementById('vault-img-el');
+                if (host) host.scrollTop = top;
+            }
+        } catch(e) { console.error('[vault] refresh open note:', e); }
+        return;
+    }
+    if (vaultMdEditMode) return;
     const host = document.getElementById('vault-img-el');
     if (!host) return;
     try {
@@ -900,7 +918,8 @@ let vaultIsGraph          = false;
 
 // Markdown editor state
 let vaultIsMd        = false;
-let vaultMdEditMode  = false;
+let vaultMdMode      = 'live';   // 'read' | 'live' | 'source'
+let vaultMdEditMode  = false;    // true for live + source: there are edits to flush
 let vaultMdSaveTimer = null;
 
 // PDF.js state
@@ -1101,9 +1120,14 @@ function _saveVaultMdContent() {
     if (!vaultOpenFileId || !vaultMdEditMode) return;
     const file = vaultData.files.find(f => f.id === vaultOpenFileId);
     if (!file) return;
-    const ta = document.getElementById('vault-md-textarea');
-    if (!ta) return;
-    const text = ta.value;
+    let text = null;
+    if (vaultMdMode === 'live') {
+        if (typeof vaultLiveIsMounted === 'function' && vaultLiveIsMounted()) text = vaultLiveGetText();
+    } else {
+        const ta = document.getElementById('vault-md-textarea');
+        if (ta) text = ta.value;
+    }
+    if (text === null) return;
     vaultWriteFile(path.join(VAULT_DIR, file.storedName), text);
     file.size      = Buffer.byteLength(text, 'utf8');
     file.updatedAt = Date.now();
@@ -1119,42 +1143,84 @@ function _saveVaultMdContent() {
     }
 }
 
-function vaultSetMdMode(mode) {
-    if (!vaultOpenFileId || !vaultIsMd) return;
-    const file       = vaultData.files.find(f => f.id === vaultOpenFileId);
-    if (!file) return;
-    const altEl      = document.getElementById('vault-content-alt');
-    const storedPath = path.join(VAULT_DIR, file.storedName);
-    const readBtn    = document.getElementById('vault-md-read-btn');
-    const writeBtn   = document.getElementById('vault-md-write-btn');
+// Debounced save shared by the live editor and the source textarea.
+function vaultMdQueueSave() {
+    clearTimeout(vaultMdSaveTimer);
+    vaultMdSaveTimer = setTimeout(_saveVaultMdContent, 800);
+}
 
-    if (mode === 'write' && !vaultMdEditMode) {
-        vaultMdEditMode = true;
-        const text = fs.existsSync(storedPath) ? fs.readFileSync(storedPath, 'utf8') : '';
+function vaultMdSyncButtons() {
+    [['read', 'vault-md-read-btn'], ['live', 'vault-md-live-btn'], ['source', 'vault-md-write-btn']]
+        .forEach(([m, id]) => {
+            const btn = document.getElementById(id);
+            if (btn) btn.classList.toggle('active', vaultMdMode === m);
+        });
+}
+
+// Build the viewer body for whatever mode the open note is in:
+//   read   — rendered markdown, not editable
+//   live   — Obsidian-style live preview: the line you are on shows its
+//            markdown, every other line shows the formatting it produces
+//   source — the raw file in a plain textarea
+function vaultMdRender(file, focus) {
+    const altEl = document.getElementById('vault-content-alt');
+    if (!altEl) return;
+    const storedPath = path.join(VAULT_DIR, file.storedName);
+    let text;
+    try {
+        text = fs.existsSync(storedPath) ? fs.readFileSync(storedPath, 'utf8') : '';
+    } catch (e) {
+        altEl.innerHTML = `<p class="text-red-400 p-6 text-sm">Could not read file: ${e.message}</p>`;
+        return;
+    }
+    const backlinks = (typeof vaultGraphBacklinksHTML === 'function') ? vaultGraphBacklinksHTML(file.id) : '';
+
+    if (vaultMdMode === 'source') {
         altEl.innerHTML = '<textarea id="vault-md-textarea" class="w-full h-full bg-[#0d1117] text-slate-300 text-sm font-mono leading-relaxed outline-none resize-none p-6 chat-scroll" spellcheck="false" placeholder="Write markdown…"></textarea>';
         const ta = document.getElementById('vault-md-textarea');
         ta.value = text;
-        ta.addEventListener('input', () => {
-            clearTimeout(vaultMdSaveTimer);
-            vaultMdSaveTimer = setTimeout(_saveVaultMdContent, 800);
-        });
-        ta.focus();
-        readBtn?.classList.remove('active');
-        writeBtn?.classList.add('active');
-    } else if (mode === 'read' && vaultMdEditMode) {
-        clearTimeout(vaultMdSaveTimer);
-        _saveVaultMdContent();
-        vaultMdEditMode = false;
-        try {
-            const text = fs.readFileSync(storedPath, 'utf8');
-            altEl.innerHTML = `<div id="vault-img-el" class="w-full h-full overflow-y-auto chat-scroll" style="background:#13141f">${renderVaultMarkdown(text)}</div>`;
-            vaultRenderMath(altEl);
-        } catch(e) {
-            altEl.innerHTML = `<p class="text-red-400 p-6 text-sm">Could not read file: ${e.message}</p>`;
+        ta.addEventListener('input', vaultMdQueueSave);
+        if (focus !== false) ta.focus();
+    } else if (vaultMdMode === 'live') {
+        altEl.innerHTML = '<div id="vault-img-el" class="w-full h-full overflow-y-auto chat-scroll" style="background:#13141f"></div>';
+        const host = document.getElementById('vault-img-el');
+        if (typeof vaultLiveMount === 'function') {
+            vaultLiveMount(host, text, vaultMdQueueSave, focus !== false);
+            if (backlinks) host.insertAdjacentHTML('beforeend', backlinks);
+        } else {
+            // Live editor script missing — fall back to the rendered view
+            // rather than showing an empty pane.
+            vaultMdMode = 'read';
+            vaultMdEditMode = false;
+            host.innerHTML = renderVaultMarkdown(text) + backlinks;
+            vaultRenderMath(host);
         }
-        readBtn?.classList.add('active');
-        writeBtn?.classList.remove('active');
+    } else {
+        altEl.innerHTML =
+            `<div id="vault-img-el" class="w-full h-full overflow-y-auto chat-scroll" style="background:#13141f">
+                ${renderVaultMarkdown(text)}
+                ${backlinks}
+            </div>`;
+        vaultRenderMath(altEl);
     }
+    vaultMdSyncButtons();
+}
+
+function vaultSetMdMode(mode) {
+    if (!vaultOpenFileId || !vaultIsMd) return;
+    if (mode === 'write') mode = 'source';        // the old two-mode name
+    if (!['read', 'live', 'source'].includes(mode)) return;
+    const file = vaultData.files.find(f => f.id === vaultOpenFileId);
+    if (!file) return;
+    if (mode === vaultMdMode) return;
+
+    // Flush what the outgoing mode holds before the DOM is swapped under it.
+    if (vaultMdEditMode) { clearTimeout(vaultMdSaveTimer); _saveVaultMdContent(); }
+    if (vaultMdMode === 'live' && typeof vaultLiveUnmount === 'function') vaultLiveUnmount();
+
+    vaultMdMode     = mode;
+    vaultMdEditMode = (mode !== 'read');
+    vaultMdRender(file);
 }
 
 function vaultPrintMd() {
@@ -2126,8 +2192,10 @@ function _vaultResetViewerAreas() {
         clearTimeout(vaultMdSaveTimer);
         try { _saveVaultMdContent(); } catch(e) { console.error('[reset] md save:', e); }
     }
+    if (vaultIsMd && typeof vaultLiveUnmount === 'function') vaultLiveUnmount();
     vaultIsMd       = false;
     vaultMdEditMode = false;
+    vaultMdMode     = 'live';
     const _mdToolbar = document.getElementById('vault-md-toolbar');
     if (_mdToolbar) _mdToolbar.classList.add('hidden');
 
@@ -2269,7 +2337,10 @@ function openVaultFile(id) {
         vaultIsDoc  = false;
         vaultIsNotebook = false;
         vaultIsMd   = true;
-        vaultMdEditMode = false;
+        // Notes open in live preview, the way Obsidian opens them: type and
+        // the formatting appears; Read and Source are a click away.
+        vaultMdMode     = 'live';
+        vaultMdEditMode = true;
         pdfDoc = null;
         canvas.style.display  = 'none';
         ctrlBar.style.display = 'none';
@@ -2278,19 +2349,7 @@ function openVaultFile(id) {
         if (imgCtrlBar) imgCtrlBar.style.display = '';
         const _mdToolbar = document.getElementById('vault-md-toolbar');
         if (_mdToolbar) _mdToolbar.classList.remove('hidden');
-        document.getElementById('vault-md-read-btn')?.classList.add('active');
-        document.getElementById('vault-md-write-btn')?.classList.remove('active');
-        try {
-            const text = fs.readFileSync(storedPath, 'utf8');
-            altEl.innerHTML =
-                `<div id="vault-img-el" class="w-full h-full overflow-y-auto chat-scroll" style="background:#13141f">
-                    ${renderVaultMarkdown(text)}
-                    ${(typeof vaultGraphBacklinksHTML === 'function') ? vaultGraphBacklinksHTML(file.id) : ''}
-                </div>`;
-            vaultRenderMath(altEl);
-        } catch(e) {
-            altEl.innerHTML = `<p class="text-red-400 p-6 text-sm">Could not read file: ${e.message}</p>`;
-        }
+        vaultMdRender(file);
         updateNotesForCurrentPage();
     } else if (file.isCode || (typeof isCodeFile === 'function' && isCodeFile(file.originalName))) {
         vaultIsCode = true;
@@ -2759,6 +2818,18 @@ function closeVaultViewer() {
         document.getElementById('vault-normal-view').style.display     = '';
         document.getElementById('vault-viewer-title').classList.remove('hidden');
         document.getElementById('vault-doc-title-input').classList.add('hidden');
+    }
+
+    // Save the open note before the viewer body is emptied — live preview and
+    // source mode both save on a debounce, and closing beats the timer.
+    if (vaultIsMd) {
+        if (vaultMdEditMode) {
+            clearTimeout(vaultMdSaveTimer);
+            try { _saveVaultMdContent(); } catch(e) { console.error('[close] md save:', e); }
+        }
+        if (typeof vaultLiveUnmount === 'function') vaultLiveUnmount();
+        vaultIsMd       = false;
+        vaultMdEditMode = false;
     }
 
     // Save any pending note

@@ -150,6 +150,7 @@ async function vaultAIFileText(file) {
             if (ed) return _vaultAIHtmlToText(ed.innerHTML);
         }
         if (vaultIsMd && vaultMdEditMode) {
+            if (typeof vaultLiveIsMounted === 'function' && vaultLiveIsMounted()) return vaultLiveGetText();
             const ta = document.getElementById('vault-md-textarea');
             if (ta) return ta.value;
         }
@@ -488,6 +489,9 @@ function _vaultAIWriteTarget() {
         if (ed) return { kind: 'doc', el: ed };
     }
     if (vaultIsMd && vaultMdEditMode) {
+        if (typeof vaultLiveIsMounted === 'function' && vaultLiveIsMounted()) {
+            return { kind: 'live', el: document.getElementById('vault-live-editor') };
+        }
         const ta = document.getElementById('vault-md-textarea');
         if (ta) return { kind: 'md', el: ta };
     }
@@ -497,6 +501,11 @@ function _vaultAIWriteTarget() {
 /** Snapshot the selection before the toolbar click steals focus. */
 function _vaultAICaptureSelection(target) {
     if (!target) return null;
+    if (target.kind === 'live') {
+        const sel = vaultLiveGetSelection();
+        return { kind: 'live', el: target.el, start: sel.start, end: sel.end,
+                 text: sel.text, all: sel.all, before: sel.all.slice(0, sel.end) };
+    }
     if (target.kind === 'md') {
         const ta = target.el;
         // Without focus selectionStart is a meaningless 0, which would make
@@ -567,6 +576,16 @@ function _vaultAIApplyToMd(snap, text, replace) {
         document.execCommand('insertText', false, (ta.value[at - 1] === '\n' ? '\n' : '\n\n') + text);
     }
     ta.dispatchEvent(new Event('input', { bubbles: true }));
+}
+
+function _vaultAIApplyToLive(snap, text, replace) {
+    if (replace) {
+        vaultLiveReplaceRange(snap.start, snap.end, text);
+    } else {
+        const at   = (snap.end == null) ? snap.all.length : snap.end;
+        const lead = snap.all[at - 1] === '\n' ? '\n' : '\n\n';
+        vaultLiveReplaceRange(at, at, lead + text);
+    }
 }
 
 /** Build the prompt for one action. Returns null when the user cancels a sub-prompt. */
@@ -703,8 +722,9 @@ async function vaultAIRunWriteAction(actionId, snap) {
         let text = out.replace(/^\s*```[a-z]*\n?/i, '').replace(/\n?```\s*$/i, '').trim();
         if (!text) { _vaultAIToast('The model returned nothing — try again'); return; }
 
-        if (snap.kind === 'md') _vaultAIApplyToMd(snap, text, spec.replace);
-        else                    _vaultAIApplyToDoc(snap, text, spec.replace);
+        if      (snap.kind === 'md')   _vaultAIApplyToMd(snap, text, spec.replace);
+        else if (snap.kind === 'live') _vaultAIApplyToLive(snap, text, spec.replace);
+        else                           _vaultAIApplyToDoc(snap, text, spec.replace);
     } catch (e) {
         if (e.name !== 'AbortError') _vaultAIToast(e.message, 'fa-circle-exclamation', '#f87171');
     } finally {
@@ -718,7 +738,7 @@ function vaultAIOpenWriteMenu(anchorBtn) {
     document.getElementById('vault-ai-write-menu')?.remove();
 
     const target = _vaultAIWriteTarget();
-    if (!target) { _vaultAIToast('Open a document, or switch markdown to Write mode'); return; }
+    if (!target) { _vaultAIToast('Open a document, or switch the note to Live or Source mode'); return; }
     const snap    = _vaultAICaptureSelection(target);
     const hasSel  = !!(snap && snap.text.trim());
 

@@ -1179,18 +1179,21 @@
                                 <div id="vault-img-controls" class="shrink-0 flex items-center justify-end gap-1.5 px-5 py-2.5 border-t border-slate-800/80 bg-slate-900/80" style="display:none">
                                     <div id="vault-md-toolbar" class="hidden mr-auto flex items-center gap-2">
                                         <div class="flex bg-slate-800 p-0.5 rounded-lg gap-0.5">
-                                            <button id="vault-md-read-btn" class="vault-notes-tab active px-2.5 py-1 rounded-md text-[10px] font-medium flex items-center gap-1.5" onclick="vaultSetMdMode('read')" title="Read mode">
+                                            <button id="vault-md-live-btn" class="vault-notes-tab active px-2.5 py-1 rounded-md text-[10px] font-medium flex items-center gap-1.5" onclick="vaultSetMdMode('live')" title="Live preview — write markdown and watch it format">
+                                                <i class="fas fa-pencil text-[9px]"></i> Live
+                                            </button>
+                                            <button id="vault-md-read-btn" class="vault-notes-tab px-2.5 py-1 rounded-md text-[10px] font-medium flex items-center gap-1.5" onclick="vaultSetMdMode('read')" title="Read mode">
                                                 <i class="fas fa-eye text-[9px]"></i> Read
                                             </button>
-                                            <button id="vault-md-write-btn" class="vault-notes-tab px-2.5 py-1 rounded-md text-[10px] font-medium flex items-center gap-1.5" onclick="vaultSetMdMode('write')" title="Write mode">
-                                                <i class="fas fa-pencil text-[9px]"></i> Write
+                                            <button id="vault-md-write-btn" class="vault-notes-tab px-2.5 py-1 rounded-md text-[10px] font-medium flex items-center gap-1.5" onclick="vaultSetMdMode('source')" title="Source — the raw markdown file">
+                                                <i class="fas fa-code text-[9px]"></i> Source
                                             </button>
                                         </div>
                                         <div class="w-px h-4 bg-slate-700/80 shrink-0"></div>
                                         <button onclick="vaultPrintMd()" class="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700/50 text-slate-400 hover:text-white text-[10px] font-medium transition-colors flex items-center gap-1.5" title="Print">
                                             <i class="fas fa-print text-[9px]"></i> Print
                                         </button>
-                                        <button id="vault-md-ai-btn" class="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700/50 text-slate-400 hover:text-white text-[10px] font-medium transition-colors flex items-center gap-1.5" title="AI writing — continue, rewrite, translate… (Write mode)">
+                                        <button id="vault-md-ai-btn" class="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700/50 text-slate-400 hover:text-white text-[10px] font-medium transition-colors flex items-center gap-1.5" title="AI writing — continue, rewrite, translate…">
                                             <i class="fas fa-wand-magic-sparkles text-[9px]" style="color:var(--accent-light)"></i> AI
                                         </button>
                                     </div>
@@ -4729,6 +4732,7 @@
     <script src="js/study.js"></script>
     <script src="js/vault.js"></script>
     <script src="js/docx-import.js"></script>
+    <script src="js/vault-live.js"></script>
     <script src="js/vault-graph.js"></script>
     <script src="js/vault-ai.js"></script>
     <script src="js/pdf-annot.js"></script>
