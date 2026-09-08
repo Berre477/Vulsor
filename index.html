@@ -101,53 +101,22 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Vulsor AI</title>
-    <script src="js/tailwind.min.js"></script>
-    <!-- Three.js + GLTFLoader for the chess 3D physical view -->
-    <script src="js/three.min.js"></script>
-    <script src="js/GLTFLoader.js"></script>
+    <!-- three.js is loaded once, near the bottom (vendor/three.min.js r130) —
+         the copy that used to load here was overwritten by it anyway, so it cost
+         a megabyte of parsing at every launch and changed nothing. -->
     <link href="css/font-awesome.min.css" rel="stylesheet">
     <link rel="stylesheet" href="css/styles.css">
     <!-- KaTeX fonts & layout CSS (fonts are injected with absolute paths at runtime) -->
     <link rel="stylesheet" href="css/katex.css">
-    <!-- Ace Editor (local bundle — no CDN required) -->
-    <script src="js/ace/ace.min.js"></script>
-    <script src="js/ace/ext-language_tools.min.js"></script>
-    <script src="js/ace/ext-inline_autocomplete.min.js"></script>
+    <!-- Tailwind, built ahead of time by `npm run build:css` (see tailwind.config.js).
+         This used to be the Play CDN script, which recompiled the stylesheet from
+         the live DOM at every launch — 1.7 seconds before the window could appear.
+         It loads last, the way the CDN's injected <style> did, so the cascade is
+         unchanged. Rebuild it after adding Tailwind classes to markup. -->
+    <link rel="stylesheet" href="css/tailwind.css">
+    <!-- Ace Editor, Chart.js: loaded on first use (js/lazy.js), not at launch -->
     <!-- Pre-load all themes so setTheme() works instantly offline -->
-    <script src="js/ace/theme-monokai.min.js"></script>
-    <script src="js/ace/theme-dracula.min.js"></script>
-    <script src="js/ace/theme-one_dark.min.js"></script>
-    <script src="js/ace/theme-tomorrow_night.min.js"></script>
-    <script src="js/ace/theme-nord_dark.min.js"></script>
-    <script src="js/ace/theme-github_dark.min.js"></script>
-    <script src="js/ace/theme-solarized_dark.min.js"></script>
-    <script src="js/ace/theme-cobalt.min.js"></script>
-    <script src="js/ace/theme-tomorrow_night_blue.min.js"></script>
-    <script src="js/ace/theme-vibrant_ink.min.js"></script>
-    <script src="js/ace/theme-github.min.js"></script>
-    <script src="js/ace/theme-solarized_light.min.js"></script>
-    <script src="js/ace/theme-xcode.min.js"></script>
-    <script src="js/ace/theme-eclipse.min.js"></script>
     <!-- Pre-load all language modes -->
-    <script src="js/ace/mode-python.min.js"></script>
-    <script src="js/ace/mode-javascript.min.js"></script>
-    <script src="js/ace/mode-typescript.min.js"></script>
-    <script src="js/ace/mode-sh.min.js"></script>
-    <script src="js/ace/mode-golang.min.js"></script>
-    <script src="js/ace/mode-ruby.min.js"></script>
-    <script src="js/ace/mode-c_cpp.min.js"></script>
-    <script src="js/ace/mode-java.min.js"></script>
-    <script src="js/ace/mode-rust.min.js"></script>
-    <script src="js/ace/mode-php.min.js"></script>
-    <script src="js/ace/mode-perl.min.js"></script>
-    <script src="js/ace/mode-r.min.js"></script>
-    <script src="js/ace/mode-html.min.js"></script>
-    <script src="js/ace/mode-css.min.js"></script>
-    <script src="js/ace/mode-json.min.js"></script>
-    <script src="js/ace/mode-yaml.min.js"></script>
-    <script src="js/ace/mode-sql.min.js"></script>
-    <script src="js/ace/mode-markdown.min.js"></script>
-    <script src="js/ace/mode-text.min.js"></script>
     <!-- xterm.js (integrated terminal) — CSS only; JS loaded via require() in code.js/notebook.js -->
     <link rel="stylesheet" href="js/xterm/xterm.css">
 </head>
@@ -4555,8 +4524,6 @@
     </div>
 
     <!-- Scripts in dependency order — all local for offline use -->
-    <!-- Chart.js -->
-    <script src="vendor/chart.umd.min.js"></script>
     <!-- three.js + legacy controls (r130 — last version with examples/js/) for the Studio 3D editor -->
     <script src="vendor/three.min.js"></script>
     <!-- Register GLTFLoader on the SAME (vendor r130) THREE that Galaxy/Voyage use,
@@ -4722,6 +4689,7 @@
     </div>
 
     <script src="js/globals.js"></script>
+    <script src="js/lazy.js"></script>
     <script src="js/jarvis.js"></script>
     <script src="js/ui.js"></script>
     <script src="js/mathviz.js"></script>

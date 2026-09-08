@@ -12,14 +12,16 @@
     "build:wasm": "em++ cpp/starfield.cpp -O3 --no-entry -sSTANDALONE_WASM -sINITIAL_MEMORY=33554432 -o js/wasm/starfield.wasm && em++ cpp/galaxy.cpp -O3 --no-entry -sSTANDALONE_WASM -o js/wasm/galaxy.wasm",
     "deploy": "bash build-extras/deploy-to-applications.sh",
     "set-default": "swift build-extras/set-default-browser.swift",
-    "set-default-md": "swift build-extras/set-default-markdown.swift"
+    "set-default-md": "swift build-extras/set-default-markdown.swift",
+    "build:css": "tailwindcss -c tailwind.config.js -i build-extras/tailwind-input.css -o css/tailwind.css --minify"
   },
   "author": "Alexander Home",
   "license": "ISC",
   "devDependencies": {
     "@electron/packager": "^20.3.0",
     "electron": "^41.10.6",
-    "eslint": "^9.39.5"
+    "eslint": "^9.39.5",
+    "tailwindcss": "^3.4.17"
   },
   "dependencies": {
     "@ghostery/adblocker-electron": "^2.18.0",

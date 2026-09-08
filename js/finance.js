@@ -394,7 +394,16 @@ function buildChartBuckets(period) {
 
 function renderFinanceChart() {
     const canvas = document.getElementById('fin-chart');
-    if (!canvas || typeof Chart === 'undefined') return;
+    if (!canvas) return;
+    // Chart.js is not in the startup bundle any more (200KB nobody needs until
+    // they open Finance) — pull it in, then draw.
+    if (typeof Chart === 'undefined') {
+        if (typeof vulsorLoadChart !== 'function') return;
+        vulsorLoadChart()
+            .then(() => renderFinanceChart())
+            .catch(e => console.error('[finance] Chart.js failed to load:', e));
+        return;
+    }
     const sym = finCurrencySymbol();
     if (finChartInstance) { finChartInstance.destroy(); finChartInstance = null; }
 

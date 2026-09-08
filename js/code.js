@@ -1150,11 +1150,19 @@ function initVaultCodeEditor() {
 // ──────────────────────────────────────────────────────────────────
 // LAZY ACE INIT  (called after the editor pane is visible)
 // ──────────────────────────────────────────────────────────────────
-function _ensureAceInit() {
-    if (vaultAceEditor) return; // already initialised
-    if (typeof ace === 'undefined') { console.warn('[Vulsor] Ace editor not loaded'); return; }
+function _ensureAceInit(onReady) {
+    if (vaultAceEditor) { if (onReady) onReady(); return; }
+    // Ace is no longer part of the startup bundle — a megabyte and a half of
+    // editor that most sessions never open. Fetch it the first time one is,
+    // then come back here and carry on.
+    if (typeof ace === 'undefined') {
+        if (typeof vulsorLoadAce !== 'function') { console.warn('[Vulsor] Ace editor not loaded'); return; }
+        vulsorLoadAce()
+            .then(() => _ensureAceInit(onReady))
+            .catch(e => console.error('[Vulsor] Ace failed to load:', e));
+        return;
+    }
 
-    // All themes/modes pre-loaded as <script> tags — no CDN fetches needed
     ace.config.set('useWorker', false);
     try { ace.require('ace/ext/language_tools'); } catch(_) {}
 
@@ -1699,15 +1707,16 @@ function openVaultCodeEditor(file, storedPath) {
     if (statusEl) statusEl.textContent = '';
 
     // ── 2. Now that the pane is visible, lazily initialise Ace
-    //        (Ace needs real pixel dimensions to render correctly)
-    _ensureAceInit();
-
-    if (vaultAceEditor) {
+    //        (Ace needs real pixel dimensions to render correctly). The file is
+    //        loaded in the callback because the first open also has to fetch Ace.
+    _ensureAceInit(() => {
+        if (!vaultAceEditor) return;
         vaultAceEditor.session.setMode(`ace/mode/${info.mode}`);
         const content = fs.existsSync(storedPath) ? fs.readFileSync(storedPath, 'utf8') : '';
         vaultAceEditor.setValue(content, -1);
         vaultAceEditor.clearSelection();
-    }
+        vaultAceEditor.resize(true);
+    });
 
     // Set terminal CWD
     vaultTermCwd = VAULT_DIR;

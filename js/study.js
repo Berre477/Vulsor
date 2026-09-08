@@ -60,8 +60,19 @@ function fmtTime(s) {
     return `${String(Math.floor(s / 60)).padStart(2,'0')}:${String(s % 60).padStart(2,'0')}`;
 }
 
+// Ask for notification permission when a timer actually starts, not at launch.
+// Reading Notification.permission is a synchronous trip to the browser process,
+// and during startup that process is busy opening the window — the read alone
+// blocked the renderer for over a second before anything could be painted.
+function studyAskNotifyPermission() {
+    try {
+        if (Notification.permission === 'default') Notification.requestPermission();
+    } catch (_) {}
+}
+
 function startTimer() {
     if (pomo.running) return;
+    studyAskNotifyPermission();
     pomo.running = true;
     pomo.interval = setInterval(() => {
         pomo.secondsLeft--;
@@ -142,6 +153,8 @@ function onSessionComplete() {
 }
 
 function notify(title, body) {
+    // Reading the permission here is cheap: by the time a session ends the
+    // browser process is long past its startup work.
     if (Notification.permission === 'granted') {
         new Notification(`Vulsor Study — ${title}`, { body, silent: false });
     }
@@ -411,8 +424,6 @@ function closeStudySettings() {
 // ── Init ──────────────────────────────────────────────────────────
 function initStudy() {
     studyData = loadStudyData();
-
-    if (Notification.permission === 'default') Notification.requestPermission();
 
     // Session type buttons
     ['work','short','long'].forEach(type =>

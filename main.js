@@ -1737,12 +1737,21 @@ app.on('web-contents-created', (event, contents) => {
 });
 
 app.whenReady().then(async () => {
+    // Widevine stays ahead of the window: the castlabs build wants its
+    // components registered before content that plays protected media exists.
     if (components && typeof components.whenReady === 'function') {
         try { await components.whenReady(); console.log('[Widevine] ready:', components.status && components.status()); } catch (e) {}
     }
 
+    // The window goes up next, before the rest of the startup chores. All of
+    // them used to run first, which on a cold launch is dead time between
+    // clicking the icon and seeing anything: none of it is needed to paint.
+    createWindow();
+
     try { waBot.init(path.join(app.getPath('userData'), 'wa-session')); } catch (_) {}
     _adLoad(); _initAdblockEngine();
+    // Browser sessions are configured before any <webview> can exist — the
+    // renderer is still loading, and web tabs only appear once the user opens one.
     ['persist:browser', 'browser-private'].forEach(p => { try { _setupBrowserSession(session.fromPartition(p)); } catch (_) {} });
     buildMenu();
 
@@ -1759,7 +1768,6 @@ app.whenReady().then(async () => {
             try { fs.writeFileSync(flagFile, JSON.stringify({ asked: true })); } catch (_) {}
         }
     } catch (_) {}
-    createWindow();
     initAutoUpdate();
 
     // Let the other Vulsor apps drive this one. Loopback only, and a failure

@@ -84,7 +84,16 @@ function _nbDestroyAceEditors() {
 /** Initialise one Ace editor for a code cell (called after DOM is ready). */
 function _nbInitCellAce(cell) {
     const el = document.getElementById(`vnb-ace-${cell.id}`);
-    if (!el || typeof ace === 'undefined') return;
+    if (!el) return;
+    // Ace loads on first use rather than at startup — come back once it is here,
+    // as long as this cell is still on screen.
+    if (typeof ace === 'undefined') {
+        if (typeof vulsorLoadAce !== 'function') return;
+        vulsorLoadAce()
+            .then(() => { if (document.getElementById(`vnb-ace-${cell.id}`)) _nbInitCellAce(cell); })
+            .catch(e => console.error('[notebook] Ace failed to load:', e));
+        return;
+    }
 
     const theme = localStorage.getItem('vulsor_code_theme') || 'monokai';
     const mode  = NB_ACE_MODES[cell.lang || notebookLang] || 'python';
