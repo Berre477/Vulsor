@@ -860,6 +860,13 @@ function vaultRefreshOpenMarkdown(file) {
     if (vaultMdMode === 'live') {
         const ed = document.getElementById('vault-live-editor');
         if (!ed || ed.contains(document.activeElement) || ed === document.activeElement) return;
+        // Keystrokes still inside the save debounce are newer than the file:
+        // write them out instead of replacing them with what is on disk.
+        if (vaultMdDirty) {
+            clearTimeout(vaultMdSaveTimer);
+            try { _saveVaultMdContent(); } catch(e) { console.error('[vault] flush before refresh:', e); }
+            return;
+        }
         try {
             const text = fs.readFileSync(path.join(VAULT_DIR, file.storedName), 'utf8');
             if (typeof vaultLiveGetText === 'function' && vaultLiveGetText() !== text) {
@@ -921,6 +928,7 @@ let vaultIsMd        = false;
 let vaultMdMode      = 'live';   // 'read' | 'live' | 'source'
 let vaultMdEditMode  = false;    // true for live + source: there are edits to flush
 let vaultMdSaveTimer = null;
+let vaultMdDirty     = false;   // edits typed but not yet written to disk
 
 // PDF.js state
 let pdfDoc          = null;
@@ -1128,6 +1136,7 @@ function _saveVaultMdContent() {
         if (ta) text = ta.value;
     }
     if (text === null) return;
+    vaultMdDirty = false;
     vaultWriteFile(path.join(VAULT_DIR, file.storedName), text);
     file.size      = Buffer.byteLength(text, 'utf8');
     file.updatedAt = Date.now();
@@ -1145,6 +1154,7 @@ function _saveVaultMdContent() {
 
 // Debounced save shared by the live editor and the source textarea.
 function vaultMdQueueSave() {
+    vaultMdDirty = true;
     clearTimeout(vaultMdSaveTimer);
     vaultMdSaveTimer = setTimeout(_saveVaultMdContent, 800);
 }
@@ -1165,6 +1175,7 @@ function vaultMdSyncButtons() {
 function vaultMdRender(file, focus) {
     const altEl = document.getElementById('vault-content-alt');
     if (!altEl) return;
+    vaultMdDirty = false;
     const storedPath = path.join(VAULT_DIR, file.storedName);
     let text;
     try {
@@ -2226,6 +2237,15 @@ function _vaultResetViewerAreas() {
     vaultIsMd       = false;
     vaultMdEditMode = false;
     vaultMdMode     = 'live';
+
+    // Let go of the open PDF properly. Dropping the reference — which every
+    // branch of openVaultFile used to do — leaves pdf.js's worker thread and
+    // its parsed pages alive for the life of the window, so a session of
+    // hopping between a book and your notes piled up a worker each time.
+    if (pdfDoc) {
+        try { pdfDoc.destroy(); } catch(e) { console.error('[reset] pdf destroy:', e); }
+        pdfDoc = null;
+    }
     const _mdToolbar = document.getElementById('vault-md-toolbar');
     if (_mdToolbar) _mdToolbar.classList.add('hidden');
 

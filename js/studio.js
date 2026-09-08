@@ -1794,9 +1794,13 @@ function mount3DEditor(p) {
     // Render loop
     const tick = () => {
         if (!three.renderer) return;
+        three.rafId = requestAnimationFrame(tick);
+        // View hidden (user switched tabs) → skip the WebGL work, the way the
+        // chess and physics scenes do. Left running, this rendered a full 3D
+        // scene at 60fps behind whatever the user had moved on to.
+        if (three.renderer.domElement.offsetParent === null) return;
         three.orbit.update();
         three.renderer.render(three.scene, three.camera);
-        three.rafId = requestAnimationFrame(tick);
     };
     tick();
 
