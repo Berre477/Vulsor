@@ -199,6 +199,12 @@ function abPause() {
     abUpdateTransport();
 }
 function abStop() {
+    // Touching speechSynthesis at all makes the browser process enumerate the
+    // system's Text-to-Speech voices, and on macOS that blocks it for over a
+    // second — with the app's window waiting behind it, because _activateView
+    // calls this on every view switch, including the first one at startup.
+    // There is nothing to cancel unless we actually started speaking.
+    if (!abPlaying && !abPaused) { abUpdateTransport(); return; }
     abPlaying = false; abPaused = false;
     try { window.speechSynthesis.cancel(); } catch (_) {}
     abUpdateTransport();

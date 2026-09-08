@@ -235,6 +235,7 @@ function stripMarkdown(text) {
 }
 
 function findVoiceForProfile(profile) {
+    vsEnsureVoiceWatch();
     const voices = window.speechSynthesis.getVoices();
 
     // Custom voices store an exact voiceURI
@@ -286,6 +287,15 @@ function speakText(text) {
 }
 
 // ── Voice selector UI ───────────────────────────────────────────
+// Register the voiceschanged handler on first real use. Kept out of startup:
+// see the note in initVoice about what touching speechSynthesis costs.
+let _vsVoiceWatchArmed = false;
+function vsEnsureVoiceWatch() {
+    if (_vsVoiceWatchArmed) return;
+    _vsVoiceWatchArmed = true;
+    try { window.speechSynthesis.onvoiceschanged = () => renderVoiceSelector(); } catch (_) {}
+}
+
 function renderVoiceSelector() {
     const container = document.getElementById('voice-selector');
     if (!container) return;
@@ -607,6 +617,7 @@ function closeVoiceEditor() {
 function populateSystemVoiceDropdown(selectedURI) {
     const sel = document.getElementById('ve-system-voice');
     sel.innerHTML = '';
+    vsEnsureVoiceWatch();
     const voices = window.speechSynthesis.getVoices();
     // Group by language for readability
     const sorted = [...voices].sort((a, b) => a.lang.localeCompare(b.lang) || a.name.localeCompare(b.name));
@@ -707,6 +718,7 @@ function saveVoiceFromEditor() {
     const rate  = parseFloat(document.getElementById('ve-rate').value);
 
     if (!name) { document.getElementById('ve-name').focus(); return; }
+    vsEnsureVoiceWatch();
     const sysVoice = window.speechSynthesis.getVoices().find(v => v.voiceURI === voiceURI);
     const lang = sysVoice ? sysVoice.lang : 'en-US';
 
@@ -769,6 +781,7 @@ function testVoiceFromEditor() {
     const name  = document.getElementById('ve-name').value.trim() || 'Vulsor';
     window.speechSynthesis.cancel();
     const utter = new SpeechSynthesisUtterance(`Hi, I'm ${name}. This is how I sound.`);
+    vsEnsureVoiceWatch();
     const v = window.speechSynthesis.getVoices().find(x => x.voiceURI === voiceURI);
     if (v) utter.voice = v;
     utter.pitch = pitch;
@@ -836,15 +849,17 @@ async function ensureWhisperReady() {
 function initVoice() {
     wireVoiceEditor();
 
-    // Never call speechSynthesis.getVoices() during startup. The first call
-    // blocks the browser process while macOS loads its Text-to-Speech voices —
-    // measured at ~1.3 seconds here, with the whole app waiting on it, because
-    // the window is not shown until the browser process comes back. The
-    // selector is built from saved profiles and needs no system voice list;
-    // voiceschanged refreshes it once macOS has one, and everything that
-    // actually speaks asks for a voice at that moment.
+    // Do not touch window.speechSynthesis during startup — not getVoices(), not
+    // even reading the property. The first access binds Blink's SpeechSynthesis
+    // interface, and handling that one message makes the browser process
+    // enumerate every macOS Text-to-Speech voice: 1.26 SECONDS, measured in a
+    // Chromium trace, with the app's window waiting behind it.
+    //
+    // The selector is built from saved profiles and needs no system voice list.
+    // The voiceschanged handler is registered the first time something actually
+    // reaches for a voice (vsEnsureVoiceWatch, called from the paths that speak
+    // or list system voices), by which point the user has asked for speech.
     renderVoiceSelector();
-    window.speechSynthesis.onvoiceschanged = () => renderVoiceSelector();
 
     document.getElementById('voice-mic-btn').onclick = () => {
         if (isProcessing) return;
