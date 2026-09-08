@@ -303,7 +303,18 @@ function createWindow() {
         }
     });
 
-    win.once('ready-to-show', () => win.show());
+    // Show the window as soon as there is a DOM to paint. 'ready-to-show' waits
+    // for the page's load event, and the tab strip's favicons are fetched from
+    // whatever sites were open — that put the whole window behind a network
+    // round-trip on every launch. backgroundColor above covers the first frame.
+    let revealed = false;
+    const reveal = () => {
+        if (revealed || win.isDestroyed()) return;
+        revealed = true;
+        win.show();
+    };
+    win.once('ready-to-show', reveal);
+    win.webContents.once('dom-ready', reveal);
     windows.push(win);
     win.on('closed', () => {
         const i = windows.indexOf(win);

@@ -836,11 +836,15 @@ async function ensureWhisperReady() {
 function initVoice() {
     wireVoiceEditor();
 
-    if (window.speechSynthesis.getVoices().length > 0) {
-        renderVoiceSelector();
-    } else {
-        window.speechSynthesis.onvoiceschanged = () => renderVoiceSelector();
-    }
+    // Never call speechSynthesis.getVoices() during startup. The first call
+    // blocks the browser process while macOS loads its Text-to-Speech voices —
+    // measured at ~1.3 seconds here, with the whole app waiting on it, because
+    // the window is not shown until the browser process comes back. The
+    // selector is built from saved profiles and needs no system voice list;
+    // voiceschanged refreshes it once macOS has one, and everything that
+    // actually speaks asks for a voice at that moment.
+    renderVoiceSelector();
+    window.speechSynthesis.onvoiceschanged = () => renderVoiceSelector();
 
     document.getElementById('voice-mic-btn').onclick = () => {
         if (isProcessing) return;

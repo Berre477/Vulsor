@@ -553,5 +553,8 @@ function initFinance() {
     renderFinanceSummary();
     renderTransactions();
     renderRecurring();
-    renderFinanceChart();
+    // No chart here: Finance is not on screen at startup, and drawing it pulls
+    // in Chart.js — a script fetched during page load, which holds back the
+    // load event and with it the window. _activateView('finance') draws it when
+    // the view is actually opened.
 }

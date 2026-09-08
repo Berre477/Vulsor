@@ -329,7 +329,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (m.loading)
                         iconHtml = `<span class="tab-favicon" style="background:transparent"><i class="fas fa-circle-notch fa-spin" style="font-size:9px; color:#818cf8"></i></span>`;
                     else if (m.favicon)
-                        iconHtml = `<span class="tab-favicon" style="background:transparent"><img src="${m.favicon.replace(/"/g,'&quot;')}" style="width:14px; height:14px; border-radius:3px; object-fit:cover" onerror="this.style.display='none'"></span>`;
+                        // lazy + async: a favicon is a network fetch, and an eager
+                        // <img> holds back the page's load event — which is what the
+                        // window waits for before it appears.
+                        iconHtml = `<span class="tab-favicon" style="background:transparent"><img src="${m.favicon.replace(/"/g,'&quot;')}" loading="lazy" decoding="async" style="width:14px; height:14px; border-radius:3px; object-fit:cover" onerror="this.style.display='none'"></span>`;
                     else
                         iconHtml = `<span class="tab-favicon" style="background:${m.private?'rgba(168,85,247,0.12)':def.color+'20'}; color:${m.private?'#c084fc':def.color}"><i class="fas ${m.private?'fa-user-secret':'fa-globe'}" style="font-size:9px"></i></span>`;
                 } else {
@@ -1226,6 +1229,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             _buildArchived();
+            _favLoadWhenIdle();
         }
 
         // ── Archived shortcuts: opened from the button in the page's corner ────
@@ -1366,10 +1370,26 @@ document.addEventListener('DOMContentLoaded', () => {
                 window._favAdvance(img);
             }
         };
+        // Fill in the shortcut logos once the window is up. An <img> with a
+        // remote src holds back the page's load event, and the window is not
+        // shown until then — thirteen of these put a round-trip to Google and
+        // DuckDuckGo in front of every launch. They arrive a frame later now.
+        window._favLoadPending = function () {
+            document.querySelectorAll('img.home-site-favicon[data-src]').forEach(img => {
+                const src = img.dataset.src;
+                delete img.dataset.src;
+                if (src) img.src = src;
+            });
+        };
+        function _favLoadWhenIdle() {
+            if (document.readyState === 'complete') { setTimeout(window._favLoadPending, 0); return; }
+            window.addEventListener('load', () => setTimeout(window._favLoadPending, 0), { once: true });
+        }
+
         function _siteIconHtml(site) {
             const srcs = _faviconSources(site.url);
             if (!srcs.length) return `<i class="fas fa-globe" style="color:#94a3b8; font-size:22px"></i>`;
-            return `<img class="home-site-favicon" src="${srcs[0]}" alt="" loading="lazy" data-fb="${_escHtml(srcs.slice(1).join('|'))}" onerror="window._favAdvance(this)" onload="window._favCheck(this)"><i class="fas fa-globe" style="display:none; color:#94a3b8; font-size:22px"></i>`;
+            return `<img class="home-site-favicon" alt="" decoding="async" data-src="${_escHtml(srcs[0])}" data-fb="${_escHtml(srcs.slice(1).join('|'))}" onerror="window._favAdvance(this)" onload="window._favCheck(this)"><i class="fas fa-globe" style="display:none; color:#94a3b8; font-size:22px"></i>`;
         }
 
         // ── Custom site: add / edit modal ──────────────────────
