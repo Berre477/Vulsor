@@ -29,7 +29,7 @@ const BG_THEMES = [
     { id: 'slate',    name: 'Slate',     preview: '#020617', base: '#020617', surface: '#0f172a', elevated: '#1e293b', border: '#1e293b', borderHi: '#334155', inputBg: '#1e293b', dark: true  },
     // Apple's dark register: pure black page, #1a1a1a cards (the surface the
     // system's own dark widgets use), hairlines a step above.
-    { id: 'black',    name: 'Black',     preview: '#000000', base: '#000000', surface: '#111111', elevated: '#1a1a1a', border: '#242424', borderHi: '#333333', inputBg: '#1a1a1a', dark: true  },
+    { id: 'black',    name: 'Black',     preview: '#000000', base: '#000000', surface: '#161616', elevated: '#1f1f1f', border: '#2a2a2a', borderHi: '#3a3a3a', inputBg: '#1f1f1f', dark: true  },
     { id: 'midnight', name: 'Midnight',  preview: '#0a0e1a', base: '#0a0e1a', surface: '#111827', elevated: '#1b2436', border: '#1f2a3d', borderHi: '#2e3b54', inputBg: '#161f30', dark: true  },
     { id: 'deepblue', name: 'Deep Blue', preview: '#03071e', base: '#03071e', surface: '#060d28', elevated: '#0d1639', border: '#1a2550', borderHi: '#263a72', inputBg: '#0d1639', dark: true  },
     { id: 'ocean',    name: 'Ocean',     preview: '#04151f', base: '#04151f', surface: '#08202e', elevated: '#0d2c3e', border: '#12384c', borderHi: '#1b5069', inputBg: '#0a2734', dark: true  },

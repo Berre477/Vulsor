@@ -580,21 +580,21 @@ function renderVaultMarkdown(raw) {
 
     return `
 <style>
-.vmd-wrap{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;font-size:15px;line-height:1.7;color:#dcddde;padding:32px 40px;max-width:860px;margin:0 auto}
-.vmd-h{font-weight:700;color:#fff;margin:1.4em 0 .5em;line-height:1.3}
-.vmd-h1{font-size:2em;border-bottom:1px solid rgba(255,255,255,.1);padding-bottom:.3em}
-.vmd-h2{font-size:1.5em;border-bottom:1px solid rgba(255,255,255,.07);padding-bottom:.25em}
+.vmd-wrap{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;font-size:15px;line-height:1.7;color:rgb(var(--slate-200));padding:32px 40px;max-width:860px;margin:0 auto}
+.vmd-h{font-weight:700;color:rgb(var(--slate-100));margin:1.4em 0 .5em;line-height:1.3}
+.vmd-h1{font-size:2em;border-bottom:1px solid rgb(var(--ink-rgb) / .1);padding-bottom:.3em}
+.vmd-h2{font-size:1.5em;border-bottom:1px solid rgb(var(--ink-rgb) / .07);padding-bottom:.25em}
 .vmd-h3{font-size:1.2em}
 .vmd-h4{font-size:1.05em}
-.vmd-h5{font-size:.95em;color:#a0aec0}
-.vmd-h6{font-size:.875em;color:#718096}
-.vmd-p{margin:.55em 0;color:#cdd6f4}
+.vmd-h5{font-size:.95em;color:rgb(var(--slate-400))}
+.vmd-h6{font-size:.875em;color:rgb(var(--slate-500))}
+.vmd-p{margin:.55em 0;color:rgb(var(--slate-200))}
 .vmd-space{height:.6em}
-.vmd-a{color:#7aa2f7;text-decoration:none;border-bottom:1px solid rgba(122,162,247,.3);transition:border-color .15s}
-.vmd-a:hover{border-color:#7aa2f7}
-.vmd-ic{font-family:"SF Mono",Monaco,Consolas,monospace;font-size:.875em;background:rgba(255,255,255,.08);color:#f38ba8;padding:.1em .35em;border-radius:4px;border:1px solid rgba(255,255,255,.08)}
-.vmd-pre-wrap{position:relative;margin:1.1em 0;border-radius:8px;overflow:hidden;border:1px solid rgba(255,255,255,.08)}
-.vmd-lang{position:absolute;top:8px;right:12px;font-family:"SF Mono",Monaco,Consolas,monospace;font-size:10px;color:#6b7280;text-transform:uppercase;letter-spacing:.08em;pointer-events:none}
+.vmd-a{color:var(--accent-light);text-decoration:none;border-bottom:1px solid rgba(var(--accent-rgb),.3);transition:border-color .15s}
+.vmd-a:hover{border-color:var(--accent-light)}
+.vmd-ic{font-family:"SF Mono",Monaco,Consolas,monospace;font-size:.875em;background:rgb(var(--ink-rgb) / .08);color:rgb(var(--tw-rose-400));padding:.1em .35em;border-radius:4px;border:1px solid rgb(var(--ink-rgb) / .08)}
+.vmd-pre-wrap{position:relative;margin:1.1em 0;border-radius:8px;overflow:hidden;border:1px solid rgb(var(--ink-rgb) / .08)}
+.vmd-lang{position:absolute;top:8px;right:12px;font-family:"SF Mono",Monaco,Consolas,monospace;font-size:10px;color:rgb(var(--slate-500));text-transform:uppercase;letter-spacing:.08em;pointer-events:none}
 .vmd-pre{margin:0;padding:18px 20px;background:#0d1117;overflow-x:auto;font-family:"SF Mono",Monaco,Consolas,monospace;font-size:13px;line-height:1.6;color:rgb(var(--slate-200))}
 .vmd-pre code{background:none;border:none;padding:0;color:inherit;font-size:inherit}
 /* Code colours (GitHub-dark family, tuned for the #0d1117 block background):
@@ -611,34 +611,34 @@ function renderVaultMarkdown(raw) {
 .vmd-t-o{color:#ff7b72;opacity:.85}
 .vmd-t-g{color:#7ee787}
 .vmd-t-a{color:#79c0ff}
-.vmd-hr{border:none;border-top:1px solid rgba(255,255,255,.12);margin:1.8em 0}
-.vmd-bq{border-left:3px solid #4a9eff;margin:1em 0;padding:.5em 1em;background:rgba(74,158,255,.06);border-radius:0 6px 6px 0;color:#a0aec0;font-style:italic}
+.vmd-hr{border:none;border-top:1px solid rgb(var(--ink-rgb) / .12);margin:1.8em 0}
+.vmd-bq{border-left:3px solid var(--accent-light);margin:1em 0;padding:.5em 1em;background:rgba(var(--accent-rgb),.07);border-radius:0 6px 6px 0;color:rgb(var(--slate-400));font-style:italic}
 .vmd-callout{border-radius:6px;margin:1.1em 0;overflow:hidden;border:1px solid color-mix(in srgb,var(--ccolor) 25%,transparent)}
 .vmd-callout-title{display:flex;align-items:center;gap:8px;padding:8px 14px;background:color-mix(in srgb,var(--ccolor) 15%,transparent);color:var(--ccolor);font-weight:600;font-size:13px;text-transform:uppercase;letter-spacing:.06em}
 .vmd-callout-title .fas{font-size:12px}
-.vmd-callout-body{padding:10px 14px;color:#cdd6f4;font-size:14px;background:color-mix(in srgb,var(--ccolor) 5%,transparent)}
-.vmd-ul,.vmd-ol{margin:.5em 0 .5em 1.5em;padding:0;color:#cdd6f4}
+.vmd-callout-body{padding:10px 14px;color:rgb(var(--slate-200));font-size:14px;background:color-mix(in srgb,var(--ccolor) 5%,transparent)}
+.vmd-ul,.vmd-ol{margin:.5em 0 .5em 1.5em;padding:0;color:rgb(var(--slate-200))}
 .vmd-ul li,.vmd-ol li{margin:.2em 0;padding-left:.2em}
-.vmd-ul li::marker{color:#4a9eff}
-.vmd-ol li::marker{color:#7aa2f7;font-weight:600}
+.vmd-ul li::marker{color:var(--accent-light)}
+.vmd-ol li::marker{color:var(--accent-light);font-weight:600}
 .vmd-task{list-style:none;display:flex;align-items:baseline;gap:7px;margin:.3em 0}
 .vmd-cb{display:inline-flex;align-items:center;justify-content:center;width:14px;height:14px;min-width:14px;border:1.5px solid rgb(var(--slate-600));border-radius:3px;margin-top:2px;background:transparent;transition:all .15s;flex-shrink:0}
 .vmd-cb-done{background:#3dba4e;border-color:#3dba4e}
 .vmd-cb-done::after{content:"✓";color:#fff;font-size:10px;line-height:1}
-.vmd-task-done{color:#6b7280;text-decoration:line-through}
-.vmd-tbl-wrap{overflow-x:auto;margin:1.1em 0;border-radius:8px;border:1px solid rgba(255,255,255,.1)}
+.vmd-task-done{color:rgb(var(--slate-500));text-decoration:line-through}
+.vmd-tbl-wrap{overflow-x:auto;margin:1.1em 0;border-radius:8px;border:1px solid rgb(var(--ink-rgb) / .1)}
 .vmd-tbl{border-collapse:collapse;width:100%;font-size:14px}
-.vmd-th{padding:9px 14px;background:rgba(255,255,255,.06);color:rgb(var(--slate-200));font-weight:600;text-align:left;border-bottom:1px solid rgba(255,255,255,.1);white-space:nowrap}
-.vmd-td{padding:8px 14px;border-bottom:1px solid rgba(255,255,255,.05);color:#cdd6f4}
+.vmd-th{padding:9px 14px;background:rgb(var(--ink-rgb) / .06);color:rgb(var(--slate-200));font-weight:600;text-align:left;border-bottom:1px solid rgb(var(--ink-rgb) / .1);white-space:nowrap}
+.vmd-td{padding:8px 14px;border-bottom:1px solid rgb(var(--ink-rgb) / .05);color:rgb(var(--slate-200))}
 .vmd-tbl tbody tr:last-child .vmd-td{border-bottom:none}
-.vmd-tbl tbody tr:hover .vmd-td{background:rgba(255,255,255,.03)}
+.vmd-tbl tbody tr:hover .vmd-td{background:rgb(var(--ink-rgb) / .03)}
 .vmd-img{max-width:100%;border-radius:8px;margin:.5em 0;box-shadow:0 4px 24px rgba(0,0,0,.4)}
 .vmd-math-block{display:flex;justify-content:center;padding:14px 0;margin:.8em 0;overflow-x:auto}
 math{color:rgb(var(--slate-200));font-size:1.05em}
 .vmd-p math,p math{font-size:1em;vertical-align:middle}
 strong{color:rgb(var(--slate-100));font-weight:600}
 em{color:rgb(var(--slate-200));font-style:italic}
-del{color:#6b7280}
+del{color:rgb(var(--slate-500))}
 </style>
 <div class="vmd-wrap">${out}</div>`;
 }
@@ -1193,7 +1193,7 @@ function vaultMdRender(file, focus) {
         ta.addEventListener('input', vaultMdQueueSave);
         if (focus !== false) ta.focus();
     } else if (vaultMdMode === 'live') {
-        altEl.innerHTML = '<div id="vault-img-el" class="w-full h-full overflow-y-auto chat-scroll" style="background:#13141f"></div>';
+        altEl.innerHTML = '<div id="vault-img-el" class="w-full h-full overflow-y-auto chat-scroll" style="background:var(--bg-surface)"></div>';
         const host = document.getElementById('vault-img-el');
         if (typeof vaultLiveMount === 'function') {
             vaultLiveMount(host, text, vaultMdQueueSave, focus !== false);
@@ -1208,7 +1208,7 @@ function vaultMdRender(file, focus) {
         }
     } else {
         altEl.innerHTML =
-            `<div id="vault-img-el" class="w-full h-full overflow-y-auto chat-scroll" style="background:#13141f">
+            `<div id="vault-img-el" class="w-full h-full overflow-y-auto chat-scroll" style="background:var(--bg-surface)">
                 ${renderVaultMarkdown(text)}
                 ${backlinks}
             </div>`;
@@ -2457,7 +2457,7 @@ function openVaultFile(id) {
                 const text = fs.readFileSync(storedPath, 'utf8');
                 if (['md','markdown'].includes(ext)) {
                     altEl.innerHTML =
-                        `<div id="vault-img-el" class="w-full h-full overflow-y-auto chat-scroll" style="background:#13141f">
+                        `<div id="vault-img-el" class="w-full h-full overflow-y-auto chat-scroll" style="background:var(--bg-surface)">
                             ${renderVaultMarkdown(text)}
                         </div>`;
                     vaultRenderMath(altEl);
@@ -2484,7 +2484,7 @@ function openVaultFile(id) {
                 }
             } catch(_) {}
             altEl.innerHTML =
-                `<div class="w-full h-full flex flex-col items-center justify-center p-4 gap-3" style="background:var(--bg-base)">
+                `<div class="w-full h-full flex flex-col items-center justify-center p-4 gap-3" style="background:var(--bg-surface)">
                     <video id="vault-video-el" src="${fileUrl}" controls playsinline
                         class="max-w-full rounded-xl shadow-2xl bg-black" style="max-height:calc(100% - 52px)">${trackHtml}</video>
                     <button onclick="openVideoEditor('${file.id}')"
@@ -3807,6 +3807,13 @@ async function _vaultThumbPump() {
     _vaultThumbBusy = true;
     try {
         while (_vaultThumbQueue.length) {
+            // Thumbnails are a background nicety: wait for idle time between
+            // renders (each is ~100 ms of decode + draw), and stop altogether
+            // while the grid isn't on screen — the next render re-queues
+            // whatever is still missing.
+            await new Promise(r => (window.requestIdleCallback ? requestIdleCallback(r, { timeout: 1500 }) : setTimeout(r, 120)));
+            const gridEl = document.getElementById('vault-files-grid');
+            if (!gridEl || !gridEl.offsetParent) { _vaultThumbQueue.length = 0; break; }
             const id   = _vaultThumbQueue.shift();
             const file = vaultData.files.find(f => f.id === id);
             if (!file) continue;
@@ -3881,8 +3888,8 @@ function renderVaultGrid() {
         titleEl.innerHTML = crumbs.map((c, i) => {
             const isLast = i === crumbs.length - 1;
             return isLast
-                ? `<span class="text-white">${c.name}</span>`
-                : `<button class="vault-crumb text-slate-500 hover:text-slate-300 transition-colors" data-id="${c.id ?? ''}">${c.name}</button>
+                ? `<span class="text-white">${_vaultEsc(c.name)}</span>`
+                : `<button class="vault-crumb text-slate-500 hover:text-slate-300 transition-colors" data-id="${c.id ?? ''}">${_vaultEsc(c.name)}</button>
                    <span class="text-slate-700 mx-1">/</span>`;
         }).join('');
         titleEl.querySelectorAll('.vault-crumb').forEach(btn => {
@@ -3918,7 +3925,7 @@ function renderVaultGrid() {
             <div class="vault-thumb vault-thumb-icon" style="background:${f.color}0e">
                 <i class="fas fa-folder" style="color:${f.color}"></i>
             </div>
-            <p class="vault-card-name">${f.name}</p>
+            <p class="vault-card-name">${_vaultEsc(f.name)}</p>
             <div class="vault-card-meta"><span>${subLabel}</span></div>
             <!-- Hover: add subfolder + delete -->
             <div class="absolute top-2 right-2 hidden group-hover:flex items-center gap-1">
@@ -3950,7 +3957,7 @@ function renderVaultGrid() {
         const date   = new Date(file.addedAt).toLocaleDateString([], { month: 'short', day: 'numeric' });
         const deleteBtn = `<button class="vault-card-delete absolute top-2 left-2 w-6 h-6 bg-red-600 rounded-lg text-white items-center justify-center opacity-0 group-hover:opacity-100 transition-all hover:bg-red-700 flex" data-id="${file.id}"><i class="fas fa-trash text-[9px]"></i></button>`;
         const shareBtn  = `<button class="vault-card-share absolute top-2 right-2 w-6 h-6 bg-slate-700 hover:bg-slate-600 rounded-lg text-slate-300 items-center justify-center opacity-0 group-hover:opacity-100 transition-all flex" data-id="${file.id}" title="Export / Share"><i class="fas fa-share-alt text-[9px]"></i></button>`;
-        const folderTag = folder && vaultSearchQuery ? `<div class="mt-1.5 flex items-center gap-1.5"><div class="w-1.5 h-1.5 rounded-full" style="background:${folder.color}"></div><span class="text-[10px] text-slate-500 truncate">${folder.name}</span></div>` : '';
+        const folderTag = folder && vaultSearchQuery ? `<div class="mt-1.5 flex items-center gap-1.5"><div class="w-1.5 h-1.5 rounded-full" style="background:${folder.color}"></div><span class="text-[10px] text-slate-500 truncate">${_vaultEsc(folder.name)}</span></div>` : '';
 
         if (file.isProject) {
             const pt = PROJECT_TYPES[file.projectType] || PROJECT_TYPES.build;
@@ -3959,7 +3966,7 @@ function renderVaultGrid() {
                 <div class="vault-thumb vault-thumb-icon" style="background:${pt.color}0e">
                     <i class="fas ${pt.icon}" style="color:${pt.color}"></i>
                 </div>
-                <p class="vault-card-name" title="${file.originalName}">${file.originalName}</p>
+                <p class="vault-card-name" title="${_vaultEsc(file.originalName)}">${_vaultEsc(file.originalName)}</p>
                 <div class="vault-card-meta">
                     <span class="vault-card-kind" style="color:${pt.color}">${pt.name}</span>
                     <span><i class="fas fa-circle" style="font-size:4px;vertical-align:middle;margin-right:3px;color:${ps.color}"></i>${ps.label}</span>
@@ -3985,7 +3992,7 @@ function renderVaultGrid() {
                   : vaultExt(file.originalName).toUpperCase();
         return `<div class="vault-card group relative cursor-pointer" data-id="${file.id}">
             ${preview}
-            <p class="vault-card-name" title="${file.originalName}">${file.originalName}</p>
+            <p class="vault-card-name" title="${_vaultEsc(file.originalName)}">${_vaultEsc(file.originalName)}</p>
             <div class="vault-card-meta">
                 <span class="vault-card-kind" style="color:${color}">${ext}</span>
                 <span>${vaultFmtSize(file.size)}</span>
@@ -4850,9 +4857,14 @@ function initVault() {
     }
 
     // ── Search ──
+    // Debounced: a search across the whole vault re-renders a few hundred
+    // cards (~40–60 ms) and queues PDF thumbnails, which made typing in the
+    // box stutter when it ran on every keystroke.
+    let _vaultSearchTimer = null;
     document.getElementById('vault-search').oninput = e => {
         vaultSearchQuery = e.target.value.trim();
-        renderVaultGrid();
+        clearTimeout(_vaultSearchTimer);
+        _vaultSearchTimer = setTimeout(() => requestAnimationFrame(renderVaultGrid), vaultSearchQuery ? 110 : 0);
     };
 
     // ── Sort ──
