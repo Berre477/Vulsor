@@ -42,6 +42,21 @@
     // so the same scene reads as ink on paper when the theme is light. The
     // accent-tinted parts already work on both.
     const isLight = () => document.documentElement.dataset.theme === 'light';
+    // How dark the page is: 1 on a black page, 0 on a light one. Scenes use it
+    // to push alpha up on near-black themes, where the same strokes that read
+    // fine on slate almost vanish.
+    function pageDarkness() {
+        try {
+            const v = getComputedStyle(document.documentElement).getPropertyValue('--bg-base').trim();
+            const m = v.match(/^#([0-9a-f]{6})$/i);
+            if (m) {
+                const n = parseInt(m[1], 16);
+                const l = (0.2126 * ((n >> 16) & 255) + 0.7152 * ((n >> 8) & 255) + 0.0722 * (n & 255)) / 255;
+                return Math.max(0, Math.min(1, 1 - l * 6));   // <#2a2a2a ≈ 1, slate ≈ 0.7
+            }
+        } catch (_) {}
+        return 0.7;
+    }
     const INK = {
         // On light themes the scenes are drawn in saturated colour — indigo and
         // blue stars, orange embers — never grey, which read as dirt on white.
@@ -99,6 +114,8 @@
             },
             draw() {
                 const slow = reduceMotion() ? 0.25 : 1;
+                // Near-black pages get brighter links and nodes (up to ~1.6×).
+                const boost = isLight() ? 1 : 1 + 0.6 * pageDarkness();
                 rotY += 0.00042 * slow; rotX = Math.sin(rotY * 0.6) * 0.22;
                 const sy = Math.sin(rotY), cy = Math.cos(rotY);
                 const sx = Math.sin(rotX), cx = Math.cos(rotX);
@@ -123,7 +140,7 @@
                         const d2 = dx * dx + dy * dy;
                         if (d2 > LINK * LINK) continue;
                         const d = Math.sqrt(d2);
-                        const a = (1 - d / LINK) * 0.26 * Math.min(proj[i].s, proj[j].s);
+                        const a = (1 - d / LINK) * 0.26 * boost * Math.min(proj[i].s, proj[j].s);
                         if (a < 0.006) continue;
                         ctx.strokeStyle = `rgba(${nodes[i].hue},${a.toFixed(3)})`;
                         ctx.beginPath();
@@ -134,9 +151,9 @@
                 }
                 for (let i = 0; i < nodes.length; i++) {
                     const p = proj[i], r = nodes[i].r * p.s;
-                    ctx.fillStyle = `rgba(${nodes[i].hue},${(0.10 * p.s + 0.03).toFixed(3)})`;
+                    ctx.fillStyle = `rgba(${nodes[i].hue},${Math.min(1, (0.10 * p.s + 0.03) * boost).toFixed(3)})`;
                     ctx.beginPath(); ctx.arc(p.sx, p.sy, Math.max(1, r * 2.6), 0, 6.2832); ctx.fill();
-                    ctx.fillStyle = `rgba(${nodes[i].hue},${(0.68 * p.s + 0.12).toFixed(3)})`;
+                    ctx.fillStyle = `rgba(${nodes[i].hue},${Math.min(1, (0.68 * p.s + 0.12) * boost).toFixed(3)})`;
                     ctx.beginPath(); ctx.arc(p.sx, p.sy, Math.max(0.6, r), 0, 6.2832); ctx.fill();
                 }
             },
