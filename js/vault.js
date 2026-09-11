@@ -837,7 +837,7 @@ function vaultSyncExternalChange() {
         const label = fresh.length === 1
             ? `<b>${_vaultEsc(nm.length > 24 ? nm.slice(0, 22) + '…' : nm)}</b> added to the Vault`
             : `<b>${fresh.length} files</b> added to the Vault`;
-        _vaultShowToast(`<i class="fas fa-sparkles text-blue-400 text-sm"></i> <span>${label}</span>`);
+        _vaultShowToast(`<i class="fas fa-magic text-blue-400 text-sm"></i> <span>${label}</span>`);
     }
     // A note being read (not edited) should show the new text right away —
     // e.g. you asked Claude to append to the note that's open in front of you.
@@ -3884,12 +3884,17 @@ function renderVaultGrid() {
 
     // ── Breadcrumb ──
     if (titleEl) {
-        const crumbs = vaultBreadcrumb(vaultSearchQuery ? null : vaultActiveFolderId);
+        const full = vaultBreadcrumb(vaultSearchQuery ? null : vaultActiveFolderId);
+        // Deep paths collapse to "All Files / … / Parent / Current": the toolbar
+        // is one line, and the current folder's name is the part that matters.
+        const crumbs = full.length > 4
+            ? [full[0], { id: full[full.length - 3].id, name: '…', title: full.slice(1, -2).map(c => c.name).join(' / ') }, ...full.slice(-2)]
+            : full;
         titleEl.innerHTML = crumbs.map((c, i) => {
             const isLast = i === crumbs.length - 1;
             return isLast
-                ? `<span class="text-white">${_vaultEsc(c.name)}</span>`
-                : `<button class="vault-crumb text-slate-500 hover:text-slate-300 transition-colors" data-id="${c.id ?? ''}">${_vaultEsc(c.name)}</button>
+                ? `<span class="text-white" title="${_vaultEsc(c.name)}">${_vaultEsc(c.name)}</span>`
+                : `<button class="vault-crumb text-slate-500 hover:text-slate-300 transition-colors" data-id="${c.id ?? ''}" title="${_vaultEsc(c.title || c.name)}">${_vaultEsc(c.name)}</button>
                    <span class="text-slate-700 mx-1">/</span>`;
         }).join('');
         titleEl.querySelectorAll('.vault-crumb').forEach(btn => {
@@ -3922,7 +3927,7 @@ function renderVaultGrid() {
         ].filter(Boolean).join(', ') || 'Empty';
 
         return `<div class="vault-subfolder-card group relative cursor-pointer" data-folder-id="${f.id}">
-            <div class="vault-thumb vault-thumb-icon" style="background:${f.color}0e">
+            <div class="vault-thumb vault-thumb-icon" style="background:${f.color}30">
                 <i class="fas fa-folder" style="color:${f.color}"></i>
             </div>
             <p class="vault-card-name">${_vaultEsc(f.name)}</p>

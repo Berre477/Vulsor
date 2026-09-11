@@ -218,7 +218,7 @@ code  { font-family: 'Fira Code', 'JetBrains Mono', monospace; }
 }
 .browser-tab:hover {
     background: rgb(var(--ink-rgb) / 0.06);
-    color: #8897ab;
+    color: rgb(var(--slate-400));
 }
 .browser-tab.active {
     background: var(--bg-surface, #111827);
@@ -1504,6 +1504,13 @@ body.vault-resizing { cursor: col-resize !important; user-select: none !importan
     line-height: 1.2;
 }
 .vault-toolbar-title i { font-size: 12px; color: var(--accent-light, rgb(var(--tw-red-400))); }
+/* Breadcrumb stays on one line: long folder names are clipped with an
+   ellipsis instead of wrapping into the search box. The current folder gets
+   the room; earlier crumbs are capped so a deep path still fits. */
+.vault-toolbar-title { flex-wrap: nowrap; white-space: nowrap; overflow: hidden; min-width: 0; }
+.vault-toolbar-title > * { flex-shrink: 0; }
+.vault-toolbar-title .vault-crumb { flex: 0 1 auto; min-width: 48px; max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.vault-toolbar-title > span:last-child { flex: 0 1 auto; min-width: 90px; overflow: hidden; text-overflow: ellipsis; }
 .vault-toolbar-sub   { margin-top: 3px; font-size: 11px; color: rgb(var(--slate-500)); }
 .vault-toolbar-actions { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
 .vault-toolbar-sep {
@@ -1719,21 +1726,25 @@ body.vault-resizing { cursor: col-resize !important; user-select: none !importan
    small, so what varies between cards is the documents themselves rather
    than the chrome around them. */
 .vault-card, .vault-subfolder-card {
-    padding: 10px 10px 12px;
+    padding: 10px 10px 11px;
+    aspect-ratio: 1 / 1;
+    display: flex; flex-direction: column;
     border-radius: 14px;
-    background: rgb(var(--slate-900) / 0.5);
-    border: 1px solid rgb(var(--slate-800) / 0.9);
+    /* Cards sit on the page colour itself (black on the Black theme) with a
+       hairline; the preview is what carries the card. */
+    background: var(--bg-base);
+    border: 1px solid rgb(var(--slate-800));
     transition: background .18s ease, border-color .18s ease,
                 transform .18s ease, box-shadow .18s ease;
 }
 .vault-card:hover, .vault-subfolder-card:hover {
-    background: rgb(var(--slate-900) / 0.9);
+    background: var(--bg-surface);
     border-color: rgb(var(--slate-600) / 0.8);
     transform: translateY(-2px);
     box-shadow: 0 10px 26px -12px rgba(0, 0, 0, 0.85);
 }
 .vault-card-name {
-    margin: 10px 1px 3px;
+    margin: 10px 1px auto;
     font-size: 11.5px;
     font-weight: 500;
     line-height: 1.35;
@@ -1768,8 +1779,10 @@ body.vault-resizing { cursor: col-resize !important; user-select: none !importan
 .vault-thumb {
     position: relative;
     width: 100%;
-    /* Portrait, close to a paper page: the whole first page fits with no crop */
-    aspect-ratio: 3 / 4;
+    flex: 1 1 auto; min-height: 0;
+    /* Landscape preview so that, with the two-line name and detail row under
+       it, the whole card comes out square — a tile, not a tall shelf card. */
+    aspect-ratio: 4 / 3;
     margin-bottom: 0.75rem;
     border-radius: 0.75rem;
     overflow: hidden;
@@ -1800,6 +1813,11 @@ body.vault-resizing { cursor: col-resize !important; user-select: none !importan
     font-size: 38px;
 }
 .vault-thumb-icon i { position: relative; opacity: 0.7; }
+/* Folders: full-strength colour, a touch larger, lifted by a soft shadow */
+.vault-subfolder-card .vault-thumb-icon { font-size: 46px; }
+.vault-subfolder-card .vault-thumb-icon i { opacity: 1; filter: drop-shadow(0 6px 14px rgba(0,0,0,0.35)); }
+/* On a pastel tile that shadow reads as a grey smudge — flat icon on light */
+html[data-theme="light"] .vault-subfolder-card .vault-thumb-icon i { filter: none; }
 /* For a file we couldn't preview, draw the empty page it would have been, so
    these cards keep the same rhythm as the ones showing a real page */
 .vault-thumb-plate::before {
@@ -2117,12 +2135,12 @@ html[data-theme="light"] ::-webkit-scrollbar-track { background: transparent !im
     min-width: 54px;
     flex-shrink: 0;
     background: rgb(var(--ink-rgb) / 0.015);
-    border-right: 1px solid #30363d;
+    border-right: 1px solid rgb(var(--slate-700));
 }
 .vnb-counter {
     font-size: 11px;
     font-family: 'Fira Code', 'JetBrains Mono', monospace;
-    color: #6e7681;
+    color: rgb(var(--slate-500));
     white-space: nowrap;
     min-height: 18px;
     line-height: 18px;
@@ -2172,7 +2190,7 @@ html[data-theme="light"] ::-webkit-scrollbar-track { background: transparent !im
 }
 .vnb-ace-wrap .ace_gutter {
     background: rgba(0,0,0,0.18) !important;
-    border-right: 1px solid #30363d !important;
+    border-right: 1px solid rgb(var(--slate-700)) !important;
     color: #5a6272 !important;
 }
 .vnb-ace-wrap .ace_gutter-active-line {
@@ -2191,34 +2209,34 @@ html[data-theme="light"] ::-webkit-scrollbar-track { background: transparent !im
     border: none;
     outline: none;
     resize: none;
-    color: #cdd9e5;
+    color: rgb(var(--slate-200));
     font-size: 13px;
     font-family: 'Inter', sans-serif;
     line-height: 1.65;
     padding: 10px 14px;
 }
-.vnb-md-ta::placeholder { color: #484f58; }
+.vnb-md-ta::placeholder { color: rgb(var(--slate-500)); }
 
 /* Markdown preview */
 .vnb-md-preview {
     padding: 6px 14px 12px;
-    color: #cdd9e5;
+    color: rgb(var(--slate-200));
     font-size: 13.5px;
     line-height: 1.75;
-    border-top: 1px dashed #30363d;
+    border-top: 1px dashed rgb(var(--slate-700));
 }
 .vnb-md-preview:empty { display: none; }
-.vnb-md-h1 { font-size: 1.45em; font-weight: 700; color: #e6edf3; margin: 0.5em 0 0.25em; }
-.vnb-md-h2 { font-size: 1.2em;  font-weight: 700; color: #e6edf3; margin: 0.5em 0 0.25em; }
-.vnb-md-h3 { font-size: 1.05em; font-weight: 600; color: #e6edf3; margin: 0.4em 0 0.2em; }
+.vnb-md-h1 { font-size: 1.45em; font-weight: 700; color: rgb(var(--slate-100)); margin: 0.5em 0 0.25em; }
+.vnb-md-h2 { font-size: 1.2em;  font-weight: 700; color: rgb(var(--slate-100)); margin: 0.5em 0 0.25em; }
+.vnb-md-h3 { font-size: 1.05em; font-weight: 600; color: rgb(var(--slate-100)); margin: 0.4em 0 0.2em; }
 .vnb-md-p  { margin: 0.3em 0; }
 .vnb-md-code {
-    background: #1c2128;
+    background: rgb(var(--ink-rgb) / 0.08);
     border-radius: 4px;
     padding: 1px 5px;
     font-size: 12px;
     font-family: 'Fira Code', monospace;
-    color: #e6edf3;
+    color: rgb(var(--slate-100));
 }
 .vnb-md-pre {
     background: #0d1117;
@@ -2234,8 +2252,8 @@ html[data-theme="light"] ::-webkit-scrollbar-track { background: transparent !im
 .vnb-md-ol { list-style: decimal; padding-left: 1.5em; margin: 0.3em 0; }
 .vnb-md-li { margin: 0.15em 0; }
 .vnb-md-bq {
-    border-left: 3px solid #484f58;
-    color: #8b949e;
+    border-left: 3px solid rgb(var(--slate-600));
+    color: rgb(var(--slate-500));
     padding: 2px 12px;
     margin: 0.3em 0;
     font-style: italic;
@@ -2284,7 +2302,7 @@ html[data-theme="light"] ::-webkit-scrollbar-track { background: transparent !im
     padding: 6px 14px;
     margin: 0;
 }
-.vnb-running { padding: 8px 14px; color: #6e7681; font-size: 12px; }
+.vnb-running { padding: 8px 14px; color: rgb(var(--slate-500)); font-size: 12px; }
 
 /* Cell action buttons (shown on hover) */
 .vnb-actions {
@@ -2302,7 +2320,7 @@ html[data-theme="light"] ::-webkit-scrollbar-track { background: transparent !im
     height: 22px;
     font-size: 10px;
     background: transparent;
-    color: #6e7681;
+    color: rgb(var(--slate-500));
     border: 1px solid transparent;
     border-radius: 5px;
     cursor: pointer;
@@ -2313,7 +2331,7 @@ html[data-theme="light"] ::-webkit-scrollbar-track { background: transparent !im
     line-height: 1;
     font-family: 'Inter', sans-serif;
 }
-.vnb-action-btn:hover      { background: #21262d; color: #e6edf3; border-color: #30363d; }
+.vnb-action-btn:hover      { background: rgb(var(--slate-800)); color: rgb(var(--slate-100)); border-color: rgb(var(--slate-700)); }
 .vnb-del-cell:hover        { color: #f85149 !important; }
 .vnb-add-code:hover        { color: #e97424 !important; }
 .vnb-add-md:hover          { color: rgb(var(--tw-violet-400)) !important; }
@@ -3290,7 +3308,7 @@ html[data-theme="light"] ::-webkit-scrollbar-track { background: transparent !im
 }
 .bw-hist-item:hover { background: rgb(var(--slate-700) / 0.5); }
 .bw-hist-time  { flex: none; width: 52px; color: rgb(var(--slate-500)); font-size: 10.5px; }
-.bw-hist-title { flex: 1; color: #dbe4f5; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bw-hist-title { flex: 1; color: rgb(var(--slate-200)); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .bw-hist-host  { flex: none; max-width: 110px; color: rgb(var(--slate-500)); font-size: 10.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 /* Settings menu rows */
