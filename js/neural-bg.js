@@ -101,42 +101,60 @@
                 ? [a, a, mix(a, 0.45, [30, 41, 59]), mix(a, 0.25, [79, 70, 229]), a]
                 : [a, a, a, mix(a, 0.3), mix(a, 0.3)];
         };
+        // Project a 3D point with the current rotation → { sx, sy, s }.
+        function project(n) {
+            const sy = Math.sin(rotY), cy = Math.cos(rotY);
+            const sx = Math.sin(rotX), cx = Math.cos(rotX);
+            let x = n.x * cy + n.z * sy;
+            let z = -n.x * sy + n.z * cy;
+            let y = n.y * cx - z * sx;
+            z = n.y * sx + z * cx;
+            const s = FOCAL / (FOCAL + z + DEPTH / 2);
+            return { sx: W / 2 + x * s, sy: H / 2 + y * s, s };
+        }
+        // A node is only useful if it lands on the page: sample 3D positions
+        // until the projection is on-screen. That is what keeps the rotating
+        // field covering the whole canvas instead of clumping at the edges.
+        function seed(n, fadeIn) {
+            for (let tries = 0; tries < 40; tries++) {
+                n.x = (Math.random() - 0.5) * W * 2.2;
+                n.y = (Math.random() - 0.5) * H * 2.2;
+                n.z = (Math.random() - 0.5) * DEPTH;
+                const p = project(n);
+                if (p.sx > -10 && p.sx < W + 10 && p.sy > -10 && p.sy < H + 10) break;
+            }
+            n.fade = fadeIn ? 0 : 1;
+            return n;
+        }
         return {
             id: 'plexus',
             build() {
                 const HU = hues();
-                // More nodes in a wider volume, so the rotating field keeps
-                // covering the whole page instead of thinning out in the middle.
-                const count = Math.max(110, Math.min(300, Math.round(W * H / 5200)));
-                nodes = Array.from({ length: count }, () => ({
-                    x: (Math.random() - 0.5) * W * 1.9,
-                    y: (Math.random() - 0.5) * H * 1.8,
-                    z: (Math.random() - 0.5) * DEPTH,
+                const count = Math.max(80, Math.min(200, Math.round(W * H / 7800)));
+                nodes = Array.from({ length: count }, () => seed({
                     vx: rand(-0.11, 0.11), vy: rand(-0.11, 0.11), vz: rand(-0.14, 0.14),
                     hue: HU[Math.floor(Math.random() * HU.length)],
                     r: 2.2 + Math.random() * 2.6,
-                }));
+                }, false));
             },
             draw() {
                 const slow = reduceMotion() ? 0.25 : 1;
                 // Near-black pages get brighter links and nodes (up to ~2.2×).
                 const boost = isLight() ? 1 : 1.15 + 1.05 * pageDarkness();
                 rotY += 0.00042 * slow; rotX = Math.sin(rotY * 0.6) * 0.22;
-                const sy = Math.sin(rotY), cy = Math.cos(rotY);
-                const sx = Math.sin(rotX), cx = Math.cos(rotX);
                 const proj = new Array(nodes.length);
+                const M = 60;                                   // off-screen margin before re-seeding
                 for (let i = 0; i < nodes.length; i++) {
                     const n = nodes[i];
                     n.x += n.vx * slow; n.y += n.vy * slow; n.z += n.vz * slow;
-                    if (Math.abs(n.x) > W * 0.95)  n.vx *= -1;
-                    if (Math.abs(n.y) > H * 0.9)   n.vy *= -1;
                     if (Math.abs(n.z) > DEPTH / 2) n.vz *= -1;
-                    let x = n.x * cy + n.z * sy;
-                    let z = -n.x * sy + n.z * cy;
-                    let y = n.y * cx - z * sx;
-                    z = n.y * sx + z * cx;
-                    const s = FOCAL / (FOCAL + z + DEPTH / 2);
-                    proj[i] = { sx: W / 2 + x * s, sy: H / 2 + y * s, s };
+                    let p = project(n);
+                    // Drifted (or rotated) out of view: come back somewhere visible,
+                    // fading in so nothing pops.
+                    if (p.sx < -M || p.sx > W + M || p.sy < -M || p.sy > H + M) { seed(n, true); p = project(n); }
+                    if (n.fade < 1) n.fade = Math.min(1, n.fade + 0.02 * slow);
+                    p.s *= n.fade;
+                    proj[i] = p;
                 }
                 ctx.lineWidth = isLight() ? 1 : 1.25;
                 const linkHue = accentRGB();
