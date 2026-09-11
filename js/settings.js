@@ -47,7 +47,7 @@ const BG_THEMES = [
 // custom light colour still works — they are just no longer offered here.
 
 
-let settingsData = { accentIndex: 0, customAccent: null, bgTheme: 'slate', customBg: null, wallpaper: null, wallpaperFit: 'fill', homeBg: 'plexus', homeBgIntensity: 1, homeBgSpeed: 1, homeIconSize: 60, categoryColors: {}, categoryIcons: {}, categoryTileColor: null, homeItems: null, homeSites: [], archived: [] };
+let settingsData = { accentIndex: 0, customAccent: null, bgTheme: 'slate', customBg: null, wallpaper: null, wallpaperFit: 'fill', homeBg: 'plexus', homeBgIntensity: 1, homeBgSpeed: 1, homeIconSize: 60, appIcon: 'black', categoryColors: {}, categoryIcons: {}, categoryTileColor: null, homeItems: null, homeSites: [], archived: [] };
 
 // ── Home icon size (Appearance → Home icon size) ─────────────────────
 const HOME_ICON_MIN = 40, HOME_ICON_MAX = 96, HOME_ICON_DEFAULT = 60;
@@ -735,6 +735,44 @@ function renderSettingsModal() {
                 grid.querySelectorAll('.accent-swatch').forEach(s => s.classList.remove('active'));
             }
         };
+    }
+
+    // ── App icon ──
+    const iconGrid = document.getElementById('app-icon-grid');
+    if (iconGrid) {
+        const cur = settingsData.appIcon || 'black';
+        const isCustom = cur !== 'black' && cur !== 'white';
+        iconGrid.querySelectorAll('.app-icon-opt').forEach(b => {
+            const id = b.dataset.icon;
+            b.classList.toggle('active', id === cur || (id === 'custom' && isCustom));
+        });
+        const cimg = document.getElementById('app-icon-custom-img');
+        if (cimg) { cimg.hidden = !isCustom; if (isCustom) cimg.src = 'file://' + encodeURI(cur); }
+        if (!iconGrid._wired) {
+            iconGrid._wired = true;
+            const hint = document.getElementById('app-icon-hint');
+            const apply = async (choice) => {
+                settingsData.appIcon = choice; saveSettingsData();
+                let r = null;
+                try { r = await ipcRenderer.invoke('app-icon:set', choice); } catch (e) { r = { ok: false, error: e.message }; }
+                if (hint) {
+                    if (!r || !r.ok) hint.textContent = (r && r.error) || 'Could not change the icon.';
+                    else if (r.bundle) hint.textContent = 'Dock updated. Finder shows the new icon after it refreshes (relaunching the app helps).';
+                    else hint.textContent = r.error || 'Dock updated. The Finder icon changes in the packaged app.';
+                }
+                renderSettingsModal();
+            };
+            iconGrid.addEventListener('click', async e => {
+                const b = e.target.closest('.app-icon-opt'); if (!b) return;
+                if (b.dataset.icon === 'custom') {
+                    let p = null;
+                    try { p = await ipcRenderer.invoke('app-icon:pick'); } catch (_) {}
+                    if (p && p.ok && p.path) apply(p.path);
+                    return;
+                }
+                apply(b.dataset.icon);
+            });
+        }
     }
 
     // ── Home background intensity ──

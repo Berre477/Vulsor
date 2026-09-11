@@ -326,8 +326,76 @@ ipcMain.on('window:set-bg', (e, hex) => {
     for (const w of BrowserWindow.getAllWindows()) { try { w.setBackgroundColor(hex); } catch (_) {} }
 });
 
+// ── App icon (Appearance → App icon) ─────────────────────────────────
+// Two shipped variants (black / white) plus any PNG the user picks. The
+// choice is applied to the Dock at once, and — in the packaged app, whose
+// bundle is only linker-signed and carries no resource seal — the .icns in
+// Contents/Resources is replaced too, so Finder and Launchpad follow. A custom
+// PNG is converted to .icns with macOS's own sips + iconutil.
+const ICON_VARIANTS = {
+    black: { png: path.join(__dirname, 'build-extras', 'icons', 'black.png'), icns: path.join(__dirname, 'build-extras', 'icons', 'black.icns') },
+    white: { png: path.join(__dirname, 'build-extras', 'icons', 'white.png'), icns: path.join(__dirname, 'build-extras', 'icons', 'white.icns') },
+};
+function _savedAppIcon() {
+    try {
+        const sf = path.join(os.homedir(), 'Documents', 'Vulsor_Memories', 'settings.json');
+        return JSON.parse(fs.readFileSync(sf, 'utf8')).appIcon || null;
+    } catch (_) { return null; }
+}
+function _iconPngFor(choice) {
+    if (!choice) return null;
+    if (ICON_VARIANTS[choice]) return ICON_VARIANTS[choice].png;
+    if (typeof choice === 'string' && /\.(png|icns|jpe?g)$/i.test(choice) && fs.existsSync(choice)) return choice;
+    return null;
+}
+async function _icnsFor(choice) {
+    if (ICON_VARIANTS[choice]) return ICON_VARIANTS[choice].icns;
+    if (/\.icns$/i.test(choice)) return choice;
+    // Custom image → iconset → icns (macOS tools)
+    const { execFile } = require('child_process');
+    const run = (cmd, args) => new Promise((res, rej) => execFile(cmd, args, err => err ? rej(err) : res()));
+    const dir = path.join(app.getPath('userData'), 'app-icon.iconset');
+    fs.rmSync(dir, { recursive: true, force: true }); fs.mkdirSync(dir, { recursive: true });
+    for (const [n, names] of [[16, ['icon_16x16.png']], [32, ['icon_16x16@2x.png', 'icon_32x32.png']], [64, ['icon_32x32@2x.png']], [128, ['icon_128x128.png']], [256, ['icon_128x128@2x.png', 'icon_256x256.png']], [512, ['icon_256x256@2x.png', 'icon_512x512.png']], [1024, ['icon_512x512@2x.png']]]) {
+        const out = path.join(dir, names[0]);
+        await run('/usr/bin/sips', ['-s', 'format', 'png', '-z', String(n), String(n), choice, '--out', out]);
+        for (const extra of names.slice(1)) fs.copyFileSync(out, path.join(dir, extra));
+    }
+    const icns = path.join(app.getPath('userData'), 'app-icon.icns');
+    await run('/usr/bin/iconutil', ['-c', 'icns', dir, '-o', icns]);
+    fs.rmSync(dir, { recursive: true, force: true });
+    return icns;
+}
+async function applyAppIcon(choice, { writeBundle = true } = {}) {
+    const png = _iconPngFor(choice);
+    if (!png) return { ok: false, error: 'That image could not be used as an icon.' };
+    try { if (process.platform === 'darwin') app.dock.setIcon(png); } catch (e) { return { ok: false, error: e.message }; }
+    if (!writeBundle || process.platform !== 'darwin' || !app.isPackaged) return { ok: true, bundle: false };
+    try {
+        const icns = await _icnsFor(choice);
+        const plist = path.join(process.resourcesPath, '..', 'Info.plist');
+        let iconFile = 'electron.icns';
+        try { const m = fs.readFileSync(plist, 'utf8').match(/<key>CFBundleIconFile<\/key>\s*<string>([^<]+)<\/string>/); if (m) iconFile = m[1].endsWith('.icns') ? m[1] : m[1] + '.icns'; } catch (_) {}
+        const dest = path.join(process.resourcesPath, iconFile);
+        fs.copyFileSync(icns, dest);
+        // Finder caches icons by bundle mtime — bump it so the new one shows.
+        const bundle = path.resolve(process.resourcesPath, '..', '..');
+        const now = new Date(); fs.utimesSync(bundle, now, now);
+        return { ok: true, bundle: true };
+    } catch (e) {
+        return { ok: true, bundle: false, error: `Dock updated; the app file itself could not be changed (${e.message}).` };
+    }
+}
+ipcMain.handle('app-icon:set', (e, choice) => applyAppIcon(choice));
+ipcMain.handle('app-icon:pick', async () => {
+    const r = await dialog.showOpenDialog({ title: 'Choose an app icon', properties: ['openFile'], filters: [{ name: 'Images', extensions: ['png', 'jpg', 'jpeg', 'icns'] }] });
+    if (r.canceled || !r.filePaths[0]) return { ok: false, canceled: true };
+    return { ok: true, path: r.filePaths[0] };
+});
+
 function createWindow() {
-    const iconPath = path.join(__dirname, 'icon.icns');
+    const saved = _savedAppIcon();
+    const iconPath = _iconPngFor(saved) || path.join(__dirname, 'icon.icns');
 
     if (process.platform === 'darwin' && fs.existsSync(iconPath)) {
         try { app.dock.setIcon(iconPath); } catch (e) {}

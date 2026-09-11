@@ -1,0 +1,74 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <defs>
+    <!-- macOS squircle -->
+    <clipPath id="tile"><rect x="100" y="100" width="824" height="824" rx="185" ry="185"/></clipPath>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset="0.6" stop-color="#f4f4f6"/>
+      <stop offset="1" stop-color="#e9e9ee"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0.5" cy="0.42" r="0.6">
+      <stop offset="0" stop-color="#ff3b30" stop-opacity="0.14"/>
+      <stop offset="0.55" stop-color="#ff3b30" stop-opacity="0.03"/>
+      <stop offset="1" stop-color="#ff3b30" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="rim" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.9"/>
+      <stop offset="0.5" stop-color="#ffffff" stop-opacity="0.0"/>
+      <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
+    </linearGradient>
+    <!-- eye: dark sclera ring, red iris, black pupil, specular -->
+    <radialGradient id="iris" cx="0.42" cy="0.38" r="0.7">
+      <stop offset="0" stop-color="#ff6b5f"/>
+      <stop offset="0.45" stop-color="#e5261a"/>
+      <stop offset="1" stop-color="#7a0c08"/>
+    </radialGradient>
+    <radialGradient id="sclera" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0.82" stop-color="#101010"/>
+      <stop offset="1" stop-color="#2a2a2a"/>
+    </radialGradient>
+    <filter id="soft" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="18"/>
+    </filter>
+    <filter id="eyeShadow" x="-50%" y="-50%" width="200%" height="200%">
+      <feDropShadow dx="0" dy="10" stdDeviation="14" flood-color="#000" flood-opacity="0.35"/>
+    </filter>
+    <symbol id="eye" viewBox="-100 -100 200 200">
+      <circle r="100" fill="url(#sclera)"/>
+      <circle r="80" fill="url(#iris)"/>
+      <circle r="38" cy="4" fill="#0a0507"/>
+      <circle r="22" cx="-30" cy="-32" fill="#fff" fill-opacity="0.92"/>
+      <circle r="9" cx="18" cy="26" fill="#fff" fill-opacity="0.35"/>
+    </symbol>
+  </defs>
+
+  <g clip-path="url(#tile)">
+    <rect x="100" y="100" width="824" height="824" fill="url(#bg)"/>
+    <!-- faint web -->
+    <g stroke="#000000" stroke-opacity="0.07" stroke-width="3" fill="none">
+      <path d="M512 100 L512 924 M100 512 L924 512 M160 160 L864 864 M864 160 L160 864"/>
+      <path d="M512 300 L662 362 L724 512 L662 662 L512 724 L362 662 L300 512 L362 362 Z"/>
+      <path d="M512 190 L740 284 L834 512 L740 740 L512 834 L284 740 L190 512 L284 284 Z"/>
+      <path d="M512 410 L584 440 L614 512 L584 584 L512 614 L440 584 L410 512 L440 440 Z"/>
+    </g>
+    <!-- red ambient glow behind the eyes -->
+    <ellipse cx="512" cy="470" rx="380" ry="260" fill="url(#glow)"/>
+    <!-- top rim light -->
+    <rect x="100" y="100" width="824" height="824" rx="185" fill="url(#rim)"/>
+  </g>
+
+  <!-- eyes: two large, two medium at the sides, four small below -->
+  <g filter="url(#eyeShadow)">
+    <use href="#eye" x="277" y="322" width="220" height="220"/>
+    <use href="#eye" x="527" y="322" width="220" height="220"/>
+    <use href="#eye" x="178" y="405" width="96" height="96"/>
+    <use href="#eye" x="750" y="405" width="96" height="96"/>
+    <use href="#eye" x="326" y="596" width="70" height="70"/>
+    <use href="#eye" x="452" y="620" width="46" height="46"/>
+    <use href="#eye" x="526" y="620" width="46" height="46"/>
+    <use href="#eye" x="628" y="596" width="70" height="70"/>
+  </g>
+
+  <!-- squircle edge -->
+  <rect x="100.5" y="100.5" width="823" height="823" rx="185" fill="none" stroke="#000000" stroke-opacity="0.10" stroke-width="1"/>
+</svg>
