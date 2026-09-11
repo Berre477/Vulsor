@@ -105,10 +105,12 @@
             id: 'plexus',
             build() {
                 const HU = hues();
-                const count = Math.max(80, Math.min(220, Math.round(W * H / 7500)));
+                // More nodes in a wider volume, so the rotating field keeps
+                // covering the whole page instead of thinning out in the middle.
+                const count = Math.max(110, Math.min(300, Math.round(W * H / 5200)));
                 nodes = Array.from({ length: count }, () => ({
-                    x: (Math.random() - 0.5) * W * 1.55,
-                    y: (Math.random() - 0.5) * H * 1.45,
+                    x: (Math.random() - 0.5) * W * 1.9,
+                    y: (Math.random() - 0.5) * H * 1.8,
                     z: (Math.random() - 0.5) * DEPTH,
                     vx: rand(-0.11, 0.11), vy: rand(-0.11, 0.11), vz: rand(-0.14, 0.14),
                     hue: HU[Math.floor(Math.random() * HU.length)],
@@ -126,8 +128,8 @@
                 for (let i = 0; i < nodes.length; i++) {
                     const n = nodes[i];
                     n.x += n.vx * slow; n.y += n.vy * slow; n.z += n.vz * slow;
-                    if (Math.abs(n.x) > W)         n.vx *= -1;
-                    if (Math.abs(n.y) > H)         n.vy *= -1;
+                    if (Math.abs(n.x) > W * 0.95)  n.vx *= -1;
+                    if (Math.abs(n.y) > H * 0.9)   n.vy *= -1;
                     if (Math.abs(n.z) > DEPTH / 2) n.vz *= -1;
                     let x = n.x * cy + n.z * sy;
                     let z = -n.x * sy + n.z * cy;

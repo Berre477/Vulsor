@@ -41,13 +41,11 @@ const BG_THEMES = [
     { id: 'dim',      name: 'Dim',       preview: '#1a1f2e', base: '#1a1f2e', surface: '#242b3d', elevated: '#2e3854', border: '#3a4668', borderHi: '#4d5e88', inputBg: '#2a3050', dark: true  },
     { id: 'metallic', name: 'Metallic',  preview: '#3a3f4b', base: '#1c1f26', surface: '#262a33', elevated: '#323845', border: '#3c4350', borderHi: '#525b6b', inputBg: '#2a2f3a', dark: true, gradient: 'linear-gradient(135deg, #2a2f38 0%, #1a1d23 45%, #20242c 70%, #2e333d 100%)' },
 
-    // ── Light. Apple's neutrals: near-white surfaces, hairline dividers, and
-    //    no blue cast — the old silver/white pair was a muddy blue-grey. ──
-    { id: 'white',    name: 'White',     preview: '#ffffff', base: '#ffffff', surface: '#fbfbfd', elevated: '#f5f5f7', border: '#e4e4e7', borderHi: '#d2d2d7', inputBg: '#ffffff', dark: false },
-    { id: 'silver',   name: 'Silver',    preview: '#f0f0f2', base: '#f5f5f7', surface: '#ffffff', elevated: '#fbfbfd', border: '#dcdce0', borderHi: '#c6c6cc', inputBg: '#ffffff', dark: false },
-    { id: 'mist',     name: 'Mist',      preview: '#eef1f6', base: '#eef1f6', surface: '#fafbfd', elevated: '#ffffff', border: '#dde2ea', borderHi: '#c5ccd8', inputBg: '#ffffff', dark: false },
-    { id: 'paper',    name: 'Paper',     preview: '#faf7f2', base: '#f7f4ee', surface: '#fffdf9', elevated: '#fbf8f2', border: '#e6e0d5', borderHi: '#d3cabb', inputBg: '#fffdf9', dark: false },
 ];
+// The light themes (White, Silver, Mist, Paper) were removed from the picker
+// at the user's request. The light-theme rendering path is kept intact — a
+// custom light colour still works — they are just no longer offered here.
+
 
 let settingsData = { accentIndex: 0, customAccent: null, bgTheme: 'slate', customBg: null, wallpaper: null, wallpaperFit: 'fill', homeBg: 'plexus', homeBgIntensity: 1, homeIconSize: 60, categoryColors: {}, categoryIcons: {}, categoryTileColor: null, homeItems: null, homeSites: [], archived: [] };
 
@@ -859,6 +857,7 @@ function buildBgFromHex(hex) {
 
 function getCurrentBgTheme() {
     if (settingsData.customBg) return buildBgFromHex(settingsData.customBg);
+    // A saved theme that no longer exists (the retired light ones) falls back to Slate.
     return BG_THEMES.find(t => t.id === (settingsData.bgTheme || 'slate')) || BG_THEMES[0];
 }
 
