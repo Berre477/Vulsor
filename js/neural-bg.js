@@ -155,14 +155,11 @@
                         const d2 = dx * dx + dy * dy;
                         if (d2 > LINK * LINK) continue;
                         const d = Math.sqrt(d2);
-                        // Smooth ease from 0 at the link radius to full strength up
-                        // close, so a link fades in as two nodes approach instead of
-                        // snapping on at a threshold. Links take the accent colour
-                        // (not the node hue), so even the faint end is blue, not grey.
-                        const k = 1 - d / LINK;
-                        const ease = k * k * (3 - 2 * k);
-                        const a = ease * (isLight() ? 0.30 : 0.46) * boost * Math.min(proj[i].s, proj[j].s);
-                        if (a < 0.01) continue;
+                        const a = (1 - d / LINK) * (isLight() ? 0.26 : 0.40) * boost * Math.min(proj[i].s, proj[j].s);
+                        // Anything fainter than this is a grey smear — either draw
+                        // a line that reads, or don't draw it. Links take the accent
+                        // (not the node hue) so none come out grey.
+                        if (a < 0.12) continue;
                         ctx.strokeStyle = `rgba(${linkHue},${Math.min(1, a).toFixed(3)})`;
                         ctx.beginPath();
                         ctx.moveTo(proj[i].sx, proj[i].sy);
