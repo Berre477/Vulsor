@@ -99,7 +99,7 @@
             const light = isLight();
             return light
                 ? [a, a, mix(a, 0.45, [30, 41, 59]), mix(a, 0.25, [79, 70, 229]), a]
-                : [a, a, mix(a, 0.35), mix(a, 0.35), mix(a, 0.92)];
+                : [a, a, a, mix(a, 0.3), mix(a, 0.3)];
         };
         return {
             id: 'plexus',
