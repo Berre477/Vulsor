@@ -72,7 +72,17 @@
     const plexus = (() => {
         const LINK = 265, DEPTH = 700, FOCAL = 950;
         let nodes = [], rotY = 0, rotX = 0;
-        const hues = () => [accentRGB(), '139,92,246', '56,189,248'];
+        // Palette follows the accent: the accent itself, a lighter tint of it,
+        // and a few near-white highlight nodes. The old fixed purple + sky mix
+        // clashed with neutral themes and with any accent that wasn't blue.
+        const mix = (rgb, t, to = [255, 255, 255]) => rgb.split(',').map((c, i) => Math.round(+c + (to[i] - c) * t)).join(',');
+        const hues = () => {
+            const a = accentRGB();
+            const light = isLight();
+            return light
+                ? [a, a, mix(a, 0.45, [30, 41, 59]), mix(a, 0.25, [79, 70, 229]), a]
+                : [a, a, mix(a, 0.35), mix(a, 0.35), mix(a, 0.92)];
+        };
         return {
             id: 'plexus',
             build() {
@@ -113,7 +123,7 @@
                         const d2 = dx * dx + dy * dy;
                         if (d2 > LINK * LINK) continue;
                         const d = Math.sqrt(d2);
-                        const a = (1 - d / LINK) * 0.20 * Math.min(proj[i].s, proj[j].s);
+                        const a = (1 - d / LINK) * 0.26 * Math.min(proj[i].s, proj[j].s);
                         if (a < 0.006) continue;
                         ctx.strokeStyle = `rgba(${nodes[i].hue},${a.toFixed(3)})`;
                         ctx.beginPath();
@@ -732,6 +742,7 @@
     // Mesh, fireflies and dots are already theme-aware and skip the wash.
     const LIGHT_STYLES = {};
     const SELF_THEMED = new Set(['mesh', 'fireflies', 'dots']);
+    const LIGHT_STRENGTH = { plexus: 0.62, warp: 0.75, waves: 0.85 };
     // The scenes were tuned as white-on-black: many stars sit at 0.2–0.5
     // alpha, which is plenty against black and nothing against white. So on
     // light themes the scene is drawn to an offscreen layer and stamped onto
@@ -764,8 +775,11 @@
                 // Twice: once in place, once a pixel over — deepens the colour
                 // and fattens the 1–2px particles the scenes were tuned with
                 // for black skies, without turning them into blobs.
+                // Line-based scenes carry more ink than particle ones; ease them.
+                const k = LIGHT_STRENGTH[id] ?? 1;
+                ctx.globalAlpha = k;
                 ctx.drawImage(layer, 0, 0);
-                ctx.globalAlpha = 0.6;
+                ctx.globalAlpha = 0.6 * k;
                 ctx.drawImage(layer, dpr, dpr);
                 ctx.restore();
             },
