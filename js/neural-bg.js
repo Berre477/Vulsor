@@ -42,6 +42,9 @@
     // so the same scene reads as ink on paper when the theme is light. The
     // accent-tinted parts already work on both.
     const isLight = () => document.documentElement.dataset.theme === 'light';
+    // User-adjustable strength (Appearance → Background intensity). 1 = as
+    // designed; below 1 fades, above 1 stamps the scene again for more ink.
+    let intensity = 1;
     // How dark the page is: 1 on a black page, 0 on a light one. Scenes use it
     // to push alpha up on near-black themes, where the same strokes that read
     // fine on slate almost vanish.
@@ -849,9 +852,30 @@
         if (t - lastFrame >= 1000 / FPS) {
             lastFrame = t;
             ctx.clearRect(0, 0, W, H);
-            try { const st = activeStyle(); if (st) st.draw(t - t0); } catch (_) {}
+            try { const st = activeStyle(); if (st) drawWithIntensity(st, t - t0); } catch (_) {}
         }
         requestAnimationFrame(frame);
+    }
+
+    // Paint a style at the current intensity. At exactly 1 the scene draws
+    // straight to the canvas; otherwise it goes through an offscreen layer
+    // that is composited back with the chosen alpha — and stamped once more
+    // per whole step above 1, so "200%" genuinely doubles the ink.
+    let iLayer = null, iCtx = null;
+    function drawWithIntensity(st, t) {
+        if (Math.abs(intensity - 1) < 0.01) { st.draw(t); return; }
+        if (!iLayer) { iLayer = document.createElement('canvas'); iCtx = iLayer.getContext('2d'); }
+        if (iLayer.width !== canvas.width || iLayer.height !== canvas.height) { iLayer.width = canvas.width; iLayer.height = canvas.height; }
+        iCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        iCtx.clearRect(0, 0, W, H);
+        const main = ctx; ctx = iCtx;
+        try { st.draw(t); } finally { ctx = main; }
+        ctx.save();
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
+        let k = intensity;
+        ctx.globalCompositeOperation = isLight() ? 'multiply' : 'source-over';
+        while (k > 0) { ctx.globalAlpha = Math.min(1, k); ctx.drawImage(iLayer, 0, 0); k -= 1; }
+        ctx.restore();
     }
 
     // Public: switch style. Unknown id (or 'none') leaves the canvas blank.
@@ -894,6 +918,7 @@
         requestAnimationFrame(frame);
 
         window.setHomeBackground = setStyle;
+        window.setHomeBackgroundIntensity = k => { intensity = Math.max(0.25, Math.min(2.5, Number(k) || 1)); };
         window.homeBackgroundStyles = Object.keys(STYLES);
         // Real thumbnail of a style for the Appearance picker: the engine is
         // pointed at an offscreen canvas of the swatch size, the style is

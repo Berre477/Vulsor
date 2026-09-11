@@ -49,7 +49,7 @@ const BG_THEMES = [
     { id: 'paper',    name: 'Paper',     preview: '#faf7f2', base: '#f7f4ee', surface: '#fffdf9', elevated: '#fbf8f2', border: '#e6e0d5', borderHi: '#d3cabb', inputBg: '#fffdf9', dark: false },
 ];
 
-let settingsData = { accentIndex: 0, customAccent: null, bgTheme: 'slate', customBg: null, wallpaper: null, wallpaperFit: 'fill', homeBg: 'plexus', homeIconSize: 60, categoryColors: {}, categoryIcons: {}, categoryTileColor: null, homeItems: null, homeSites: [], archived: [] };
+let settingsData = { accentIndex: 0, customAccent: null, bgTheme: 'slate', customBg: null, wallpaper: null, wallpaperFit: 'fill', homeBg: 'plexus', homeBgIntensity: 1, homeIconSize: 60, categoryColors: {}, categoryIcons: {}, categoryTileColor: null, homeItems: null, homeSites: [], archived: [] };
 
 // ── Home icon size (Appearance → Home icon size) ─────────────────────
 const HOME_ICON_MIN = 40, HOME_ICON_MAX = 96, HOME_ICON_DEFAULT = 60;
@@ -97,7 +97,10 @@ const HOME_BGS = [
 
 // Hand the chosen style to the renderer. Safe to call before it has loaded.
 function applyHomeBackground() {
-    try { if (typeof window.setHomeBackground === 'function') window.setHomeBackground(settingsData.homeBg || 'plexus'); }
+    try {
+        if (typeof window.setHomeBackgroundIntensity === 'function') window.setHomeBackgroundIntensity(settingsData.homeBgIntensity ?? 1);
+        if (typeof window.setHomeBackground === 'function') window.setHomeBackground(settingsData.homeBg || 'plexus');
+    }
     catch (e) { console.error('[settings] home background:', e); }
 }
 
@@ -733,6 +736,28 @@ function renderSettingsModal() {
                 grid.querySelectorAll('.accent-swatch').forEach(s => s.classList.remove('active'));
             }
         };
+    }
+
+    // ── Home background intensity ──
+    const intInput = document.getElementById('home-bg-intensity');
+    if (intInput && !intInput._wired) {
+        intInput._wired = true;
+        const val = document.getElementById('home-bg-intensity-val');
+        const paint = k => {
+            intInput.value = Math.round(k * 100);
+            intInput.style.setProperty('--fill', ((k - 0.25) / (2.5 - 0.25) * 100).toFixed(1) + '%');
+            if (val) val.textContent = Math.round(k * 100) + '%';
+        };
+        const commit = (pct, save) => {
+            settingsData.homeBgIntensity = Math.max(0.25, Math.min(2.5, (Number(pct) || 100) / 100));
+            paint(settingsData.homeBgIntensity);
+            if (typeof window.setHomeBackgroundIntensity === 'function') window.setHomeBackgroundIntensity(settingsData.homeBgIntensity);
+            if (save) saveSettingsData();
+        };
+        intInput.addEventListener('input',  () => commit(intInput.value, false));
+        intInput.addEventListener('change', () => commit(intInput.value, true));
+        document.getElementById('home-bg-intensity-reset')?.addEventListener('click', () => commit(100, true));
+        paint(settingsData.homeBgIntensity ?? 1);
     }
 
     // ── Home icon size ──

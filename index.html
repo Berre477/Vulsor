@@ -4673,6 +4673,19 @@
                 <div>
                     <p class="text-slate-400 text-[10px] uppercase tracking-widest font-semibold mb-3">Home background</p>
                     <div id="home-bg-grid" class="grid grid-cols-3 gap-2.5"></div>
+                    <div class="flex items-center justify-between mt-4 mb-2">
+                        <p class="text-slate-400 text-[10px] uppercase tracking-widest font-semibold">Intensity</p>
+                        <span class="flex items-center gap-2">
+                            <span id="home-bg-intensity-val" class="text-slate-500 text-[11px] tabular-nums">100%</span>
+                            <button id="home-bg-intensity-reset" type="button" class="home-size-preset" style="padding:2px 8px">Reset</button>
+                        </span>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <i class="fas fa-circle text-slate-500" style="font-size:7px"></i>
+                        <input id="home-bg-intensity" type="range" min="25" max="250" step="5" value="100" class="flex-1 accent-slider" aria-label="Background intensity">
+                        <i class="fas fa-circle text-slate-300" style="font-size:12px"></i>
+                    </div>
+                    <p class="text-slate-600 text-[10px] mt-1.5">How strongly the background is drawn — fade it back, or push it past 100% for more.</p>
                 </div>
 
                 <!-- Wallpaper -->
