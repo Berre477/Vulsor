@@ -3685,12 +3685,9 @@ hr { border-color: var(--hairline); }
 /* ── Home page in a light theme ───────────────────────────────────
    The greeting, omnibox and tiles were built for a dark ground: on a
    white one the greeting vanished and the omnibox read as a black pill.
-   Inverting the animated canvas turns its light-on-dark plexus into
-   dark-on-light, so the same background works in both. */
-html[data-theme="light"] #home-neural-bg {
-    filter: invert(1) hue-rotate(180deg);
-    opacity: 0.4;
-}
+   (The canvas is NOT filtered here any more: neural-bg.js paints proper
+   light renditions of every background itself — an inverted, 40%-opacity
+   canvas turned them all into faint smudges.) */
 /* The greeting is a gradient fill, so the light version needs its own
    gradient — a plain colour is painted over by the transparent text fill. */
 html[data-theme="light"] .home-greeting-title {

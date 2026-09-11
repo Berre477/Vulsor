@@ -43,17 +43,25 @@
     // accent-tinted parts already work on both.
     const isLight = () => document.documentElement.dataset.theme === 'light';
     const INK = {
-        star:      () => isLight() ? '51,65,85'   : '214,228,255',   // small distant stars
-        starHi:    () => isLight() ? '30,41,59'   : '226,236,255',   // brighter / bent stars
-        nebStar:   () => isLight() ? '30,41,59'   : '235,243,255',
-        streak:    () => isLight() ? '51,65,85'   : '215,230,255',   // warp lines
-        coreWarm:  () => isLight() ? '150,95,35'  : '255,241,214',   // galaxy core
-        coreMid:   () => isLight() ? '170,110,40' : '255,196,120',
-        coreEdge:  () => isLight() ? '190,130,60' : '255,170,90',
-        armWarm:   () => isLight() ? '160,100,40' : '255,232,196',
-        armCool:   () => isLight() ? '60,80,120'  : '186,214,255',
+        // On light themes the scenes are drawn in saturated colour — indigo and
+        // blue stars, orange embers — never grey, which read as dirt on white.
+        star:      () => isLight() ? '99,102,241'  : '214,228,255',   // small distant stars
+        starHi:    () => isLight() ? '37,99,235'   : '226,236,255',   // brighter / bent stars
+        nebStar:   () => isLight() ? '124,58,237'  : '235,243,255',
+        streak:    () => isLight() ? '59,130,246'  : '215,230,255',   // warp lines
+        coreWarm:  () => isLight() ? '234,88,12'   : '255,241,214',   // galaxy core
+        coreMid:   () => isLight() ? '245,158,11'  : '255,196,120',
+        coreEdge:  () => isLight() ? '251,191,36'  : '255,170,90',
+        armWarm:   () => isLight() ? '234,88,12'   : '255,232,196',
+        armCool:   () => isLight() ? '37,99,235'   : '186,214,255',
+        ring:      () => isLight() ? '234,88,12'   : '255,214,160',   // black-hole photon ring
+        ringSoft:  () => isLight() ? '249,115,22'  : '255,180,90',
+        emberGlow: () => isLight() ? '234,88,12'   : '251,146,60',
+        ember:     () => isLight() ? '249,115,22'  : '253,205,140',
         // Additive blending brightens toward white — invisible on a light page.
         blend:     () => isLight() ? 'multiply' : 'lighter',
+        // Light pages need a little more opacity for the same presence.
+        boost:     () => isLight() ? 1.35 : 1,
     };
 
     // ── Styles ─────────────────────────────────────────────────────────
@@ -259,9 +267,9 @@
                     if (p.y < -12) { p.y = H + 12; p.x = Math.random() * W; }
                     const a = 0.30 + 0.30 * Math.sin(t * 0.0013 + p.ph);
                     const sx = p.x, sy = p.y;
-                    ctx.fillStyle = `rgba(251,146,60,${(a * 0.14).toFixed(3)})`;
+                    ctx.fillStyle = `rgba(${INK.emberGlow()},${(a * 0.14).toFixed(3)})`;
                     ctx.beginPath(); ctx.arc(sx, sy, p.r * 5, 0, 6.2832); ctx.fill();
-                    ctx.fillStyle = `rgba(253,205,140,${a.toFixed(3)})`;
+                    ctx.fillStyle = `rgba(${INK.ember()},${a.toFixed(3)})`;
                     ctx.beginPath(); ctx.arc(sx, sy, p.r, 0, 6.2832); ctx.fill();
                 }
             },
@@ -357,10 +365,10 @@
 
                 // Photon ring.
                 ctx.globalCompositeOperation = INK.blend();
-                ctx.strokeStyle = 'rgba(255,214,160,0.55)';
+                ctx.strokeStyle = `rgba(${INK.ring()},0.55)`;
                 ctx.lineWidth = Math.max(1, R * 0.045);
                 ctx.beginPath(); ctx.arc(cx, cy, R * 1.02, 0, 6.2832); ctx.stroke();
-                ctx.strokeStyle = 'rgba(255,180,90,0.16)';
+                ctx.strokeStyle = `rgba(${INK.ringSoft()},0.16)`;
                 ctx.lineWidth = Math.max(2, R * 0.14);
                 ctx.beginPath(); ctx.arc(cx, cy, R * 1.06, 0, 6.2832); ctx.stroke();
 
@@ -639,7 +647,7 @@
         embers:    () => ['251,146,60', '253,186,116', '244,114,182'],
     };
     // Which styles get bokeh on top of the wash, and how it moves.
-    const LIGHT_BOKEH = { plexus: 'drift', stars: 'drift', embers: 'rise', galaxy: 'drift', nebula: 'drift' };
+    const LIGHT_BOKEH = {};   // the real scene now draws on top of the wash
 
     function makeLightScene(id) {
         let blobs = [], bokeh = [];
@@ -696,9 +704,50 @@
             },
         };
     }
+    // On light themes the real scene is drawn over a faint wash in its own
+    // palette: the wash gives the page colour, the scene stays recognisable.
+    // Mesh, fireflies and dots are already theme-aware and skip the wash.
     const LIGHT_STYLES = {};
-    const SELF_THEMED = new Set(['mesh', 'fireflies', 'dots']);   // draw correctly on both
-    for (const id of Object.keys(STYLES)) LIGHT_STYLES[id] = SELF_THEMED.has(id) ? STYLES[id] : makeLightScene(id);
+    const SELF_THEMED = new Set(['mesh', 'fireflies', 'dots']);
+    // The scenes were tuned as white-on-black: many stars sit at 0.2–0.5
+    // alpha, which is plenty against black and nothing against white. So on
+    // light themes the scene is drawn to an offscreen layer and stamped onto
+    // the page three times with multiply — alpha compounds (0.3 → ~0.66) and
+    // every dot, line and spark comes through in saturated colour. The scene
+    // code itself stays untouched.
+    let layer = null, layerCtx = null;
+    function ensureLayer() {
+        if (!layer) { layer = document.createElement('canvas'); layerCtx = layer.getContext('2d'); }
+        if (layer.width !== canvas.width || layer.height !== canvas.height) {
+            layer.width = canvas.width; layer.height = canvas.height;
+        }
+        layerCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    }
+    for (const id of Object.keys(STYLES)) {
+        if (SELF_THEMED.has(id)) { LIGHT_STYLES[id] = STYLES[id]; continue; }
+        const wash = makeLightScene(id), scene = STYLES[id];
+        LIGHT_STYLES[id] = {
+            id: `${id}-light`,
+            build() { wash.build(); scene.build(); },
+            draw(t) {
+                ctx.globalAlpha = 0.38; wash.draw(t); ctx.globalAlpha = 1;
+                ensureLayer();
+                layerCtx.clearRect(0, 0, W, H);
+                const main = ctx; ctx = layerCtx;          // scenes draw through the module's ctx
+                try { scene.draw(t); } finally { ctx = main; }
+                ctx.save();
+                ctx.setTransform(1, 0, 0, 1, 0, 0);
+                ctx.globalCompositeOperation = 'multiply';
+                // Twice: once in place, once a pixel over — deepens the colour
+                // and fattens the 1–2px particles the scenes were tuned with
+                // for black skies, without turning them into blobs.
+                ctx.drawImage(layer, 0, 0);
+                ctx.globalAlpha = 0.6;
+                ctx.drawImage(layer, dpr, dpr);
+                ctx.restore();
+            },
+        };
+    }
 
     // The theme can change while the home page is open; pick the right
     // rendition each frame and reseed when it flips.
