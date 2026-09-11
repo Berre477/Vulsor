@@ -114,8 +114,8 @@
             },
             draw() {
                 const slow = reduceMotion() ? 0.25 : 1;
-                // Near-black pages get brighter links and nodes (up to ~1.6×).
-                const boost = isLight() ? 1 : 1 + 0.6 * pageDarkness();
+                // Near-black pages get brighter links and nodes (up to ~2.2×).
+                const boost = isLight() ? 1 : 1.15 + 1.05 * pageDarkness();
                 rotY += 0.00042 * slow; rotX = Math.sin(rotY * 0.6) * 0.22;
                 const sy = Math.sin(rotY), cy = Math.cos(rotY);
                 const sx = Math.sin(rotX), cx = Math.cos(rotX);
