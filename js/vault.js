@@ -612,7 +612,8 @@ function renderVaultMarkdown(raw) {
 .vmd-t-g{color:#7ee787}
 .vmd-t-a{color:#79c0ff}
 .vmd-hr{border:none;border-top:1px solid rgb(var(--ink-rgb) / .12);margin:1.8em 0}
-.vmd-bq{border-left:3px solid var(--accent-light);margin:1em 0;padding:.5em 1em;background:rgba(var(--accent-rgb),.07);border-radius:0 6px 6px 0;color:rgb(var(--slate-400));font-style:italic}
+.vmd-bq{border-left:3px solid var(--accent-light);margin:1em 0;padding:.5em 1em;background:rgb(var(--ink-rgb) / .04);border-radius:0 8px 8px 0;color:rgb(var(--slate-300));font-style:italic}
+.vmd-bq strong{color:rgb(var(--slate-100))}
 .vmd-callout{border-radius:6px;margin:1.1em 0;overflow:hidden;border:1px solid color-mix(in srgb,var(--ccolor) 25%,transparent)}
 .vmd-callout-title{display:flex;align-items:center;gap:8px;padding:8px 14px;background:color-mix(in srgb,var(--ccolor) 15%,transparent);color:var(--ccolor);font-weight:600;font-size:13px;text-transform:uppercase;letter-spacing:.06em}
 .vmd-callout-title .fas{font-size:12px}

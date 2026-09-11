@@ -50,6 +50,11 @@ function vlpEnsureStyle() {
 .vlp-b.vlp-src{background:rgba(var(--accent-rgb),.06);border-radius:4px;box-shadow:0 0 0 1px rgba(var(--accent-rgb),.10)}
 .vlp-b.vlp-src .vmd-h{margin:0}
 .vlp-b .vmd-ul,.vlp-b .vmd-ol{margin-top:0;margin-bottom:0}
+/* Each source line is its own block, so a multi-line quote came out as a
+   stack of separate boxes with gaps. Consecutive quote blocks join up. */
+.vlp-b .vmd-bq{margin:.35em 0}
+.vlp-b:has(> .vmd-bq) + .vlp-b:has(> .vmd-bq) .vmd-bq{margin-top:-.35em;border-top-right-radius:0;padding-top:.15em}
+.vlp-b:has(> .vmd-bq):has(+ .vlp-b > .vmd-bq) .vmd-bq{border-bottom-right-radius:0;padding-bottom:.15em}
 .vlp-b .vmd-p{margin:0}
 .vlp-b .vmd-h{margin:.9em 0 .3em}
 .vlp-b:first-child .vmd-h{margin-top:0}
