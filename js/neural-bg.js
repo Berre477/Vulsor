@@ -136,14 +136,14 @@
                     const s = FOCAL / (FOCAL + z + DEPTH / 2);
                     proj[i] = { sx: W / 2 + x * s, sy: H / 2 + y * s, s };
                 }
-                ctx.lineWidth = 1;
+                ctx.lineWidth = isLight() ? 1 : 1.25;
                 for (let i = 0; i < nodes.length; i++) {
                     for (let j = i + 1; j < nodes.length; j++) {
                         const dx = proj[i].sx - proj[j].sx, dy = proj[i].sy - proj[j].sy;
                         const d2 = dx * dx + dy * dy;
                         if (d2 > LINK * LINK) continue;
                         const d = Math.sqrt(d2);
-                        const a = (1 - d / LINK) * 0.26 * boost * Math.min(proj[i].s, proj[j].s);
+                        const a = (1 - d / LINK) * (isLight() ? 0.26 : 0.40) * boost * Math.min(proj[i].s, proj[j].s);
                         if (a < 0.006) continue;
                         ctx.strokeStyle = `rgba(${nodes[i].hue},${a.toFixed(3)})`;
                         ctx.beginPath();
