@@ -137,11 +137,16 @@
                     r: 2.2 + Math.random() * 2.6,
                 }, false));
             },
-            draw() {
+            draw(t) {
                 const slow = reduceMotion() ? 0.25 : 1;
                 // Near-black pages get brighter links and nodes (up to ~2.2×).
                 const boost = isLight() ? 1 : 1.15 + 1.05 * pageDarkness();
-                rotY += 0.00042 * slow; rotX = Math.sin(rotY * 0.6) * 0.22;
+                // A gentle sway rather than a full turn: a volume rotating all the
+                // way round goes edge-on twice per lap and empties a strip of the
+                // page each time. Small oscillations keep the parallax without that.
+                const tt = (t || 0) * slow;
+                rotY = Math.sin(tt * 0.00011) * 0.16;
+                rotX = Math.sin(tt * 0.00007 + 1.3) * 0.10;
                 const proj = new Array(nodes.length);
                 const M = 60;                                   // off-screen margin before re-seeding
                 for (let i = 0; i < nodes.length; i++) {
