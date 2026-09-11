@@ -518,6 +518,96 @@
 
     const STYLES = { plexus, stars, blackhole, galaxy, nebula, warp, aurora, waves, embers };
 
+    // ── Light-theme renditions ──────────────────────────────────────────
+    // The scenes above are night skies; drawn as dark specks on a white page
+    // they read as dirt, not stars. On light themes each style is replaced by
+    // a wash: a few large, slow-drifting colour fields in that style's palette
+    // (the way macOS wallpapers do it), plus soft bokeh discs where the dark
+    // version had particles. Multiply blending keeps overlaps rich instead of
+    // bleaching toward white. Same ids, so the picker and settings are
+    // untouched — only what gets painted changes with the theme.
+    const LIGHT_PALETTES = {
+        plexus:    () => [accentRGB(), '99,102,241', '56,189,248'],
+        stars:     () => ['56,189,248', '129,140,248', accentRGB()],
+        blackhole: () => ['251,146,60', '248,113,113', '129,140,248'],
+        galaxy:    () => ['251,191,36', '56,189,248', '167,139,250'],
+        nebula:    () => ['244,114,182', '56,189,248', '167,139,250'],
+        warp:      () => ['56,189,248', '34,211,238', '129,140,248'],
+        aurora:    () => [accentRGB(), '139,92,246', '56,189,248', '16,185,129'],
+        waves:     () => [accentRGB(), '56,189,248', '99,102,241'],
+        embers:    () => ['251,146,60', '253,186,116', '244,114,182'],
+    };
+    // Which styles get bokeh on top of the wash, and how it moves.
+    const LIGHT_BOKEH = { plexus: 'drift', stars: 'drift', embers: 'rise', galaxy: 'drift', nebula: 'drift' };
+
+    function makeLightScene(id) {
+        let blobs = [], bokeh = [];
+        return {
+            id: `${id}-light`,
+            build() {
+                const pal = (LIGHT_PALETTES[id] || LIGHT_PALETTES.aurora)();
+                const R = Math.max(W, H);
+                blobs = pal.map((hue, i) => ({
+                    hue,
+                    r: R * rand(0.38, 0.62),
+                    px: rand(0.12, 0.88), py: rand(0.10, 0.90),
+                    ax: rand(0.08, 0.22), ay: rand(0.06, 0.18),
+                    sp: rand(0.00004, 0.00009) * (i % 2 ? -1 : 1),
+                    ph: rand(0, 6.28),
+                    a: 0.28 + (i === 0 ? 0.07 : 0),
+                }));
+                const mode = LIGHT_BOKEH[id];
+                const count = mode ? Math.max(14, Math.min(34, Math.round(W * H / 26000))) : 0;
+                bokeh = Array.from({ length: count }, () => ({
+                    x: Math.random() * W, y: Math.random() * H,
+                    r: rand(14, 54), hue: pal[Math.floor(Math.random() * pal.length)],
+                    vx: rand(-0.06, 0.06), vy: mode === 'rise' ? rand(-0.16, -0.05) : rand(-0.05, 0.05),
+                    ph: rand(0, 6.28), a: rand(0.07, 0.15),
+                }));
+            },
+            draw(t) {
+                const slow = reduceMotion() ? 0.25 : 1;
+                ctx.globalCompositeOperation = 'multiply';
+                for (const b of blobs) {
+                    const k = t * b.sp * slow + b.ph;
+                    const cx = (b.px + Math.cos(k) * b.ax) * W;
+                    const cy = (b.py + Math.sin(k * 1.3) * b.ay) * H;
+                    const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, b.r);
+                    g.addColorStop(0,    `rgba(${b.hue},${b.a.toFixed(3)})`);
+                    g.addColorStop(0.5,  `rgba(${b.hue},${(b.a * 0.38).toFixed(3)})`);
+                    g.addColorStop(1,    `rgba(${b.hue},0)`);
+                    ctx.fillStyle = g;
+                    ctx.beginPath(); ctx.arc(cx, cy, b.r, 0, 6.2832); ctx.fill();
+                }
+                for (const p of bokeh) {
+                    p.x += p.vx * slow; p.y += p.vy * slow;
+                    if (p.y < -p.r) { p.y = H + p.r; p.x = Math.random() * W; }
+                    if (p.y > H + p.r) p.y = -p.r;
+                    if (p.x < -p.r) p.x = W + p.r; else if (p.x > W + p.r) p.x = -p.r;
+                    const a = p.a * (0.7 + 0.3 * Math.sin(t * 0.0009 + p.ph));
+                    const g = ctx.createRadialGradient(p.x, p.y, p.r * 0.55, p.x, p.y, p.r);
+                    g.addColorStop(0, `rgba(${p.hue},${a.toFixed(3)})`);
+                    g.addColorStop(1, `rgba(${p.hue},0)`);
+                    ctx.fillStyle = g;
+                    ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, 6.2832); ctx.fill();
+                }
+                ctx.globalCompositeOperation = 'source-over';
+            },
+        };
+    }
+    const LIGHT_STYLES = {};
+    for (const id of Object.keys(STYLES)) LIGHT_STYLES[id] = makeLightScene(id);
+
+    // The theme can change while the home page is open; pick the right
+    // rendition each frame and reseed when it flips.
+    let paintedLight = null;
+    function activeStyle() {
+        const light = isLight();
+        const st = light ? LIGHT_STYLES[styleId] : STYLES[styleId];
+        if (st && paintedLight !== light) { paintedLight = light; if (W && H) st.build(); }
+        return st || null;
+    }
+
     // ── Engine ─────────────────────────────────────────────────────────
     function resize() {
         const home = document.getElementById(HOME_ID);
@@ -530,6 +620,7 @@
         canvas.height = H * dpr;
         ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
         if (style) style.build();
+        if (LIGHT_STYLES[styleId]) LIGHT_STYLES[styleId].build();
     }
 
     function frame(t) {
@@ -545,7 +636,7 @@
         if (t - lastFrame >= 1000 / FPS) {
             lastFrame = t;
             ctx.clearRect(0, 0, W, H);
-            try { style.draw(t - t0); } catch (_) {}
+            try { const st = activeStyle(); if (st) st.draw(t - t0); } catch (_) {}
         }
         requestAnimationFrame(frame);
     }
@@ -559,6 +650,8 @@
         // frame sitting on a hidden canvas.
         if (ctx && W && H) ctx.clearRect(0, 0, W, H);
         if (style && W && H) style.build();
+        if (style && W && H && LIGHT_STYLES[styleId]) LIGHT_STYLES[styleId].build();
+        paintedLight = null;
     }
 
     function init() {
@@ -586,10 +679,11 @@
         window.homeBackgroundStyles = Object.keys(STYLES);
         // Test/debug hook — paints one frame regardless of visibility
         window.__neuralBgDraw = (t) => {
-            if (!ctx || !style) return 0;
+            const st = activeStyle();
+            if (!ctx || !st) return 0;
             ctx.clearRect(0, 0, W, H);
-            style.draw((t || performance.now()) - t0);
-            return styleId;
+            st.draw((t || performance.now()) - t0);
+            return st.id;
         };
     }
 

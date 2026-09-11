@@ -612,10 +612,25 @@ function renderSettingsModal() {
     const hbGrid = document.getElementById('home-bg-grid');
     if (hbGrid) {
         const cur = settingsData.homeBg || 'plexus';
+        // Light themes paint the wash renditions (see neural-bg.js), so the
+        // swatch previews the wash rather than the night-sky version.
+        const lightTheme = document.documentElement.dataset.theme === 'light';
+        const LIGHT_SWATCH = {
+            plexus:    'radial-gradient(60% 70% at 30% 35%, rgba(99,102,241,.35), transparent), radial-gradient(55% 65% at 75% 65%, rgba(56,189,248,.32), transparent), #f5f6fa',
+            stars:     'radial-gradient(60% 70% at 25% 60%, rgba(56,189,248,.32), transparent), radial-gradient(55% 65% at 75% 30%, rgba(129,140,248,.30), transparent), #f5f6fa',
+            blackhole: 'radial-gradient(60% 70% at 30% 40%, rgba(251,146,60,.32), transparent), radial-gradient(55% 65% at 75% 65%, rgba(248,113,113,.28), transparent), #faf6f3',
+            galaxy:    'radial-gradient(60% 70% at 30% 35%, rgba(251,191,36,.30), transparent), radial-gradient(55% 65% at 72% 65%, rgba(56,189,248,.28), transparent), #f8f7f3',
+            nebula:    'radial-gradient(60% 70% at 30% 35%, rgba(244,114,182,.32), transparent), radial-gradient(55% 65% at 72% 62%, rgba(56,189,248,.30), transparent), #f8f5f9',
+            warp:      'radial-gradient(60% 70% at 25% 40%, rgba(56,189,248,.32), transparent), radial-gradient(55% 65% at 75% 60%, rgba(34,211,238,.28), transparent), #f3f8fa',
+            aurora:    'radial-gradient(60% 80% at 25% 30%, rgba(139,92,246,.32), transparent), radial-gradient(60% 80% at 75% 65%, rgba(16,185,129,.28), transparent), #f5f5f8',
+            waves:     'radial-gradient(60% 70% at 30% 70%, rgba(99,102,241,.30), transparent), radial-gradient(55% 65% at 72% 30%, rgba(56,189,248,.28), transparent), #f4f6fa',
+            embers:    'radial-gradient(60% 70% at 30% 65%, rgba(251,146,60,.32), transparent), radial-gradient(55% 65% at 72% 30%, rgba(244,114,182,.26), transparent), #faf6f2',
+            none:      'linear-gradient(135deg, #f5f5f7, #ececf0)',
+        };
         hbGrid.innerHTML = HOME_BGS.map(b => {
             const on = cur === b.id;
             return `<button class="home-bg-btn flex flex-col items-center gap-1.5" data-hbg="${b.id}" title="${b.desc}">
-                <div class="w-full rounded-lg border-2 transition-all" style="height:46px;background:${b.swatch};background-color:#070b18;border-color:${on ? 'var(--accent,#dc2626)' : 'rgba(148,163,184,0.18)'}"></div>
+                <div class="w-full rounded-lg border-2 transition-all" style="height:46px;background:${lightTheme ? (LIGHT_SWATCH[b.id] || b.swatch) : b.swatch};background-color:${lightTheme ? '#f5f5f7' : '#070b18'};border-color:${on ? 'var(--accent,#dc2626)' : 'rgba(148,163,184,0.18)'}"></div>
                 <span class="text-[10px] font-medium ${on ? '' : 'text-slate-500'}" style="${on ? 'color:var(--accent-light)' : ''}">${b.name}</span>
             </button>`;
         }).join('');
