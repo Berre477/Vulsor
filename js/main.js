@@ -1835,7 +1835,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
             setSendButtonMode('stop');
             showTyping();
-            const reply = await generate(messageText, imageBase64);
+            const imageMime = imageDataUrl && /^data:([^;]+);/.exec(imageDataUrl) ? /^data:([^;]+);/.exec(imageDataUrl)[1] : null;
+            const reply = await generate(messageText, imageBase64, imageMime);
             const indicator = document.getElementById('typing-indicator');
             if (indicator) indicator.remove();
             setSendButtonMode('send');

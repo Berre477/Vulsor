@@ -17,7 +17,7 @@ const VAULT_AI_URL     = 'http://localhost:11434/api/chat';
 // its first couple of pages. Everything here feeds real files to the model, so
 // the window has to be raised explicitly or the answers quietly go wrong.
 const VAULT_AI_NUM_CTX = 8192;
-const VAULT_AI_OFFLINE = 'Cannot reach Ollama. Make sure it is running on localhost:11434.';
+const VAULT_AI_OFFLINE = 'Vulsor\'s local model isn\'t running (it works through Ollama on localhost:11434). Start it, or pick a cloud model in the chat\'s model picker.';
 
 // Rough budget for how much file text we hand the model. ~4 chars per token,
 // leaving room for the question, the system prompt and the reply.
@@ -30,13 +30,23 @@ const VAULT_AI_MAX_CONTEXT = 12000;
  */
 async function _vaultAIChat(messages, opts = {}) {
     const { signal = null, temperature = 0.3, onToken = null } = opts;
+    // A cloud model chosen in the chat's model picker is used here too, so
+    // "Ask Vault" follows the same choice. Those providers answer in one piece,
+    // so the streaming callback just gets the whole reply.
+    if (typeof aiComplete === 'function' && typeof aiActiveProvider === 'function' && aiActiveProvider() !== 'ollama') {
+        const system = messages.filter(m => m.role === 'system').map(m => m.content).join('\n\n');
+        const text = String(await aiComplete({ system, messages, signal }) || '').trim();
+        if (onToken) onToken(text);
+        return text;
+    }
+    const localModel = (typeof aiActiveModel === 'function' && aiActiveModel('ollama')) || MODEL;
     let res;
     try {
         res = await fetch(VAULT_AI_URL, {
             method:  'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                model:    MODEL,
+                model:    localModel,
                 messages,
                 stream:   !!onToken,
                 options:  { temperature, num_ctx: VAULT_AI_NUM_CTX }
@@ -47,7 +57,7 @@ async function _vaultAIChat(messages, opts = {}) {
         if (e.name === 'AbortError') throw e;
         throw new Error(VAULT_AI_OFFLINE);
     }
-    if (!res.ok) throw new Error(`Ollama returned ${res.status} — is the "${MODEL}" model pulled?`);
+    if (!res.ok) throw new Error(`The local model service returned ${res.status} — is the "${localModel}" model installed? (ollama pull ${localModel})`);
 
     if (!onToken) {
         const data = await res.json();

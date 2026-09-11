@@ -5,9 +5,10 @@ browser, an AI chat client, a Markdown notes vault, a code editor and notebook, 
 mail client, and a wide set of study, science and media tools — all in one app,
 with your data on your own disk.
 
-Nothing is uploaded anywhere by default. Model API keys are entered in Settings at
-runtime and stored locally via Electron's `safeStorage`; there are no keys, tokens
-or accounts baked into this repository.
+Nothing is uploaded anywhere by default: the chat runs on a local model unless you
+pick Claude, ChatGPT, Gemini or another API provider in the model picker. API keys
+are entered at runtime and stored locally, encrypted via Electron's `safeStorage`;
+there are no keys, tokens or accounts baked into this repository.
 
 ---
 
@@ -147,7 +148,8 @@ the vault, notes, cookies, logins, downloaded speech models and preferences.
 
 | File | Purpose |
 |---|---|
-| `js/ai.js` | AI generation |
+| `js/providers.js` | Model providers for the chat: the local Vulsor model (Ollama), Claude (official SDK), OpenAI, Gemini, any OpenAI-compatible server; encrypted key storage and the model picker |
+| `js/ai.js` | AI generation and the tool-call loop (provider-agnostic) |
 | `js/chat.js` | Chat session management |
 | `js/jarvis.js` | Voice assistant / computer access |
 | `js/mathviz.js` | Math and diagram rendering inside chat |

@@ -195,6 +195,7 @@
                 <!-- Chat toolbar (only on chat tab) -->
                 <div id="chat-toolbar" class="flex items-center gap-1.5" style="display:none">
                     <span id="chat-session-title" class="text-slate-500 text-xs truncate max-w-[160px] hidden sm:block">New Conversation</span>
+                    <button id="ai-model-btn" class="ai-model-btn" title="Choose the AI model"><i class="fas fa-microchip"></i><span id="ai-model-label">Model</span><i class="fas fa-chevron-down" style="font-size:8px;opacity:.7"></i></button>
                     <button id="commands-btn" title="Custom commands (type / in chat)" class="browser-tool-btn"><i class="fas fa-terminal" style="font-size:10px"></i></button>
                 </div>
 
@@ -4749,12 +4750,42 @@
         </div>
     </div>
 
+    <!-- AI model picker (chat toolbar) — filled by providers.js -->
+    <div id="ai-picker" class="ai-picker" hidden>
+        <div class="ai-picker-head">
+            <span class="ai-picker-title">Model</span>
+            <span id="ai-picker-status" class="ai-picker-status"></span>
+        </div>
+        <div id="ai-picker-providers" class="ai-picker-providers"></div>
+        <div class="ai-picker-body">
+            <label class="ai-picker-label" for="ai-picker-model">Model</label>
+            <div class="ai-picker-row">
+                <select id="ai-picker-model" class="ai-picker-select"></select>
+                <input id="ai-picker-model-custom" class="ai-picker-input" type="text" placeholder="model id" spellcheck="false" autocomplete="off" hidden>
+            </div>
+            <div id="ai-picker-url-wrap" hidden>
+                <label class="ai-picker-label" for="ai-picker-url">Base URL</label>
+                <input id="ai-picker-url" class="ai-picker-input" type="text" placeholder="https://openrouter.ai/api/v1" spellcheck="false" autocomplete="off">
+            </div>
+            <div id="ai-picker-key-wrap">
+                <label class="ai-picker-label" for="ai-picker-key">API key</label>
+                <div class="ai-picker-row">
+                    <input id="ai-picker-key" class="ai-picker-input" type="password" placeholder="Paste key" spellcheck="false" autocomplete="off">
+                    <button id="ai-picker-key-save" class="ai-picker-btn ai-picker-btn-primary" type="button">Save</button>
+                </div>
+                <p id="ai-picker-key-hint" class="ai-picker-hint"></p>
+            </div>
+            <p id="ai-picker-hint" class="ai-picker-hint"></p>
+        </div>
+    </div>
+
     <script src="js/globals.js"></script>
     <script src="js/lazy.js"></script>
     <script src="js/jarvis.js"></script>
     <script src="js/ui.js"></script>
     <script src="js/mathviz.js"></script>
     <script src="js/chat.js"></script>
+    <script src="js/providers.js"></script>
     <script src="js/ai.js"></script>
     <script src="js/commands.js"></script>
     <script src="js/todos.js"></script>

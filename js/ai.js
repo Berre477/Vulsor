@@ -30,9 +30,9 @@ function cancelGeneration() {
     }
 }
 
-async function generate(text, imageBase64 = null) {
+async function generate(text, imageBase64 = null, imageMime = null) {
     const userMsg = { role: 'user', content: text };
-    if (imageBase64) userMsg.images = [imageBase64];
+    if (imageBase64) { userMsg.images = [imageBase64]; if (imageMime) userMsg.imageMime = imageMime; }
     chatHistory.push(userMsg);
     saveChat();
 
@@ -68,37 +68,13 @@ async function generate(text, imageBase64 = null) {
                 if (sysIdx2 >= 0) messages[sysIdx2].content = sysForCall;
             }
 
-            const res = await fetch('http://localhost:11434/api/chat', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    model: MODEL,
-                    messages,
-                    system: sysForCall,
-                    stream: false,
-                    options: {
-                        temperature:   TUNING.temperature,
-                        repeat_penalty: TUNING.repeat_penalty
-                    }
-                }),
-                signal
+            // Whatever provider is selected in the picker (providers.js).
+            const reply = await aiComplete({
+                system: sysForCall,
+                messages,
+                signal,
+                options: { temperature: TUNING.temperature, repeat_penalty: TUNING.repeat_penalty },
             });
-
-            if (!res.ok) {
-                // Ollama's 404 body says which model is missing — turn that into
-                // the one command that fixes it instead of a bare status code.
-                let detail = '';
-                try { detail = (await res.json()).error || ''; } catch (_) {}
-                if (res.status === 404 && /model/i.test(detail)) {
-                    const err = new Error(`The model "${MODEL}" isn't installed. In a terminal run:\n\n\`\`\`\nollama pull ${MODEL}\n\`\`\`\n\nthen send your message again.`);
-                    err.userFacing = true;
-                    throw err;
-                }
-                throw new Error(`Ollama returned ${res.status}${detail ? ` — ${detail}` : ''}`);
-            }
-
-            const data  = await res.json();
-            const reply = data.message?.content || '';
             lastReply = reply;
 
             if (jarvisEnabled && !isLastIter) {
@@ -173,9 +149,12 @@ async function generate(text, imageBase64 = null) {
             saveChat();
             return cancelMsg;
         }
-        if (e.userFacing) return e.message;
+        if (e.userFacing) {
+            if (e.needsKey && typeof aiOpenPicker === 'function') setTimeout(() => aiOpenPicker(), 300);
+            return e.message;
+        }
         if (e.message.includes('fetch') || e.message.includes('ECONNREFUSED')) {
-            return 'I can\'t reach the local model. Vulsor chats through **Ollama** on `localhost:11434` — start the Ollama app (or run `ollama serve`) and try again. If you don\'t have it yet, it\'s a free download from ollama.com.';
+            return 'I can\'t reach the model right now — check your connection (or, for the local Vulsor model, that it is running) and try again.';
         }
         return `Something went wrong talking to the model: ${e.message}`;
     } finally {

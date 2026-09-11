@@ -24,6 +24,7 @@
     "tailwindcss": "^3.4.17"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.125.0",
     "@ghostery/adblocker-electron": "^2.18.0",
     "@whiskeysockets/baileys": "^7.0.0-rc13",
     "ace-builds": "^1.43.6",
