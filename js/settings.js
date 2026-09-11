@@ -257,7 +257,9 @@ function buildThemeVars(t) {
         // needs to be ink, not another surface; from there down the stops mirror.
         // Ink follows Apple's light-mode text ramp: #1d1d1f primary (200),
         // #424245 (300), #86868b secondary (400), #aeaeb2 tertiary (600).
-        const mirror = { 800: baseL - 12, 700: baseL - 23, 600: 68, 500: 57, 400: 50, 300: 27, 200: 13, 100: 11, 50: 9 };
+        // Chips/fields (800) sit ~7 points under the page (Apple's #f0f0f2 on
+        // #f5f5f7); hover washes and strong hairlines (700) ~15 under.
+        const mirror = { 800: baseL - 7, 700: baseL - 15, 600: 62, 500: 55, 400: 47, 300: 27, 200: 13, 100: 11, 50: 9 };
         for (const stop of [800, 700, 600, 500, 400, 300, 200, 100, 50]) derive(stop, mirror[stop]);
     }
 

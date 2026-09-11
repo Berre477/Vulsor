@@ -1996,6 +1996,44 @@ html[data-theme="light"] .vault-ctx-menu button { color: var(--text-1) !importan
 html[data-theme="light"] .vault-color-dot.is-current { box-shadow: 0 0 0 2px #fff, 0 0 0 3.5px var(--text-1) !important; }
 html[data-theme="light"] .vault-thumb-img img { filter: drop-shadow(0 2px 5px rgba(0,0,0,0.18)) !important; }
 
+/* Form fields: white with a hairline ring, the way macOS draws them — the
+   dark themes' filled grey field reads as a heavy block on a light page. */
+html[data-theme="light"] input[class*="bg-slate"]:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]),
+html[data-theme="light"] select[class*="bg-slate"],
+html[data-theme="light"] textarea[class*="bg-slate"],
+html[data-theme="light"] .bw-set-select, html[data-theme="light"] .bw-pw-input, html[data-theme="light"] .sp-search,
+html[data-theme="light"] .mail-inp, html[data-theme="light"] .ed-ins-input, html[data-theme="light"] .res-md-input,
+html[data-theme="light"] .ai-picker-select, html[data-theme="light"] .ai-picker-input,
+html[data-theme="light"] #user-input {
+    background-color: var(--bg-surface) !important;
+    border-color: transparent !important;
+    box-shadow: inset 0 0 0 1px rgb(var(--slate-700) / 0.9), 0 1px 2px rgba(0,0,0,0.04);
+}
+html[data-theme="light"] input[class*="bg-slate"]:focus,
+html[data-theme="light"] select[class*="bg-slate"]:focus,
+html[data-theme="light"] textarea[class*="bg-slate"]:focus,
+html[data-theme="light"] #user-input:focus,
+html[data-theme="light"] .ai-picker-input:focus, html[data-theme="light"] .ai-picker-select:focus {
+    box-shadow: inset 0 0 0 1px rgb(var(--accent-rgb) / 0.7), 0 0 0 3px rgb(var(--accent-rgb) / 0.15);
+}
+/* Panels wrapping a bare input (search pills, composer) get the same ring. */
+html[data-theme="light"] .home-omnibox { box-shadow: 0 1px 2px rgba(0,0,0,0.04), 0 8px 28px -12px rgba(0,0,0,0.18) !important; }
+
+/* Icon buttons in the chrome: quiet outlines, not filled squares */
+html[data-theme="light"] .browser-tool-btn {
+    background: var(--bg-surface); border-color: rgb(var(--slate-700) / 0.8);
+    color: rgb(var(--slate-500)); box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+}
+html[data-theme="light"] .browser-tool-btn:hover { background: rgb(var(--slate-800)); color: rgb(var(--slate-200)); }
+html[data-theme="light"] .ai-model-btn { background: var(--bg-surface); border-color: rgb(var(--slate-700) / 0.8); box-shadow: 0 1px 2px rgba(0,0,0,0.04); }
+
+/* No grid on light — it read as graph paper; a clean surface is the Apple move. */
+html[data-theme="light"] #chat-box { background-image: none !important; }
+
+/* Chrome edges: one hairline under the toolbar, tabs lifted off the strip */
+html[data-theme="light"] #browser-chrome { border-bottom: 1px solid var(--bg-border); }
+html[data-theme="light"] .browser-tab.active { box-shadow: 0 -1px 0 var(--bg-border), 1px 0 0 var(--bg-border), -1px 0 0 var(--bg-border); }
+
 /* Scrollbars */
 html[data-theme="light"] ::-webkit-scrollbar-thumb { background: rgb(var(--slate-600) / 0.35) !important; }
 html[data-theme="light"] ::-webkit-scrollbar-thumb:hover { background: rgb(var(--slate-600) / 0.55) !important; }
