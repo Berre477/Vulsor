@@ -55,6 +55,25 @@ document.addEventListener('DOMContentLoaded', () => {
             settings: { label: 'Settings',  icon: 'fa-gear',           color: '#64748b' },
         };
 
+        // When a view's initialiser throws, show a quiet notice inside that
+        // view instead of a blank pane, with a retry. Dismissed on next switch.
+        function _showViewFallback(key, err) {
+            const view = document.getElementById(`view-${key}`);
+            if (!view) return;
+            view.querySelector('.view-fallback')?.remove();
+            const note = document.createElement('div');
+            note.className = 'view-fallback';
+            note.innerHTML = `
+                <i class="fas fa-triangle-exclamation"></i>
+                <span>This section hit a problem while loading${err && err.message ? `: <em>${String(err.message).replace(/</g, '&lt;')}</em>` : ''}.</span>
+                <button type="button" class="view-fallback-retry">Retry</button>
+                <button type="button" class="view-fallback-close" aria-label="Dismiss">✕</button>`;
+            note.querySelector('.view-fallback-retry').onclick = () => { note.remove(); _openTab(key); };
+            note.querySelector('.view-fallback-close').onclick = () => note.remove();
+            if (getComputedStyle(view).position === 'static') view.style.position = 'relative';
+            view.prepend(note);
+        }
+
         // ── State ──────────────────────────────────────────────
         let _tabs     = [];   // [{ id, key, label?, instanceData }]
         let _activeId = null;
@@ -201,7 +220,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
 
-            // Render functions
+            // Render functions. One view's initialiser throwing must not leave
+            // the tab strip half-switched, so the whole dispatch is guarded;
+            // the failure is logged and the view shows whatever it managed.
+            try {
             if (key === 'home')     { _updateHomeGreeting(); renderHomeWeather();
                 // Browser-style: focus the search bar when landing on a new tab
                 setTimeout(() => { const o = document.getElementById('home-omnibox-input'); if (o) o.focus(); }, 60); }
@@ -244,6 +266,11 @@ document.addEventListener('DOMContentLoaded', () => {
             if (key === 'network')  { if (typeof renderNetwork === 'function') renderNetwork(); }
             if (key === 'settings') { if (typeof renderSettingsPage === 'function') renderSettingsPage(); }
             if (key === 'sudoku')   { if (typeof renderSudoku  === 'function') renderSudoku(); }
+            } catch (e) {
+                console.error('[view init]', key, e);
+                if (window.__vulsorLog) window.__vulsorLog('view-init', `${key}: ${(e && e.stack) || e}`);
+                _showViewFallback(key, e);
+            }
 
             // Address bar
             const tab  = _tabs.find(t => t.id === _activeId);
@@ -1624,6 +1651,24 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!force && _weatherCache && Date.now() - _weatherTs < 15 * 60 * 1000) {
                 el.innerHTML = _weatherCache; return;
             }
+            // Last successful reading survives restarts, so an offline launch
+            // shows this morning's weather (marked as such) rather than a
+            // "unavailable" placeholder. Nothing at all is shown if there has
+            // never been a reading — an empty slot beats an error message.
+            const LAST_KEY = 'vulsor_weather_last';
+            const showStale = () => {
+                try {
+                    const last = JSON.parse(localStorage.getItem(LAST_KEY) || 'null');
+                    if (last && last.html && Date.now() - last.ts < 12 * 60 * 60 * 1000) {
+                        const ago = Math.max(1, Math.round((Date.now() - last.ts) / 60000));
+                        const when = ago < 60 ? `${ago} min ago` : `${Math.round(ago / 60)} h ago`;
+                        el.innerHTML = `${last.html}<span class="text-slate-600 text-xs" title="Couldn't refresh — showing the last reading"> · ${when}</span>`;
+                        return true;
+                    }
+                } catch (_) {}
+                return false;
+            };
+            if (navigator.onLine === false && showStale()) return;
             try {
                 const { ipcRenderer } = require('electron');
                 const r = await ipcRenderer.invoke('get-weather');
@@ -1631,15 +1676,23 @@ document.addEventListener('DOMContentLoaded', () => {
                 const deg = r.unit === 'fahrenheit' ? '°F' : '°C';
                 const temp = Math.round(r.temp);
                 const [icon, label] = _wmoCode(r.code);
-                const city = r.city ? ` · ${r.city}` : '';
+                const city = r.city ? ` · ${_escHtml(r.city)}` : '';
                 const html = `<i class="fas ${icon}" style="color:var(--accent-light)"></i>
                     <span class="text-slate-400 text-xs">${temp}${deg} · ${label}${city}</span>`;
                 _weatherCache = html; _weatherTs = Date.now();
                 el.innerHTML = html;
+                try { localStorage.setItem(LAST_KEY, JSON.stringify({ html, ts: Date.now() })); } catch (_) {}
             } catch (e) {
-                el.innerHTML = `<span class="text-slate-600 text-xs">Weather unavailable</span>`;
+                if (!showStale()) {
+                    el.innerHTML = navigator.onLine === false
+                        ? `<i class="fas fa-wifi text-slate-600" style="font-size:10px"></i><span class="text-slate-600 text-xs">Offline</span>`
+                        : '';
+                }
             }
         }
+        // Refresh the slot when connectivity comes back, and mark it when it goes.
+        window.addEventListener('online',  () => renderHomeWeather(true));
+        window.addEventListener('offline', () => renderHomeWeather(true));
 
         // ── Boot ───────────────────────────────────────────────
         _buildHomePage();
@@ -1888,6 +1941,30 @@ document.addEventListener('DOMContentLoaded', () => {
         })();
 
     } catch (err) {
-        document.body.innerHTML = `<div class="p-10 text-red-500 font-mono text-sm bg-black h-screen whitespace-pre-wrap">[CRASH] ${err.stack}</div>`;
+        // The renderer failed to boot. Log it, and show a recoverable screen
+        // rather than a wall of red monospace: one click restarts the window,
+        // and the details are there to copy if it keeps happening.
+        console.error('[boot]', err);
+        if (window.__vulsorLog) window.__vulsorLog('boot', (err && err.stack) || String(err));
+        const esc = t => String(t == null ? '' : t).replace(/&/g, '&amp;').replace(/</g, '&lt;');
+        document.body.innerHTML = `
+            <div style="position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:var(--bg-base,#020617);color:rgb(var(--slate-200,226 232 240));font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;-webkit-app-region:drag">
+              <div style="width:min(560px,92vw);padding:28px 30px;border-radius:18px;background:var(--bg-surface,#0f172a);border:1px solid rgb(var(--slate-800,30 41 59));box-shadow:0 24px 60px rgba(0,0,0,.45);-webkit-app-region:no-drag">
+                <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px">
+                  <div style="width:40px;height:40px;border-radius:12px;background:rgb(var(--tw-amber-500,245 158 11) / .15);display:flex;align-items:center;justify-content:center;color:rgb(var(--tw-amber-400,251 191 36));font-size:18px">⚠︀</div>
+                  <div style="font-size:17px;font-weight:700;letter-spacing:-.02em">Vulsor couldn't finish starting</div>
+                </div>
+                <p style="margin:0 0 16px;font-size:13px;line-height:1.5;color:rgb(var(--slate-400,148 163 184))">Something went wrong while the window was loading. Your files and settings are untouched. Restarting usually fixes it; if it happens again, the details below say where.</p>
+                <div style="display:flex;gap:8px;margin-bottom:14px">
+                  <button id="boot-fail-restart" style="font-size:13px;font-weight:600;padding:8px 16px;border-radius:10px;border:none;cursor:pointer;color:#fff;background:var(--accent,#2563eb)">Restart</button>
+                  <button id="boot-fail-copy" style="font-size:13px;font-weight:600;padding:8px 14px;border-radius:10px;cursor:pointer;color:rgb(var(--slate-300,203 213 225));background:rgb(var(--slate-800,30 41 59));border:1px solid rgb(var(--slate-700,51 65 85))">Copy details</button>
+                </div>
+                <details style="font-size:11px;color:rgb(var(--slate-500,100 116 139))"><summary style="cursor:pointer">Technical details</summary>
+                  <pre id="boot-fail-stack" style="white-space:pre-wrap;word-break:break-word;margin:8px 0 0;font-family:ui-monospace,Menlo,monospace;font-size:11px;line-height:1.45;color:rgb(var(--slate-400,148 163 184))">${esc(err && err.stack || err)}</pre>
+                </details>
+              </div>
+            </div>`;
+        document.getElementById('boot-fail-restart').onclick = () => location.reload();
+        document.getElementById('boot-fail-copy').onclick = () => { try { navigator.clipboard.writeText(String(err && err.stack || err)); } catch (_) {} };
     }
 });

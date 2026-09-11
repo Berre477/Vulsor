@@ -139,7 +139,21 @@ function startNewChat() {
 function loadChat(filename) {
     const filePath = path.join(DOCUMENTS_PATH, filename);
     const title    = filename.replace('.json', '');
-    const history  = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+    let history;
+    try {
+        history = readJsonStrict(filePath);
+        if (!Array.isArray(history)) throw new Error('not a chat transcript');
+    } catch (e) {
+        // A damaged transcript is set aside by readJsonStrict; open a fresh
+        // tab under the same name rather than dying on the click.
+        console.warn('[chat] could not open', filename, e && e.message);
+        history = [{ role: 'system', content: TUNING.system }];
+        openOrCreateTab(title, filePath, history);
+        chatBox.innerHTML = '';
+        addMessageToUI('AI', `I couldn't read the saved transcript for "${title}" — it looked damaged, so a copy was set aside next to it and we're starting fresh here.`);
+        updateChatTitle(title);
+        return;
+    }
     openOrCreateTab(title, filePath, history);
     chatBox.innerHTML = '';
     chatHistory.forEach(msg => {
@@ -160,3 +174,30 @@ function updateChatTitle(title) {
     const el = document.getElementById('chat-session-title');
     if (el) el.textContent = title;
 }
+
+// ── Empty state ────────────────────────────────────────────────
+// The message list starts blank and is wiped on every tab switch, so the
+// welcome panel is driven by observing it rather than by each code path
+// remembering to toggle it. Chips prefill the composer.
+(function () {
+    function wire() {
+        const box   = document.getElementById('chat-box');
+        const empty = document.getElementById('chat-empty');
+        if (!box || !empty) return;
+        const sync = () => { empty.hidden = box.childElementCount > 0; };
+        new MutationObserver(sync).observe(box, { childList: true });
+        sync();
+        empty.addEventListener('click', e => {
+            const chip = e.target.closest('.chat-empty-chip');
+            if (!chip) return;
+            const input = document.getElementById('user-input');
+            if (!input) return;
+            input.value = chip.dataset.prompt || '';
+            input.focus();
+            input.dispatchEvent(new Event('input', { bubbles: true }));
+            try { input.setSelectionRange(input.value.length, input.value.length); } catch (_) {}
+        });
+    }
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', wire);
+    else wire();
+})();

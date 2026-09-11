@@ -34,13 +34,13 @@ let wsSaveTimer     = null;
 function loadStudio() {
     try {
         if (fs.existsSync(STUDIO_FILE)) {
-            projects = JSON.parse(fs.readFileSync(STUDIO_FILE, 'utf8')) || [];
+            projects = readJsonStrict(STUDIO_FILE) || [];
         }
     } catch (_) { projects = []; }
 }
 
 function saveStudio() {
-    try { fs.writeFileSync(STUDIO_FILE, JSON.stringify(projects, null, 2), 'utf8'); }
+    try { writeJsonSafe(STUDIO_FILE, projects); }
     catch (_) {}
 }
 
@@ -1659,7 +1659,8 @@ function mount3DEditor(p) {
     three.camera = new THREE.PerspectiveCamera(50, viewport.clientWidth / viewport.clientHeight, 0.1, 1000);
     three.camera.position.set(5, 4, 7);
 
-    three.renderer = new THREE.WebGLRenderer({ antialias: true });
+    three.renderer = uiCreateWebGLRenderer(viewport, { antialias: true });
+    if (!three.renderer) return;
     three.renderer.setPixelRatio(window.devicePixelRatio);
     three.renderer.setSize(viewport.clientWidth, viewport.clientHeight);
     viewport.innerHTML = '';

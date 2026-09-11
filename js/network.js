@@ -89,7 +89,7 @@ let netHubMode      = {};    // serverId -> 'chat' | 'files'
 function _netLoad() {
     try {
         if (fs.existsSync(NETWORK_FILE)) {
-            const raw = JSON.parse(fs.readFileSync(NETWORK_FILE, 'utf8'));
+            const raw = readJsonStrict(NETWORK_FILE);
             netConfig  = raw.config  || null;
             netConvos  = raw.convos  || {};
             netServers = raw.servers || {};
@@ -107,7 +107,7 @@ function _netLoad() {
 
 function _netSave() {
     try {
-        fs.writeFileSync(NETWORK_FILE, JSON.stringify({ config: netConfig, convos: netConvos, servers: netServers }, null, 2));
+        writeJsonSafe(NETWORK_FILE, { config: netConfig, convos: netConvos, servers: netServers });
     } catch (e) { console.error('network save failed', e); }
 }
 

@@ -183,7 +183,8 @@ function _setupScene(container) {
     const T = window.THREE;
 
     // Renderer
-    _renderer = new T.WebGLRenderer({ antialias: true, alpha: false });
+    _renderer = uiCreateWebGLRenderer(container, { antialias: true, alpha: false });
+    if (!_renderer) return false;
     _renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     _renderer.shadowMap.enabled = true;
     _renderer.shadowMap.type = T.PCFSoftShadowMap;
@@ -504,7 +505,7 @@ window.initPhysics3D = function () {
     if (!container) return;
 
     if (!_initialized) {
-        _setupScene(container);
+        if (_setupScene(container) === false) return;   // WebGL unavailable — panel shown
         _wire();
         _initialized = true;
         _renderProps();

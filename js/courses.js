@@ -16,12 +16,12 @@ let crsBuilding     = false;
 function loadCoursesData() {
     try {
         if (fs.existsSync(COURSES_FILE))
-            return JSON.parse(fs.readFileSync(COURSES_FILE, 'utf8'));
+            return readJsonStrict(COURSES_FILE);
     } catch (_) {}
     return { courses: [] };
 }
 function saveCoursesData() {
-    try { fs.writeFileSync(COURSES_FILE, JSON.stringify(coursesData, null, 2)); }
+    try { writeJsonSafe(COURSES_FILE, coursesData); }
     catch (e) { console.error('[courses] save failed:', e); }
 }
 

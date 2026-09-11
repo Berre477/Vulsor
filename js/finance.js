@@ -4,14 +4,14 @@
 function loadFinanceData() {
     try {
         if (fs.existsSync(FINANCE_FILE)) {
-            const d = JSON.parse(fs.readFileSync(FINANCE_FILE, 'utf8'));
+            const d = readJsonStrict(FINANCE_FILE);
             return { transactions: d.transactions || [], timeEntries: d.timeEntries || [], currency: d.currency || 'USD' };
         }
     } catch(_) {}
     return { transactions: [], timeEntries: [], currency: 'USD' };
 }
 function saveFinanceData() {
-    fs.writeFileSync(FINANCE_FILE, JSON.stringify(financeData, null, 2));
+    writeJsonSafe(FINANCE_FILE, financeData);
 }
 
 // ── State ──────────────────────────────────────────────────────────
@@ -401,7 +401,15 @@ function renderFinanceChart() {
         if (typeof vulsorLoadChart !== 'function') return;
         vulsorLoadChart()
             .then(() => renderFinanceChart())
-            .catch(e => console.error('[finance] Chart.js failed to load:', e));
+            .catch(e => {
+                console.error('[finance] Chart.js failed to load:', e);
+                const host = canvas && canvas.parentElement;
+                if (host && typeof uiUnavailable === 'function') uiUnavailable(host, {
+                    icon: 'fa-chart-column', title: 'The chart couldn\'t load',
+                    detail: 'Your transactions are safe and listed below — only the graph is affected.',
+                    action: 'Retry', onAction: () => { host.querySelector('.ui-unavailable')?.remove(); renderFinanceChart(); },
+                });
+            });
         return;
     }
     const sym = finCurrencySymbol();

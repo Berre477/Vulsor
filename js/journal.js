@@ -4,12 +4,12 @@
 function loadJournalData() {
     try {
         if (fs.existsSync(JOURNAL_FILE))
-            return JSON.parse(fs.readFileSync(JOURNAL_FILE, 'utf8'));
+            return readJsonStrict(JOURNAL_FILE);
     } catch(_) {}
     return { entries: {} };
 }
 function saveJournalData() {
-    fs.writeFileSync(JOURNAL_FILE, JSON.stringify(journalData, null, 2));
+    writeJsonSafe(JOURNAL_FILE, journalData);
 }
 
 // ── State ──────────────────────────────────────────────────────────

@@ -6,14 +6,14 @@
 function loadResearchData() {
     try {
         if (fs.existsSync(RESEARCH_FILE)) {
-            const d = JSON.parse(fs.readFileSync(RESEARCH_FILE, 'utf8'));
+            const d = readJsonStrict(RESEARCH_FILE);
             return { notebooks: d.notebooks || [], apiKey: d.apiKey || '', model: d.model || 'claude-sonnet-4-5', backend: d.backend || 'api' };
         }
     } catch (_) {}
     return { notebooks: [], apiKey: '', model: 'claude-sonnet-4-5', backend: 'api' };
 }
 function saveResearchData() {
-    try { fs.writeFileSync(RESEARCH_FILE, JSON.stringify(researchData, null, 2)); }
+    try { writeJsonSafe(RESEARCH_FILE, researchData); }
     catch (e) { console.error('[research] save failed:', e); }
 }
 

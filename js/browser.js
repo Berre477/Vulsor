@@ -65,13 +65,13 @@ function _bwSave() {
             const pub = _bwTabs.filter(t => !t.private);
             const tabs = pub.map(t => t.url || t.pendingUrl || '').filter(Boolean);
             const activeIdx = Math.max(0, pub.findIndex(t => t.id === _bwActive));
-            fs.writeFileSync(BROWSER_FILE, JSON.stringify({ tabs, activeIdx, history: _bwHistory, searches: _bwSearches, favicons: _bwFavCache, settings: _bwSettings, neverHosts: _bwPwNeverHosts }, null, 2));
+            writeJsonSafe(BROWSER_FILE, { tabs, activeIdx, history: _bwHistory, searches: _bwSearches, favicons: _bwFavCache, settings: _bwSettings, neverHosts: _bwPwNeverHosts });
         } catch (_) {}
     }, 400);
 }
 function _bwLoadSaved() {
     try {
-        if (fs.existsSync(BROWSER_FILE)) return JSON.parse(fs.readFileSync(BROWSER_FILE, 'utf8'));
+        if (fs.existsSync(BROWSER_FILE)) return readJsonStrict(BROWSER_FILE);
     } catch (_) {}
     return null;
 }
@@ -301,11 +301,37 @@ function _bwWireWebview(tab, wv) {
     wv.addEventListener('did-redirect-navigation', onNav);
     wv.addEventListener('did-navigate', onNav);
     wv.addEventListener('did-navigate-in-page', onNav);
+    // Chromium's net error codes, translated for the banner. Anything not
+    // listed falls back to Chromium's own description.
+    const NET_ERRORS = {
+        '-105': 'That address couldn\'t be found — check the spelling.',
+        '-106': 'You\'re offline. The page will load once you\'re connected again.',
+        '-118': 'The site took too long to respond.',
+        '-7':   'The site took too long to respond.',
+        '-102': 'The site refused the connection.',
+        '-100': 'The connection was closed before the page loaded.',
+        '-101': 'The connection was reset by the site.',
+        '-109': 'That address is unreachable from this network.',
+        '-200': 'This site\'s security certificate isn\'t valid.',
+        '-201': 'This site\'s security certificate has expired or isn\'t valid yet.',
+        '-202': 'This site\'s security certificate isn\'t trusted.',
+        '-501': 'This site\'s security certificate has a problem.',
+        '-20':  'This page was blocked.',
+        '-27':  'This page was blocked by the content blocker.',
+        '-137': 'The site\'s address could not be resolved right now.',
+        '-324': 'The site sent back an empty response.',
+        '-310': 'Too many redirects.',
+    };
     wv.addEventListener('did-fail-load', e => {
         // -3 = aborted (e.g. user navigated away mid-load) — not an error
         if (!e.isMainFrame || e.errorCode === -3) return;
         tab.loading = false;
-        _bwShowError(tab, `${e.errorDescription || 'Load failed'} (${e.errorCode}) — ${e.validatedURL || tab.url}`);
+        const friendly = navigator.onLine === false
+            ? NET_ERRORS['-106']
+            : (NET_ERRORS[String(e.errorCode)] || `${e.errorDescription || 'The page could not be loaded'} (${e.errorCode})`);
+        let host = '';
+        try { host = new URL(e.validatedURL || tab.url).hostname; } catch (_) {}
+        _bwShowError(tab, host ? `${host}: ${friendly}` : friendly);
         _bwScheduleUi();
     });
     // Render process died — show a recoverable error instead of a blank tab.
@@ -490,7 +516,7 @@ async function _bwClearBrowsingData(btn) {
 async function _bwLoadPasswords() {
     try {
         if (!fs.existsSync(PASSWORDS_FILE)) return;
-        const raw = JSON.parse(fs.readFileSync(PASSWORDS_FILE, 'utf8'));
+        const raw = readJsonStrict(PASSWORDS_FILE);
         if (raw.enc && raw.blob) {
             const res = await ipcRenderer.invoke('secure-decrypt', raw.blob);
             if (res && res.available && res.data) { _bwPasswords = JSON.parse(res.data) || []; _bwPwEncrypted = true; }
@@ -507,11 +533,11 @@ async function _bwSavePasswords() {
         const res = await ipcRenderer.invoke('secure-encrypt', json);
         if (res && res.available && res.data) {
             _bwPwEncrypted = true;
-            fs.writeFileSync(PASSWORDS_FILE, JSON.stringify({ enc: true, blob: res.data }));
+            writeJsonSafe(PASSWORDS_FILE, { enc: true, blob: res.data });
         } else {
             // Keychain unavailable — store base64 (NOT secure) and flag it in the UI.
             _bwPwEncrypted = false;
-            fs.writeFileSync(PASSWORDS_FILE, JSON.stringify({ enc: false, plain: Buffer.from(json, 'utf8').toString('base64') }));
+            writeJsonSafe(PASSWORDS_FILE, { enc: false, plain: Buffer.from(json, 'utf8').toString('base64') });
         }
     } catch (e) { console.error('[browser] password save failed:', e); }
 }
@@ -1138,6 +1164,12 @@ function renderBrowser() {
     document.getElementById('browser-open-ext')?.addEventListener('click', () => {
         const t = _bwActiveTab();
         if (t && t.url) { try { require('electron').shell.openExternal(t.url); } catch (_) {} }
+    });
+    // Coming back online retries the page automatically if the banner is up.
+    window.addEventListener('online', () => {
+        const el = document.getElementById('browser-error');
+        if (!el || el.style.display === 'none') return;
+        document.getElementById('browser-error-retry')?.click();
     });
     document.getElementById('browser-error-retry')?.addEventListener('click', () => {
         const t = _bwActiveTab();

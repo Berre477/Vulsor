@@ -67,10 +67,10 @@ function newSubId() { return 's' + Date.now().toString(36) + Math.random().toStr
 
 // ── Persistence ────────────────────────────────────────────────
 function loadTodos() {
-    try { todos = fs.existsSync(TODOS_FILE) ? JSON.parse(fs.readFileSync(TODOS_FILE,'utf8')) : []; }
+    try { todos = fs.existsSync(TODOS_FILE) ? readJsonStrict(TODOS_FILE) : []; }
     catch(_) { todos = []; }
 }
-function saveTodos() { fs.writeFileSync(TODOS_FILE, JSON.stringify(todos,null,2)); }
+function saveTodos() { writeJsonSafe(TODOS_FILE, todos); }
 
 const DEFAULT_CATEGORIES = [
     { id: 'cat_shopping', name: 'Shopping', color: '#22c55e', icon: '🛒' },
@@ -80,7 +80,7 @@ const DEFAULT_CATEGORIES = [
 ];
 
 function loadCategories() {
-    try { categories = fs.existsSync(CATEGORIES_FILE) ? JSON.parse(fs.readFileSync(CATEGORIES_FILE,'utf8')) : []; }
+    try { categories = fs.existsSync(CATEGORIES_FILE) ? readJsonStrict(CATEGORIES_FILE) : []; }
     catch(_) { categories = []; }
     // Seed default categories if not already present
     let changed = false;
@@ -99,7 +99,7 @@ function loadCategories() {
 function migrateLists() {
     if (!fs.existsSync(LISTS_FILE)) return;
     try {
-        const saved = JSON.parse(fs.readFileSync(LISTS_FILE, 'utf8'));
+        const saved = readJsonStrict(LISTS_FILE);
         const catMap = { shopping: 'cat_shopping', goals: 'cat_goals', ideas: 'cat_ideas', projects: 'cat_projects' };
         let migrated = 0;
         ['shopping', 'goals', 'ideas', 'projects'].forEach(key => {
@@ -115,7 +115,7 @@ function migrateLists() {
         fs.renameSync(LISTS_FILE, LISTS_FILE + '.migrated');
     } catch(e) { console.error('List migration failed:', e); }
 }
-function saveCategories() { fs.writeFileSync(CATEGORIES_FILE, JSON.stringify(categories,null,2)); }
+function saveCategories() { writeJsonSafe(CATEGORIES_FILE, categories); }
 
 // ── Helpers ────────────────────────────────────────────────────
 // Local date key. toISOString() converts to UTC first, so east of Greenwich

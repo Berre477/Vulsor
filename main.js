@@ -21,10 +21,35 @@ const os     = require('os');
 const https  = require('https');
 const { spawn } = require('child_process');
 const { pathToFileURL } = require('url');
-const { initAutoUpdate } = require('./updater');
-const controlServer = require('./control-server');
-const relay = require('./relay');
-const waBot = require('./wa-bot');
+// The four side modules are optional extras (updates, the local control
+// endpoint, the remote-access relay, the WhatsApp assistant). If one fails to
+// load — a missing dependency after a partial install, say — the app must
+// still open; the failed module is replaced by a stub whose every method
+// resolves to { ok: false, error } so callers get a clear answer, not a crash.
+function safeRequire(modulePath) {
+    try { return require(modulePath); }
+    catch (e) {
+        console.error(`[main] optional module ${modulePath} failed to load:`, e && e.message);
+        _mainLog('module-load', `${modulePath}: ${(e && e.stack) || e}`);
+        const error = `${path.basename(modulePath)} is unavailable in this install`;
+        return new Proxy({}, { get: (_, prop) => (prop === 'then' ? undefined : (async () => ({ ok: false, error }))) });
+    }
+}
+// Main-process log file (userData/logs/main.log) — the only trace a packaged
+// build leaves when something goes wrong before a window exists.
+function _mainLog(kind, msg) {
+    try {
+        const dir = path.join(app.getPath('userData'), 'logs');
+        fs.mkdirSync(dir, { recursive: true });
+        const file = path.join(dir, 'main.log');
+        try { if (fs.statSync(file).size > 512 * 1024) fs.renameSync(file, file + '.1'); } catch (_) {}
+        fs.appendFileSync(file, `${new Date().toISOString()} [${kind}] ${msg}\n`);
+    } catch (_) {}
+}
+const { initAutoUpdate } = safeRequire('./updater');
+const controlServer = safeRequire('./control-server');
+const relay = safeRequire('./relay');
+const waBot = safeRequire('./wa-bot');
 
 // ── Verso → Vulsor data migration (one-time) ──────────────────────
 // The app was renamed from Verso to Vulsor. Everything the old name owned on
@@ -102,9 +127,11 @@ migrateVersoData();
 // replace per-handler error handling — it's the last line of defence.
 process.on('uncaughtException', (err) => {
     console.error('[main uncaughtException]', err);
+    _mainLog('uncaught', (err && err.stack) || String(err));
 });
 process.on('unhandledRejection', (reason) => {
     console.error('[main unhandledRejection]', reason);
+    _mainLog('rejection', (reason && reason.stack) || String(reason));
 });
 
 // Real filter-list ad-block engine (EasyList + EasyPrivacy — the same lists
@@ -666,15 +693,48 @@ ipcMain.handle('music-pick-folder', async (event) => {
 });
 
 const MUSIC_DL_DIR = path.join(os.homedir(), 'Music', 'Vulsor');
-const YTDLP_PATHS = [ '/opt/homebrew/bin/yt-dlp', '/usr/local/bin/yt-dlp', '/usr/bin/yt-dlp' ];
 
-function findYtDlpBin() {
-    for (const p of YTDLP_PATHS) { if (fs.existsSync(p)) return p; }
+// ── Locating optional command-line tools ─────────────────────────────
+// ffmpeg, whisper.cpp and yt-dlp are optional extras the user installs
+// themselves. Look in the usual Homebrew / system prefixes first (a packaged
+// app launched from Finder has a nearly empty PATH), then in every PATH
+// entry, then in a few Linux/Windows homes — so a tool installed any normal
+// way is found, and the features that need it can say precisely what's
+// missing when it isn't. Results are cached per launch; a fresh install is
+// picked up by re-running the check the feature exposes.
+const _binCache = new Map();
+function findBin(names, extraDirs = []) {
+    const list = Array.isArray(names) ? names : [names];
+    const key = list.join('|');
+    if (_binCache.has(key) && _binCache.get(key)) return _binCache.get(key);
+    const dirs = [
+        ...extraDirs,
+        '/opt/homebrew/bin', '/usr/local/bin', '/usr/bin', '/bin',
+        '/opt/local/bin', '/snap/bin', path.join(os.homedir(), '.local', 'bin'),
+        ...(process.env.PATH || '').split(path.delimiter).filter(Boolean),
+        ...(process.platform === 'win32' ? [
+            path.join(process.env.ProgramFiles || 'C:\\Program Files', 'ffmpeg', 'bin'),
+            path.join(process.env.LOCALAPPDATA || '', 'Microsoft', 'WinGet', 'Links'),
+            path.join(process.env.ChocolateyInstall || 'C:\\ProgramData\\chocolatey', 'bin'),
+        ] : []),
+    ];
+    const exts = process.platform === 'win32' ? ['.exe', '.cmd', '.bat', ''] : [''];
+    for (const dir of dirs) for (const n of list) for (const ext of exts) {
+        const p = path.join(dir, n + ext);
+        try { if (fs.statSync(p).isFile()) { _binCache.set(key, p); return p; } } catch (_) {}
+    }
+    _binCache.set(key, null);
     return null;
 }
 
+function findYtDlpBin() { return findBin('yt-dlp'); }
+
 const WHISPER_BIN_PATHS = [ '/opt/homebrew/bin/whisper-cli', '/opt/homebrew/bin/whisper-cpp', '/usr/local/bin/whisper-cli', '/usr/local/bin/whisper-cpp' ];
-const VULSOR_DATA_DIR = path.join(os.homedir(), 'Library', 'Application Support', 'Vulsor');
+// userData resolves to ~/Library/Application Support/Vulsor on macOS (see
+// app.setName above) and to the platform's equivalent elsewhere — the old
+// hardcoded macOS path put the speech model somewhere Windows and Linux
+// builds would never look.
+const VULSOR_DATA_DIR = (() => { try { return app.getPath('userData'); } catch (_) { return path.join(os.homedir(), 'Library', 'Application Support', 'Vulsor'); } })();
 const WHISPER_MODEL_ML  = path.join(VULSOR_DATA_DIR, 'ggml-base.bin');      
 const WHISPER_MODEL_EN  = path.join(VULSOR_DATA_DIR, 'ggml-base.en.bin');   
 const WHISPER_MODEL     = WHISPER_MODEL_ML;   
@@ -687,8 +747,7 @@ function getWhisperModelInfo() {
 }
 
 function findWhisperBin() {
-    for (const p of WHISPER_BIN_PATHS) { if (fs.existsSync(p)) return p; }
-    return null;
+    return findBin(['whisper-cli', 'whisper-cpp'], WHISPER_BIN_PATHS.map(p => path.dirname(p)));
 }
 
 function downloadFile(url, destPath, onProgress) {
@@ -752,7 +811,7 @@ ipcMain.handle('voice:download-model', async (event) => {
 
 ipcMain.handle('voice:transcribe', async (event, { samples, sampleRate }) => {
     const bin = findWhisperBin();
-    if (!bin) return { ok: false, error: 'whisper-cli not installed.' };
+    if (!bin) return { ok: false, error: 'whisper.cpp is not installed. On macOS: brew install whisper-cpp' };
     const modelInfo = getWhisperModelInfo();
     if (!modelInfo) return { ok: false, error: 'Model not downloaded' };
     const tmpFile = path.join(os.tmpdir(), `vulsor-voice-${Date.now()}.wav`);
@@ -774,7 +833,7 @@ ipcMain.handle('voice:transcribe', async (event, { samples, sampleRate }) => {
 
 ipcMain.on('music-download', (event, { jobId, url, format }) => {
     const ytdlp = findYtDlpBin();
-    if (!ytdlp) { event.sender.send('music-dl-event', { jobId, type: 'error', error: 'yt-dlp not found.' }); return; }
+    if (!ytdlp) { event.sender.send('music-dl-event', { jobId, type: 'error', error: 'yt-dlp is not installed. On macOS: brew install yt-dlp' }); return; }
     if (!fs.existsSync(MUSIC_DL_DIR)) fs.mkdirSync(MUSIC_DL_DIR, { recursive: true });
     const outTpl = path.join(MUSIC_DL_DIR, '%(title)s.%(ext)s');
     const args = format === 'audio'
@@ -914,21 +973,14 @@ ipcMain.handle('get-apod', async (event, { count, apiKey }) => {
     return { ok: false, error: String(lastErr?.message || lastErr) };
 });
 
-function findFfmpeg() {
-    for (const p of ['/opt/homebrew/bin/ffmpeg', '/usr/local/bin/ffmpeg', '/usr/bin/ffmpeg']) { if (fs.existsSync(p)) return p; }
-    return null;
-}
+function findFfmpeg() { return findBin('ffmpeg'); }
 ipcMain.handle('ffmpeg-available', async () => ({ ok: !!findFfmpeg() }));
 
 // ── Karaoke: transcribe a song's audio → timed LRC (on-device, whisper.cpp) ──
 // Decodes the track to 16 kHz mono WAV with ffmpeg, then runs whisper.cpp's
 // whisper-cli with -olrc so we get timestamped lines the karaoke display can sync
 // and highlight. Fully local — no audio leaves the machine.
-function findWhisper() {
-    for (const p of ['/opt/homebrew/bin/whisper-cli', '/usr/local/bin/whisper-cli',
-                     '/opt/homebrew/bin/whisper-cpp', '/usr/local/bin/whisper-cpp']) { if (fs.existsSync(p)) return p; }
-    return null;
-}
+function findWhisper() { return findWhisperBin(); }
 function findWhisperModel() {
     const dir = app.getPath('userData');
     // Prefer the multilingual base (handles non-English songs); fall back sensibly.
@@ -948,7 +1000,7 @@ ipcMain.handle('karaoke:transcribe', async (e, opts = {}) => {
     const lang = (opts && opts.lang) || 'auto';
     try {
         if (!audioPath || !fs.existsSync(audioPath)) return { ok: false, error: 'Audio file not found.' };
-        const ff = findFfmpeg(); if (!ff) return { ok: false, error: 'ffmpeg not installed.' };
+        const ff = findFfmpeg(); if (!ff) return { ok: false, error: 'ffmpeg is not installed. On macOS: brew install ffmpeg' };
         const whisper = findWhisper(); if (!whisper) return { ok: false, error: 'whisper-cli not found — install with: brew install whisper-cpp' };
         const model = findWhisperModel(); if (!model) return { ok: false, error: 'No Whisper model found (expected ggml-base.bin in Vulsor app-support).' };
 
@@ -1061,7 +1113,7 @@ ipcMain.handle('print-file', async (event, { filePath }) => {
 });
 
 ipcMain.handle('editor-export', async (event, project) => {
-    const ff = findFfmpeg(); if (!ff) return { ok: false, error: 'ffmpeg not installed' };
+    const ff = findFfmpeg(); if (!ff) return { ok: false, error: 'ffmpeg is not installed. On macOS: brew install ffmpeg' };
     const VAULT = path.join(os.homedir(), 'Documents', 'Vulsor_Memories', 'vault');
     const clips = project.videoClips || []; if (!clips.length) return { ok: false, error: 'no clips' };
     const out = path.join(VAULT, project.outName); const W = 1280, H = 720, FPS = 30;
@@ -1109,7 +1161,7 @@ ipcMain.handle('editor-export', async (event, project) => {
 });
 
 ipcMain.handle('ffmpeg-edit', async (event, { storedName, start, duration, overlayPng, outName }) => {
-    const ff = findFfmpeg(); if (!ff) return { ok: false, error: 'ffmpeg not installed.' };
+    const ff = findFfmpeg(); if (!ff) return { ok: false, error: 'ffmpeg is not installed. On macOS: brew install ffmpeg' };
     const VAULT = path.join(os.homedir(), 'Documents', 'Vulsor_Memories', 'vault');
     const input = path.join(VAULT, storedName); const out = path.join(VAULT, outName);
     const args = []; if (start && start > 0) args.push('-ss', String(start)); if (duration && duration > 0) args.push('-t', String(duration)); args.push('-i', input);
@@ -1127,7 +1179,7 @@ ipcMain.handle('ffmpeg-edit', async (event, { storedName, start, duration, overl
 });
 
 ipcMain.handle('voice:transcribe-timed', async (event, { samples, sampleRate }) => {
-    const bin = findWhisperBin(); if (!bin) return { ok: false, error: 'whisper-cli not installed' };
+    const bin = findWhisperBin(); if (!bin) return { ok: false, error: 'whisper.cpp is not installed. On macOS: brew install whisper-cpp' };
     const modelInfo = getWhisperModelInfo(); if (!modelInfo) return { ok: false, error: 'Model not downloaded' };
     const tmpFile = path.join(os.tmpdir(), `vulsor-cam-${Date.now()}.wav`);
     try {

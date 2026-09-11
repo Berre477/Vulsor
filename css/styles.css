@@ -45,7 +45,40 @@
 
 /* ── Base ─────────────────────────────────────────────────────── */
 * { box-sizing: border-box; }
-body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; user-select: text; }
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    user-select: text;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+}
+
+/* ── Apple register ───────────────────────────────────────────────
+   Display type tracks tight and numbers tighter still (Apple sets its
+   large figures at −0.03em); labels stay at normal tracking. Cards are
+   18px-radius surfaces — on light themes a white card with a soft
+   0 1px 8px shadow, on dark themes a flat surface with a hairline. Pills
+   are fully round. These are token-level rules, so every view gets them. */
+h1, h2, h3, .text-2xl, .text-3xl, .text-4xl, .text-5xl, .text-6xl { letter-spacing: -0.02em; }
+.text-xl.font-bold, .text-2xl.font-bold, .text-3xl.font-bold, .text-4xl.font-bold,
+.tabular-nums.font-bold, .tabular-nums.font-extrabold, .font-black { letter-spacing: -0.03em; }
+.text-\[10px\].uppercase, .text-\[9px\].uppercase, .text-xs.uppercase { letter-spacing: 0.08em; font-weight: 600; }
+
+/* Light themes: Apple's white-card-on-grey depth. Any 18px-radius surface
+   painted with the surface colour reads as a card and gets the soft lift. */
+html[data-theme="light"] .rounded-2xl[class*="bg-slate-900"],
+html[data-theme="light"] .rounded-2xl[class*="bg-slate-800"],
+html[data-theme="light"] .rounded-xl[class*="bg-slate-900"],
+html[data-theme="light"] .sp-card,
+html[data-theme="light"] .vault-card,
+html[data-theme="light"] .todo-item,
+html[data-theme="light"] .cosmos-card,
+html[data-theme="light"] .wo-day-card,
+html[data-theme="light"] .study-log-row,
+html[data-theme="light"] .finance-row {
+    box-shadow: 0 1px 8px rgba(0,0,0,0.05);
+}
+html[data-theme="light"] .rounded-2xl[class*="bg-slate-900"],
+html[data-theme="light"] .rounded-xl[class*="bg-slate-900"] { background-color: var(--bg-surface); }
 
 
 /* ── Scrollbar ───────────────────────────────────────────────── */
@@ -3726,3 +3759,76 @@ input.bg-transparent:focus {
 }
 .home-size-preset:hover { color: rgb(var(--slate-200)); background: rgb(var(--slate-700)); }
 .home-size-preset.active { color: #fff; background: var(--accent); border-color: var(--accent); }
+
+/* ── View-level fallback notice (shown when a section fails to initialise) ── */
+.view-fallback {
+    position: absolute; top: 12px; left: 50%; transform: translateX(-50%);
+    z-index: 30; display: flex; align-items: center; gap: 10px;
+    max-width: min(92%, 640px); padding: 9px 12px 9px 14px;
+    border-radius: 12px; font-size: 12px; color: rgb(var(--slate-200));
+    background: rgb(var(--slate-900) / 0.95); border: 1px solid rgb(var(--tw-amber-500) / 0.35);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.35);
+    -webkit-app-region: no-drag;
+}
+.view-fallback > i { color: rgb(var(--tw-amber-400)); }
+.view-fallback em { font-style: normal; color: rgb(var(--slate-400)); }
+.view-fallback-retry {
+    font-size: 11px; font-weight: 600; padding: 4px 10px; border-radius: 8px; cursor: pointer;
+    color: #fff; background: var(--accent); border: none;
+}
+.view-fallback-close {
+    font-size: 11px; width: 22px; height: 22px; border-radius: 6px; cursor: pointer;
+    color: rgb(var(--slate-400)); background: transparent; border: none;
+}
+.view-fallback-close:hover { background: rgb(var(--ink-rgb) / 0.08); color: rgb(var(--slate-100)); }
+
+/* ── Chat empty state ─────────────────────────────────────────── */
+.chat-empty {
+    position: absolute; inset: 34px 0 84px 0;   /* between the chat tab strip and the composer */
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 10px; padding: 24px; text-align: center; pointer-events: none;
+}
+.chat-empty[hidden] { display: none; }
+.chat-empty > * { pointer-events: auto; }
+.chat-empty-badge {
+    width: 56px; height: 56px; border-radius: 18px; display: flex; align-items: center; justify-content: center;
+    font-size: 22px; color: #fff; background: var(--accent);
+    box-shadow: 0 12px 30px -10px rgba(var(--accent-rgb), 0.6);
+    margin-bottom: 6px;
+}
+.chat-empty-title { font-size: 22px; font-weight: 700; letter-spacing: -0.02em; color: rgb(var(--slate-100)); margin: 0; }
+.chat-empty-sub   { font-size: 13px; color: rgb(var(--slate-400)); max-width: 380px; margin: 0; line-height: 1.5; }
+.chat-empty-chips { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin-top: 10px; max-width: 520px; }
+.chat-empty-chip {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-size: 12px; font-weight: 500; padding: 8px 14px; border-radius: 100px; cursor: pointer;
+    color: rgb(var(--slate-300)); background: rgb(var(--slate-900) / 0.8);
+    border: 1px solid rgb(var(--slate-800)); transition: background 0.12s, color 0.12s, border-color 0.12s, transform 0.1s;
+}
+.chat-empty-chip i { font-size: 11px; color: var(--accent-light); }
+.chat-empty-chip:hover { background: rgb(var(--slate-800)); color: rgb(var(--slate-100)); border-color: rgb(var(--slate-700)); transform: translateY(-1px); }
+.chat-empty-hint { font-size: 11px; color: rgb(var(--slate-600)); margin-top: 14px; }
+.chat-empty-hint kbd {
+    font-family: inherit; font-size: 10px; padding: 1px 5px; border-radius: 5px;
+    background: rgb(var(--slate-800)); border: 1px solid rgb(var(--slate-700)); color: rgb(var(--slate-400));
+}
+html[data-theme="light"] .chat-empty-chip { box-shadow: 0 1px 8px rgba(0,0,0,0.05); background: var(--bg-surface); }
+
+/* ── Shared unavailable-feature panel (uiUnavailable) ─────────── */
+.ui-unavailable {
+    position: absolute; inset: 0; z-index: 5;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 8px; padding: 24px; text-align: center;
+    background: var(--bg-base);
+}
+.ui-unavailable-icon {
+    width: 52px; height: 52px; border-radius: 16px; display: flex; align-items: center; justify-content: center;
+    font-size: 20px; color: rgb(var(--slate-400)); background: rgb(var(--slate-800)); margin-bottom: 4px;
+}
+.ui-unavailable-title  { font-size: 15px; font-weight: 600; letter-spacing: -0.01em; color: rgb(var(--slate-200)); }
+.ui-unavailable-detail { font-size: 12.5px; line-height: 1.5; color: rgb(var(--slate-500)); max-width: 380px; }
+.ui-unavailable-action {
+    margin-top: 8px; font-size: 12px; font-weight: 600; padding: 7px 14px; border-radius: 10px; cursor: pointer;
+    color: #fff; background: var(--accent); border: none;
+}
+.ui-unavailable-action:hover { background: var(--accent-hover); }

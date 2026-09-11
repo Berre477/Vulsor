@@ -73,7 +73,7 @@ const NEWS_TTL    = 10 * 60 * 1000;
 function loadNewsData() {
     try {
         if (fs.existsSync(NEWS_FILE)) {
-            const d = JSON.parse(fs.readFileSync(NEWS_FILE, 'utf8'));
+            const d = readJsonStrict(NEWS_FILE);
             return { enabled: d.enabled || {}, custom: d.custom || [] };
         }
     } catch (_) {}
@@ -82,7 +82,7 @@ function loadNewsData() {
     return { enabled, custom: [] };
 }
 function saveNewsData() {
-    try { fs.writeFileSync(NEWS_FILE, JSON.stringify(newsData, null, 2)); }
+    try { writeJsonSafe(NEWS_FILE, newsData); }
     catch (e) { console.error('[news] save failed:', e); }
 }
 

@@ -15,7 +15,7 @@ let _cosmosNasaKey = '';
 function loadCosmosStore() {
     try {
         if (fs.existsSync(COSMOS_FILE)) {
-            const d = JSON.parse(fs.readFileSync(COSMOS_FILE, 'utf8'));
+            const d = readJsonStrict(COSMOS_FILE);
             _cosmosFavs    = d.favorites || [];
             _cosmosCache   = d.cache || [];
             _cosmosNasaKey = d.nasaKey || '';
@@ -25,7 +25,7 @@ function loadCosmosStore() {
     _cosmosFavs = []; _cosmosCache = []; _cosmosNasaKey = '';
 }
 function saveCosmosStore() {
-    try { fs.writeFileSync(COSMOS_FILE, JSON.stringify({ favorites: _cosmosFavs, cache: _cosmosCache, nasaKey: _cosmosNasaKey }, null, 2)); }
+    try { writeJsonSafe(COSMOS_FILE, { favorites: _cosmosFavs, cache: _cosmosCache, nasaKey: _cosmosNasaKey }); }
     catch (e) { console.error('[cosmos] save failed:', e); }
 }
 function saveCosmosFavs() { saveCosmosStore(); }

@@ -30,6 +30,13 @@ for (const f of FAMILIES) {
 
 module.exports = {
     content: ['./index.html', './js/**/*.js', './drag-preview.html'],
-    theme: { extend: { colors } },
+    theme: {
+        extend: {
+            colors,
+            // Apple's card radii: 18px cards, 12px controls. Utilities keep
+            // their names so the markup doesn't change.
+            borderRadius: { xl: '12px', '2xl': '18px', '3xl': '22px' },
+        },
+    },
     plugins: [],
 };

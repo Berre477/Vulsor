@@ -84,7 +84,18 @@ async function generate(text, imageBase64 = null) {
                 signal
             });
 
-            if (!res.ok) throw new Error(`Ollama returned ${res.status}`);
+            if (!res.ok) {
+                // Ollama's 404 body says which model is missing — turn that into
+                // the one command that fixes it instead of a bare status code.
+                let detail = '';
+                try { detail = (await res.json()).error || ''; } catch (_) {}
+                if (res.status === 404 && /model/i.test(detail)) {
+                    const err = new Error(`The model "${MODEL}" isn't installed. In a terminal run:\n\n\`\`\`\nollama pull ${MODEL}\n\`\`\`\n\nthen send your message again.`);
+                    err.userFacing = true;
+                    throw err;
+                }
+                throw new Error(`Ollama returned ${res.status}${detail ? ` — ${detail}` : ''}`);
+            }
 
             const data  = await res.json();
             const reply = data.message?.content || '';
@@ -162,10 +173,11 @@ async function generate(text, imageBase64 = null) {
             saveChat();
             return cancelMsg;
         }
+        if (e.userFacing) return e.message;
         if (e.message.includes('fetch') || e.message.includes('ECONNREFUSED')) {
-            return 'Cannot reach Ollama. Make sure it is running on localhost:11434.';
+            return 'I can\'t reach the local model. Vulsor chats through **Ollama** on `localhost:11434` — start the Ollama app (or run `ollama serve`) and try again. If you don\'t have it yet, it\'s a free download from ollama.com.';
         }
-        return `Error: ${e.message}`;
+        return `Something went wrong talking to the model: ${e.message}`;
     } finally {
         currentAbortController = null;
     }

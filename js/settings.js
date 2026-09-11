@@ -13,12 +13,23 @@ const ACCENT_PRESETS = [
     { name: 'Violet', hex: '#7c3aed', rgb: '124,58,237', hover: '#6d28d9', light: '#a78bfa', lighter: '#ddd6fe' },
     { name: 'Purple', hex: '#9333ea', rgb: '147,51,234', hover: '#7e22ce', light: '#c084fc', lighter: '#e9d5ff' },
     { name: 'Pink',   hex: '#db2777', rgb: '219,39,119', hover: '#be185d', light: '#f472b6', lighter: '#fbcfe8' },
+    // Apple's system colours — the accents the OS itself uses. Appended so
+    // existing saved accentIndex values keep pointing at the same swatch.
+    { name: 'Apple Blue',   hex: '#0071e3', rgb: '0,113,227',   hover: '#0062c4', light: '#2997ff', lighter: '#8ec5ff' },
+    { name: 'Apple Green',  hex: '#34c759', rgb: '52,199,89',   hover: '#28a745', light: '#30d158', lighter: '#8ee6a1' },
+    { name: 'Apple Orange', hex: '#ff9500', rgb: '255,149,0',   hover: '#e0830a', light: '#ff9f0a', lighter: '#ffc978' },
+    { name: 'Apple Red',    hex: '#ff3b30', rgb: '255,59,48',   hover: '#e0322a', light: '#ff453a', lighter: '#ff9d97' },
+    { name: 'Apple Purple', hex: '#af52de', rgb: '175,82,222',  hover: '#9a44c4', light: '#bf5af2', lighter: '#dcaaf5' },
+    { name: 'Apple Pink',   hex: '#ff2d55', rgb: '255,45,85',   hover: '#e0284c', light: '#ff375f', lighter: '#ff96ab' },
+    { name: 'Graphite',     hex: '#8e8e93', rgb: '142,142,147', hover: '#7a7a80', light: '#aeaeb2', lighter: '#d1d1d6' },
 ];
 
 const BG_THEMES = [
     // ── Dark ──
     { id: 'slate',    name: 'Slate',     preview: '#020617', base: '#020617', surface: '#0f172a', elevated: '#1e293b', border: '#1e293b', borderHi: '#334155', inputBg: '#1e293b', dark: true  },
-    { id: 'black',    name: 'Black',     preview: '#000000', base: '#000000', surface: '#0c0c0c', elevated: '#161616', border: '#202020', borderHi: '#2a2a2a', inputBg: '#141414', dark: true  },
+    // Apple's dark register: pure black page, #1a1a1a cards (the surface the
+    // system's own dark widgets use), hairlines a step above.
+    { id: 'black',    name: 'Black',     preview: '#000000', base: '#000000', surface: '#111111', elevated: '#1a1a1a', border: '#242424', borderHi: '#333333', inputBg: '#1a1a1a', dark: true  },
     { id: 'midnight', name: 'Midnight',  preview: '#0a0e1a', base: '#0a0e1a', surface: '#111827', elevated: '#1b2436', border: '#1f2a3d', borderHi: '#2e3b54', inputBg: '#161f30', dark: true  },
     { id: 'deepblue', name: 'Deep Blue', preview: '#03071e', base: '#03071e', surface: '#060d28', elevated: '#0d1639', border: '#1a2550', borderHi: '#263a72', inputBg: '#0d1639', dark: true  },
     { id: 'ocean',    name: 'Ocean',     preview: '#04151f', base: '#04151f', surface: '#08202e', elevated: '#0d2c3e', border: '#12384c', borderHi: '#1b5069', inputBg: '#0a2734', dark: true  },
@@ -96,13 +107,13 @@ const CATEGORY_TILE_GREYS = [
 function loadSettingsData() {
     try {
         if (fs.existsSync(SETTINGS_FILE)) {
-            settingsData = { ...settingsData, ...JSON.parse(fs.readFileSync(SETTINGS_FILE, 'utf8')) };
+            settingsData = { ...settingsData, ...readJsonStrict(SETTINGS_FILE) };
         }
     } catch(e) {}
 }
 
 function saveSettingsData() {
-    fs.writeFileSync(SETTINGS_FILE, JSON.stringify(settingsData, null, 2));
+    writeJsonSafe(SETTINGS_FILE, settingsData);
 }
 
 function hexToRgb(hex) {
@@ -244,7 +255,9 @@ function buildThemeVars(t) {
         const baseL = hexToHsl(t.base).l;
         // 600 is dim text and icons (text-slate-600 is its main use), so it
         // needs to be ink, not another surface; from there down the stops mirror.
-        const mirror = { 800: baseL - 12, 700: baseL - 23, 600: 60, 500: 47, 400: 32, 300: 22, 200: 13, 100: 10, 50: 8 };
+        // Ink follows Apple's light-mode text ramp: #1d1d1f primary (200),
+        // #424245 (300), #86868b secondary (400), #aeaeb2 tertiary (600).
+        const mirror = { 800: baseL - 12, 700: baseL - 23, 600: 68, 500: 57, 400: 50, 300: 27, 200: 13, 100: 11, 50: 9 };
         for (const stop of [800, 700, 600, 500, 400, 300, 200, 100, 50]) derive(stop, mirror[stop]);
     }
 

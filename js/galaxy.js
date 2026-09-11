@@ -995,7 +995,8 @@ function renderGalaxySim() {
     T = window.THREE;
     if (!T) { console.warn('THREE not loaded'); return; }
     if (!renderer) {
-        renderer = new T.WebGLRenderer({ antialias: true, alpha: false });
+        renderer = uiCreateWebGLRenderer(container, { antialias: true, alpha: false });
+        if (!renderer) return;
         renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
         renderer.outputEncoding = T.sRGBEncoding;
         // width/height:100% are required — a <canvas> is a replaced element and

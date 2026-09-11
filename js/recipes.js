@@ -5,12 +5,12 @@
 function loadRecipesData() {
     try {
         if (fs.existsSync(RECIPES_FILE))
-            return JSON.parse(fs.readFileSync(RECIPES_FILE, 'utf8'));
+            return readJsonStrict(RECIPES_FILE);
     } catch (_) {}
     return { recipes: [] };
 }
 function saveRecipesData() {
-    try { fs.writeFileSync(RECIPES_FILE, JSON.stringify(recipesData, null, 2)); } catch (_) {}
+    try { writeJsonSafe(RECIPES_FILE, recipesData); } catch (_) {}
 }
 
 // ── State ──────────────────────────────────────────────────────────

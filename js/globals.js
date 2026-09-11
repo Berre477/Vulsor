@@ -20,23 +20,125 @@ const { pathToFileURL } = require('url');
     function _quietErrToast() {}
     // Remove any toast element left behind by an older build still in the DOM.
     try { const old = document.getElementById('vulsor-global-err-toast'); if (old) old.remove(); } catch (_) {}
+    // Errors also go to a small rolling log file, so a problem the user hits
+    // in a packaged build (where there is no console) can still be diagnosed.
+    // Best-effort: if the log can't be written, nothing else is affected.
+    let _logDir = null, _logBytes = 0;
+    function _logToFile(kind, err) {
+        try {
+            if (!_logDir) return;
+            const file = path.join(_logDir, 'renderer.log');
+            if (_logBytes === 0 && fs.existsSync(file)) {
+                _logBytes = fs.statSync(file).size;
+                if (_logBytes > 512 * 1024) { fs.renameSync(file, file + '.1'); _logBytes = 0; }
+            }
+            const msg = err && err.stack ? err.stack : String(err && err.message || err);
+            const line = `${new Date().toISOString()} [${kind}] ${msg}\n`;
+            fs.appendFileSync(file, line);
+            _logBytes += line.length;
+        } catch (_) {}
+    }
+    window.__vulsorSetLogDir = dir => { _logDir = dir; };
+    window.__vulsorLog = _logToFile;
+
     window.addEventListener('error', ev => {
         // Ignore benign resource load errors (missing image/favicon etc.)
         if (ev && ev.target && ev.target !== window && (ev.target.tagName === 'IMG' || ev.target.tagName === 'LINK' || ev.target.tagName === 'SCRIPT')) return;
         // Well-known harmless browser noise, not a real error
         if (ev && typeof ev.message === 'string' && ev.message.includes('ResizeObserver loop')) return;
         console.error('[global error]', ev && (ev.error || ev.message));
+        // A SyntaxError here means a whole feature file failed to parse and
+        // every function in it is missing — worth knowing which one.
+        const where = ev && ev.filename ? ` (${ev.filename.split('/').pop()}:${ev.lineno})` : '';
+        _logToFile('error', (ev && ev.error) || ((ev && ev.message) + where));
     });
     window.addEventListener('unhandledrejection', ev => {
         console.error('[unhandled rejection]', ev && ev.reason);
+        _logToFile('rejection', ev && ev.reason);
         if (ev && ev.preventDefault) ev.preventDefault();   // stop console noise
     });
     window.__vulsorErrToast = _quietErrToast;
 })();
 
+// ── Filesystem safety helpers ─────────────────────────────────────
+// Every feature keeps its data as a JSON file under DOCUMENTS_PATH. These
+// wrap the three things that go wrong with that in practice:
+//   • the directory isn't writable (macOS denied Documents access, read-only
+//     volume, iCloud Desktop & Documents mid-sync) — ensureDir() reports it
+//     instead of throwing at load and taking the whole renderer down;
+//   • a file is truncated or corrupt (crash mid-write, sync conflict) —
+//     readJsonSafe() returns the fallback and sets the bad file aside as
+//     *.corrupt-<time> rather than letting the next save overwrite it;
+//   • a crash during a write leaves half a file — writeJsonSafe() writes to a
+//     temp file and renames, so the previous version survives.
+function ensureDir(dir) {
+    try {
+        fs.mkdirSync(dir, { recursive: true });
+        fs.accessSync(dir, fs.constants.W_OK);
+        return true;
+    } catch (_) { return false; }
+}
+function readJsonSafe(file, fallback) {
+    try {
+        if (!fs.existsSync(file)) return fallback;
+        const raw = fs.readFileSync(file, 'utf8');
+        if (!raw.trim()) return fallback;
+        return JSON.parse(raw);
+    } catch (e) {
+        console.warn('[fs] could not read', file, e && e.message);
+        try {
+            const aside = `${file}.corrupt-${new Date().toISOString().replace(/[:.]/g, '-')}`;
+            fs.copyFileSync(file, aside);
+            if (window.__vulsorLog) window.__vulsorLog('corrupt-json', `${path.basename(file)} set aside as ${path.basename(aside)}: ${e && e.message}`);
+        } catch (_) {}
+        return fallback;
+    }
+}
+// Same set-aside behaviour, but throws on a corrupt file so existing
+// `try { data = readJsonStrict(FILE) } catch { data = defaults }` loaders keep
+// their control flow — they just stop overwriting the damaged file on the
+// next save.
+function readJsonStrict(file) {
+    const raw = fs.readFileSync(file, 'utf8');
+    try { return JSON.parse(raw); }
+    catch (e) {
+        try {
+            const aside = `${file}.corrupt-${new Date().toISOString().replace(/[:.]/g, '-')}`;
+            fs.copyFileSync(file, aside);
+            if (window.__vulsorLog) window.__vulsorLog('corrupt-json', `${path.basename(file)} set aside as ${path.basename(aside)}: ${e && e.message}`);
+        } catch (_) {}
+        throw e;
+    }
+}
+function writeJsonSafe(file, data) {
+    const tmp = `${file}.tmp-${process.pid}`;
+    try {
+        fs.writeFileSync(tmp, JSON.stringify(data, null, 2));
+        fs.renameSync(tmp, file);
+        return true;
+    } catch (e) {
+        console.error('[fs] could not write', file, e && e.message);
+        if (window.__vulsorLog) window.__vulsorLog('write-failed', `${path.basename(file)}: ${e && e.message}`);
+        try { if (fs.existsSync(tmp)) fs.unlinkSync(tmp); } catch (_) {}
+        return false;
+    }
+}
+
 // ── Storage paths ──────────────────────────────────────────────
-const DOCUMENTS_PATH = path.join(os.homedir(), 'Documents', 'Vulsor_Memories');
-if (!fs.existsSync(DOCUMENTS_PATH)) fs.mkdirSync(DOCUMENTS_PATH, { recursive: true });
+// Documents/Vulsor_Memories is the home for everything. If it can't be
+// created or written (macOS "Vulsor would like to access your Documents
+// folder" declined, read-only volume …) fall back to a hidden folder in the
+// home directory rather than failing at load — the app must always open.
+const DOCUMENTS_PATH = (() => {
+    const primary = path.join(os.homedir(), 'Documents', 'Vulsor_Memories');
+    if (ensureDir(primary)) return primary;
+    const fallback = path.join(os.homedir(), '.vulsor');
+    ensureDir(fallback);
+    console.warn('[fs] Documents folder not writable — using', fallback);
+    window.__vulsorDataDirFallback = true;
+    return fallback;
+})();
+window.__vulsorSetLogDir(DOCUMENTS_PATH);
 
 const TODOS_FILE      = path.join(DOCUMENTS_PATH, 'todos.json');
 const LISTS_FILE      = path.join(DOCUMENTS_PATH, 'lists.json');
@@ -46,7 +148,7 @@ const CALENDAR_FILE   = path.join(DOCUMENTS_PATH, 'calendar.json');
 const STUDY_FILE      = path.join(DOCUMENTS_PATH, 'study.json');
 const VAULT_FILE      = path.join(DOCUMENTS_PATH, 'vault.json');
 const VAULT_DIR       = path.join(DOCUMENTS_PATH, 'vault');
-if (!fs.existsSync(VAULT_DIR)) fs.mkdirSync(VAULT_DIR, { recursive: true });
+ensureDir(VAULT_DIR);
 const FINANCE_FILE    = path.join(DOCUMENTS_PATH, 'finance.json');
 const JOURNAL_FILE    = path.join(DOCUMENTS_PATH, 'journal.json');
 const LAB_FILE        = path.join(DOCUMENTS_PATH, 'lab.json');
@@ -57,7 +159,7 @@ const LEARN_FILE      = path.join(DOCUMENTS_PATH, 'learn.json');
 const COUNTDOWN_FILE  = path.join(DOCUMENTS_PATH, 'countdowns.json');
 const DOCS_FILE       = path.join(DOCUMENTS_PATH, 'docs.json');
 const DOCS_DIR        = path.join(DOCUMENTS_PATH, 'docs');
-if (!fs.existsSync(DOCS_DIR)) fs.mkdirSync(DOCS_DIR, { recursive: true });
+ensureDir(DOCS_DIR);
 const SETTINGS_FILE   = path.join(DOCUMENTS_PATH, 'settings.json');
 const STUDIO_FILE     = path.join(DOCUMENTS_PATH, 'studio.json');
 const WORKOUT_FILE    = path.join(DOCUMENTS_PATH, 'workout.json');
@@ -70,12 +172,12 @@ const MAIL_FILE       = path.join(DOCUMENTS_PATH, 'mail.json');
 const RTS_SAVE_FILE   = path.join(DOCUMENTS_PATH, 'empire_save.json');
 const NETWORK_FILE    = path.join(DOCUMENTS_PATH, 'network.json');
 const NETWORK_DIR     = path.join(DOCUMENTS_PATH, 'network_downloads');
-if (!fs.existsSync(NETWORK_DIR)) fs.mkdirSync(NETWORK_DIR, { recursive: true });
+ensureDir(NETWORK_DIR);
 let mailData = { accounts: [] };
 const WORKOUT_DIR     = path.join(DOCUMENTS_PATH, 'workout_media');
-if (!fs.existsSync(WORKOUT_DIR)) fs.mkdirSync(WORKOUT_DIR, { recursive: true });
+ensureDir(WORKOUT_DIR);
 const RECIPES_DIR     = path.join(DOCUMENTS_PATH, 'recipe_photos');
-if (!fs.existsSync(RECIPES_DIR)) fs.mkdirSync(RECIPES_DIR, { recursive: true });
+ensureDir(RECIPES_DIR);
 
 // Files to exclude when listing chat sessions
 const NON_CHAT_FILES = new Set(['todos.json','lists.json','commands.json','study.json','vault.json','finance.json','journal.json','lab.json','recipes.json','books.json','learn.json','studio.json','workout.json','countdowns.json','news.json','courses.json','calendar.json']);

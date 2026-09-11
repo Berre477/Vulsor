@@ -5,7 +5,7 @@
 function loadStudyData() {
     try {
         return fs.existsSync(STUDY_FILE)
-            ? JSON.parse(fs.readFileSync(STUDY_FILE, 'utf8'))
+            ? readJsonStrict(STUDY_FILE)
             : defaultStudyData();
     } catch(_) { return defaultStudyData(); }
 }
@@ -19,7 +19,7 @@ function defaultStudyData() {
 }
 
 function saveStudyData() {
-    fs.writeFileSync(STUDY_FILE, JSON.stringify(studyData, null, 2));
+    writeJsonSafe(STUDY_FILE, studyData);
 }
 
 // ── State ─────────────────────────────────────────────────────────

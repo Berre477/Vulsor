@@ -9,12 +9,12 @@
 function loadWriterData() {
     try {
         if (fs.existsSync(WRITER_FILE))
-            return JSON.parse(fs.readFileSync(WRITER_FILE, 'utf8'));
+            return readJsonStrict(WRITER_FILE);
     } catch (_) {}
     return { projects: [] };
 }
 function saveWriterData() {
-    try { fs.writeFileSync(WRITER_FILE, JSON.stringify(writerData, null, 2)); } catch (_) {}
+    try { writeJsonSafe(WRITER_FILE, writerData); } catch (_) {}
 }
 
 // ── State ──────────────────────────────────────────────────────────

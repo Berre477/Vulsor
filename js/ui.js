@@ -1,6 +1,48 @@
 // ── UI Helpers ─────────────────────────────────────────────────
 // Depends on: globals.js (chatBox, currentImageBase64, currentImageDataUrl)
 
+// ── Shared "this can't run here" panel ────────────────────────────
+// Used wherever a feature depends on something the machine may not have
+// (WebGL, a helper binary, a network service). Renders a quiet, centred
+// explanation inside the feature's own container so the rest of the app is
+// untouched; optional action button for the fix.
+function uiUnavailable(container, { icon = 'fa-triangle-exclamation', title, detail, action, onAction } = {}) {
+    if (!container) return null;
+    container.querySelector('.ui-unavailable')?.remove();
+    const el = document.createElement('div');
+    el.className = 'ui-unavailable';
+    el.innerHTML = `
+        <div class="ui-unavailable-icon"><i class="fas ${icon}"></i></div>
+        <div class="ui-unavailable-title">${title || 'Not available'}</div>
+        ${detail ? `<div class="ui-unavailable-detail">${detail}</div>` : ''}
+        ${action ? `<button type="button" class="ui-unavailable-action">${action}</button>` : ''}`;
+    if (action && onAction) el.querySelector('.ui-unavailable-action').onclick = onAction;
+    if (getComputedStyle(container).position === 'static') container.style.position = 'relative';
+    container.appendChild(el);
+    return el;
+}
+
+// Creating a WebGLRenderer throws when the GPU process is unavailable or
+// WebGL is disabled. Every 3D feature goes through here so that case shows
+// the panel above instead of a blank pane and a console error.
+function uiCreateWebGLRenderer(container, opts) {
+    try {
+        if (typeof THREE === 'undefined') throw new Error('three.js did not load');
+        const probe = document.createElement('canvas');
+        if (!(probe.getContext('webgl2') || probe.getContext('webgl'))) throw new Error('WebGL is not available');
+        return new THREE.WebGLRenderer(opts);
+    } catch (e) {
+        console.warn('[webgl]', e && e.message);
+        if (window.__vulsorLog) window.__vulsorLog('webgl', e && e.message);
+        uiUnavailable(container, {
+            icon: 'fa-cube',
+            title: '3D isn\'t available on this machine',
+            detail: 'WebGL couldn\'t start. Graphics drivers or a hardware-acceleration setting are usually the cause; the rest of Vulsor works normally.',
+        });
+        return null;
+    }
+}
+
 function formatText(text) {
     // Escape HTML first to avoid XSS in code blocks
     const escapeHtml = (s) => s

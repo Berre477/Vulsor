@@ -6,14 +6,14 @@
 function loadWorkoutData() {
     try {
         if (fs.existsSync(WORKOUT_FILE)) {
-            const d = JSON.parse(fs.readFileSync(WORKOUT_FILE, 'utf8'));
+            const d = readJsonStrict(WORKOUT_FILE);
             return { days: d.days || {}, settings: d.settings || {} };
         }
     } catch (_) {}
     return { days: {}, settings: {} };
 }
 function saveWorkoutData() {
-    try { fs.writeFileSync(WORKOUT_FILE, JSON.stringify(workoutData, null, 2)); }
+    try { writeJsonSafe(WORKOUT_FILE, workoutData); }
     catch (e) { console.error('[workout] save failed:', e); }
 }
 
@@ -1256,7 +1256,7 @@ function woReadVulsorHost() {
 // is what keeps the page from being found by anyone else.
 function woShareConfig() {
     let cfg = {};
-    try { cfg = JSON.parse(fs.readFileSync(WORKOUT_SHARE_FILE, 'utf8')) || {}; } catch (_) {}
+    try { cfg = readJsonStrict(WORKOUT_SHARE_FILE) || {}; } catch (_) {}
     const before = JSON.stringify(cfg);
     // Off by default: scanning should open a tab instantly, and until the box is
     // actually running, trying to publish first would only stall the QR. Flip this
@@ -1267,7 +1267,7 @@ function woShareConfig() {
     if (!cfg.token) cfg.token = require('crypto').randomBytes(16).toString('hex');
     if (!cfg.slug)  cfg.slug  = require('crypto').randomBytes(16).toString('hex');
     if (JSON.stringify(cfg) !== before) {
-        try { fs.writeFileSync(WORKOUT_SHARE_FILE, JSON.stringify(cfg, null, 2)); } catch (_) {}
+        try { writeJsonSafe(WORKOUT_SHARE_FILE, cfg); } catch (_) {}
     }
     return cfg;
 }

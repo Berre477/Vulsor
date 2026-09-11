@@ -269,7 +269,8 @@
 
         // antialias off + pixelRatio 1: this app runs WebGL in software (hardware
         // accel is disabled for the video fix), so resolution/AA dominate cost.
-        renderer = new T.WebGLRenderer({ antialias: false, powerPreference: 'high-performance' });
+        renderer = uiCreateWebGLRenderer(container, { antialias: false, powerPreference: 'high-performance' });
+        if (!renderer) return false;
         renderer.setPixelRatio(1);
         if (T.sRGBEncoding) renderer.outputEncoding = T.sRGBEncoding;
         renderer.domElement.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;display:block';

@@ -5,12 +5,12 @@
 function loadBooksData() {
     try {
         if (fs.existsSync(BOOKS_FILE))
-            return JSON.parse(fs.readFileSync(BOOKS_FILE, 'utf8'));
+            return readJsonStrict(BOOKS_FILE);
     } catch (_) {}
     return { books: [] };
 }
 function saveBooksData() {
-    try { fs.writeFileSync(BOOKS_FILE, JSON.stringify(booksData, null, 2)); } catch (_) {}
+    try { writeJsonSafe(BOOKS_FILE, booksData); } catch (_) {}
 }
 
 // ── State ──────────────────────────────────────────────────────────

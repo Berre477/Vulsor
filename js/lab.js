@@ -11,12 +11,12 @@
 function loadLabData() {
     try {
         if (fs.existsSync(LAB_FILE))
-            return JSON.parse(fs.readFileSync(LAB_FILE, 'utf8'));
+            return readJsonStrict(LAB_FILE);
     } catch (_) {}
     return { reports: [] };
 }
 function saveLabData() {
-    try { fs.writeFileSync(LAB_FILE, JSON.stringify(labData, null, 2)); } catch (_) {}
+    try { writeJsonSafe(LAB_FILE, labData); } catch (_) {}
 }
 
 // ── State ──────────────────────────────────────────────────────────

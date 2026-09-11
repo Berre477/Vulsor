@@ -9,12 +9,12 @@
 function loadLearnData() {
     try {
         if (fs.existsSync(LEARN_FILE))
-            return JSON.parse(fs.readFileSync(LEARN_FILE, 'utf8'));
+            return readJsonStrict(LEARN_FILE);
     } catch (_) {}
     return { topics: [] };
 }
 function saveLearnData() {
-    try { fs.writeFileSync(LEARN_FILE, JSON.stringify(learnData, null, 2)); } catch (_) {}
+    try { writeJsonSafe(LEARN_FILE, learnData); } catch (_) {}
 }
 
 // ── State ──────────────────────────────────────────────────────────

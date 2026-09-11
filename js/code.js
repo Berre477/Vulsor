@@ -1159,7 +1159,15 @@ function _ensureAceInit(onReady) {
         if (typeof vulsorLoadAce !== 'function') { console.warn('[Vulsor] Ace editor not loaded'); return; }
         vulsorLoadAce()
             .then(() => _ensureAceInit(onReady))
-            .catch(e => console.error('[Vulsor] Ace failed to load:', e));
+            .catch(e => {
+                console.error('[Vulsor] Ace failed to load:', e);
+                const host = document.getElementById('vault-code-ace');
+                if (host && typeof uiUnavailable === 'function') uiUnavailable(host, {
+                    icon: 'fa-code', title: 'The code editor couldn\'t load',
+                    detail: 'Part of the editor failed to load from disk. Retrying usually fixes it; if not, reinstalling Vulsor restores the missing files.',
+                    action: 'Retry', onAction: () => { host.querySelector('.ui-unavailable')?.remove(); _ensureAceInit(onReady); },
+                });
+            });
         return;
     }
 

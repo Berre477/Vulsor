@@ -3,14 +3,14 @@
 
 function loadCommands() {
     try {
-        customCommands = fs.existsSync(COMMANDS_FILE) ? JSON.parse(fs.readFileSync(COMMANDS_FILE, 'utf8')) : [];
+        customCommands = fs.existsSync(COMMANDS_FILE) ? readJsonStrict(COMMANDS_FILE) : [];
     } catch (_) {
         customCommands = [];
     }
 }
 
 function saveCommands() {
-    fs.writeFileSync(COMMANDS_FILE, JSON.stringify(customCommands, null, 2));
+    writeJsonSafe(COMMANDS_FILE, customCommands);
 }
 
 function renderCommandsList() {

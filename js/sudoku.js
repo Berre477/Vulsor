@@ -91,17 +91,17 @@ function _sdkNewGame(diff) {
 // ── Persistence ────────────────────────────────────────────────
 function _sdkSave() {
     try {
-        fs.writeFileSync(SUDOKU_FILE, JSON.stringify({
+        writeJsonSafe(SUDOKU_FILE, {
             solution: _sdkSolution, given: _sdkGiven, cells: _sdkCells, notes: _sdkNotes,
             diff: _sdkDiff, mistakes: _sdkMistakes, start: _sdkStart, done: _sdkDone,
             stats: _sdkStats,
-        }));
+        });
     } catch (_) {}
 }
 function _sdkLoad() {
     try {
         if (fs.existsSync(SUDOKU_FILE)) {
-            const d = JSON.parse(fs.readFileSync(SUDOKU_FILE, 'utf8'));
+            const d = readJsonStrict(SUDOKU_FILE);
             if (d.stats && d.stats.byDiff) _sdkStats = d.stats;   // stats persist across games
             if (d.solution && d.cells) {
                 _sdkSolution = d.solution; _sdkGiven = d.given; _sdkCells = d.cells;

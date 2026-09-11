@@ -46,6 +46,13 @@
                 { hex: '#7c3aed', rgb: '124,58,237', hover: '#6d28d9', light: '#a78bfa', lighter: '#ddd6fe' },
                 { hex: '#9333ea', rgb: '147,51,234', hover: '#7e22ce', light: '#c084fc', lighter: '#e9d5ff' },
                 { hex: '#db2777', rgb: '219,39,119', hover: '#be185d', light: '#f472b6', lighter: '#fbcfe8' },
+                { hex: '#0071e3', rgb: '0,113,227',   hover: '#0062c4', light: '#2997ff', lighter: '#8ec5ff' },
+                { hex: '#34c759', rgb: '52,199,89',   hover: '#28a745', light: '#30d158', lighter: '#8ee6a1' },
+                { hex: '#ff9500', rgb: '255,149,0',   hover: '#e0830a', light: '#ff9f0a', lighter: '#ffc978' },
+                { hex: '#ff3b30', rgb: '255,59,48',   hover: '#e0322a', light: '#ff453a', lighter: '#ff9d97' },
+                { hex: '#af52de', rgb: '175,82,222',  hover: '#9a44c4', light: '#bf5af2', lighter: '#dcaaf5' },
+                { hex: '#ff2d55', rgb: '255,45,85',   hover: '#e0284c', light: '#ff375f', lighter: '#ff96ab' },
+                { hex: '#8e8e93', rgb: '142,142,147', hover: '#7a7a80', light: '#aeaeb2', lighter: '#d1d1d6' },
             ];
 
             function h2r(h) {
@@ -187,7 +194,7 @@
                 <!-- Chat toolbar (only on chat tab) -->
                 <div id="chat-toolbar" class="flex items-center gap-1.5" style="display:none">
                     <span id="chat-session-title" class="text-slate-500 text-xs truncate max-w-[160px] hidden sm:block">New Conversation</span>
-                    <button id="commands-btn" title="Custom Commands" class="browser-tool-btn hover:text-red-400"><i class="fas fa-slash" style="font-size:10px"></i></button>
+                    <button id="commands-btn" title="Custom commands (type / in chat)" class="browser-tool-btn"><i class="fas fa-terminal" style="font-size:10px"></i></button>
                 </div>
 
                 <!-- Right actions -->
@@ -347,6 +354,19 @@
 
                 <!-- Messages -->
                 <div id="chat-box" class="flex-1 overflow-y-auto p-5 chat-scroll space-y-1 bg-slate-950"></div>
+                <!-- Empty state: shown by chat.js while the message list has nothing in it -->
+                <div id="chat-empty" class="chat-empty" hidden>
+                    <div class="chat-empty-badge"><i class="fas fa-comments"></i></div>
+                    <h2 class="chat-empty-title">What can I help with?</h2>
+                    <p class="chat-empty-sub">Ask a question, paste something to work through, or pick a starting point.</p>
+                    <div class="chat-empty-chips">
+                        <button type="button" class="chat-empty-chip" data-prompt="Explain this concept to me step by step: "><i class="fas fa-graduation-cap"></i>Explain a concept</button>
+                        <button type="button" class="chat-empty-chip" data-prompt="Plot y = sin(x) and y = x^2 on the same graph"><i class="fas fa-chart-line"></i>Plot a function</button>
+                        <button type="button" class="chat-empty-chip" data-prompt="Help me write "><i class="fas fa-pen-nib"></i>Help me write</button>
+                        <button type="button" class="chat-empty-chip" data-prompt="Summarise the key points of: "><i class="fas fa-list-check"></i>Summarise something</button>
+                    </div>
+                    <p class="chat-empty-hint">Type <kbd>/</kbd> for commands · <kbd>⏎</kbd> to send</p>
+                </div>
 
                 <!-- Commands Modal -->
                 <div id="commands-modal" class="absolute inset-0 z-40 bg-black/60 backdrop-blur-sm items-center justify-center">
@@ -1938,24 +1958,25 @@
             <!-- Summary cards + controls -->
             <div class="px-6 pt-4 pb-3 border-b border-slate-800/60 shrink-0">
                 <!-- Stats cards -->
-                <div class="grid grid-cols-3 gap-3 mb-4">
-                    <div class="bg-slate-900/70 border border-slate-800/60 rounded-2xl px-4 py-3">
+                <!-- Bento: 6px gap, 18px radius, every cell filled -->
+                <div class="grid grid-cols-3 gap-1.5 mb-4">
+                    <div class="bg-slate-900/70 border border-slate-800/60 rounded-2xl px-5 py-4">
                         <p class="text-slate-600 text-[10px] uppercase tracking-widest mb-1">Balance</p>
-                        <p id="finance-balance" class="text-xl font-bold tabular-nums text-green-400">$0.00</p>
+                        <p id="finance-balance" class="text-2xl font-bold tabular-nums text-green-400">$0.00</p>
                     </div>
-                    <div class="bg-green-950/40 border border-green-900/30 rounded-2xl px-4 py-3">
+                    <div class="bg-green-950/40 border border-green-900/30 rounded-2xl px-5 py-4">
                         <div class="flex items-center gap-1.5 mb-1">
                             <i class="fas fa-arrow-down text-green-500 text-[9px]"></i>
                             <p class="text-green-700 text-[10px] uppercase tracking-widest">Income</p>
                         </div>
-                        <p id="finance-income" class="text-xl font-bold tabular-nums text-green-400">$0.00</p>
+                        <p id="finance-income" class="text-2xl font-bold tabular-nums text-green-400">$0.00</p>
                     </div>
-                    <div class="bg-red-950/40 border border-red-900/30 rounded-2xl px-4 py-3">
+                    <div class="bg-red-950/40 border border-red-900/30 rounded-2xl px-5 py-4">
                         <div class="flex items-center gap-1.5 mb-1">
                             <i class="fas fa-arrow-up text-red-500 text-[9px]"></i>
                             <p class="text-red-700 text-[10px] uppercase tracking-widest">Expenses</p>
                         </div>
-                        <p id="finance-expenses" class="text-xl font-bold tabular-nums text-red-400">$0.00</p>
+                        <p id="finance-expenses" class="text-2xl font-bold tabular-nums text-red-400">$0.00</p>
                     </div>
                 </div>
                 <!-- Period + chart type row -->

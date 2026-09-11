@@ -14,10 +14,10 @@ let mailMessages   = [];
 let mailOpenUid    = null;
 
 function loadMailData() {
-    try { if (fs.existsSync(MAIL_FILE)) return JSON.parse(fs.readFileSync(MAIL_FILE,'utf8')); } catch(_){}
+    try { if (fs.existsSync(MAIL_FILE)) return readJsonStrict(MAIL_FILE); } catch(_){}
     return { accounts: [] };
 }
-function saveMailData(){ try { fs.writeFileSync(MAIL_FILE, JSON.stringify(mailData,null,2)); } catch(e){ console.error('[mail] save',e); } }
+function saveMailData(){ try { writeJsonSafe(MAIL_FILE, mailData); } catch(e){ console.error('[mail] save',e); } }
 function _mEsc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 function _mAcct(){ return mailData.accounts.find(a=>a.id===mailActiveAcct) || null; }
 function _mDate(d){ try{ const dt=new Date(d); const now=new Date(); const sameDay=dt.toDateString()===now.toDateString(); return sameDay? dt.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}) : dt.toLocaleDateString([], {month:'short',day:'numeric'}); }catch(_){ return ''; } }

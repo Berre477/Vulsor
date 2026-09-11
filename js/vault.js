@@ -726,7 +726,7 @@ function vaultFilePath(f) {
 function loadVaultData() {
     try {
         return fs.existsSync(VAULT_FILE)
-            ? JSON.parse(fs.readFileSync(VAULT_FILE, 'utf8'))
+            ? readJsonStrict(VAULT_FILE)
             : { folders: [], files: [] };
     } catch(_) { return { folders: [], files: [] }; }
 }

@@ -8,7 +8,7 @@ const COUNTDOWN_COLORS = ['#eab308', '#f43f5e', '#3b82f6', '#10b981', '#a855f7',
 function loadCountdowns() {
     try {
         if (fs.existsSync(COUNTDOWN_FILE)) {
-            const data = JSON.parse(fs.readFileSync(COUNTDOWN_FILE, 'utf8'));
+            const data = readJsonStrict(COUNTDOWN_FILE);
             countdowns = Array.isArray(data) ? data : (data.countdowns || []);
         } else {
             countdowns = [];
@@ -19,7 +19,7 @@ function loadCountdowns() {
 }
 
 function saveCountdowns() {
-    try { fs.writeFileSync(COUNTDOWN_FILE, JSON.stringify(countdowns, null, 2)); } catch (_) {}
+    try { writeJsonSafe(COUNTDOWN_FILE, countdowns); } catch (_) {}
 }
 
 // ── Helpers ────────────────────────────────────────────────────────

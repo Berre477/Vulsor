@@ -40,7 +40,7 @@ let _calNowTimer  = null;
 function loadCalEvents() {
     try {
         if (fs.existsSync(CALENDAR_FILE)) {
-            const d = JSON.parse(fs.readFileSync(CALENDAR_FILE, 'utf8'));
+            const d = readJsonStrict(CALENDAR_FILE);
             return Array.isArray(d) ? d : (d.events || []);
         }
     } catch (e) { console.error('[calendar] load failed:', e); }

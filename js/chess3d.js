@@ -410,7 +410,8 @@ function chess3DInit() {
     const camera = new THREE.PerspectiveCamera(45,
         Math.max(1, container.clientWidth) / Math.max(1, container.clientHeight), 0.1, 100);
 
-    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    const renderer = uiCreateWebGLRenderer(container, { antialias: true, alpha: true });
+    if (!renderer) return;
     renderer.setSize(container.clientWidth, container.clientHeight);
     renderer.setPixelRatio(Math.min(2, window.devicePixelRatio));
     renderer.shadowMap.enabled = true;

@@ -808,7 +808,7 @@ function _vaultAILoadIndex() {
     if (vaultAIIndex) return vaultAIIndex;
     try {
         vaultAIIndex = fs.existsSync(VAULT_AI_INDEX_FILE)
-            ? JSON.parse(fs.readFileSync(VAULT_AI_INDEX_FILE, 'utf8'))
+            ? readJsonStrict(VAULT_AI_INDEX_FILE)
             : {};
     } catch (_) { vaultAIIndex = {}; }
     return vaultAIIndex;

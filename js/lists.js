@@ -10,7 +10,7 @@ const LIST_TABS = [
 
 function loadLists() {
     try {
-        const saved = fs.existsSync(LISTS_FILE) ? JSON.parse(fs.readFileSync(LISTS_FILE, 'utf8')) : {};
+        const saved = fs.existsSync(LISTS_FILE) ? readJsonStrict(LISTS_FILE) : {};
         lists = {
             shopping: saved.shopping || [],
             goals:    saved.goals    || [],
@@ -23,7 +23,7 @@ function loadLists() {
 }
 
 function saveLists() {
-    fs.writeFileSync(LISTS_FILE, JSON.stringify(lists, null, 2));
+    writeJsonSafe(LISTS_FILE, lists);
 }
 
 function renderListTab() {
