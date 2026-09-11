@@ -231,7 +231,7 @@ function renderBookFilter() {
         const c = color || BOOK_ACCENT;
         return `<button data-status="${key}" class="book-chip text-[10px] px-2 py-1 rounded-full transition-colors"
             style="${on ? `background:${c}2e;color:${c};border:1px solid ${c}59`
-                        : 'background:rgba(30,41,59,0.6);color:#94a3b8;border:1px solid rgba(51,65,85,0.6)'}">${label}</button>`;
+                        : 'background:rgb(var(--slate-800) / 0.6);color:rgb(var(--slate-400));border:1px solid rgb(var(--slate-700) / 0.6)'}">${label}</button>`;
     }).join('');
     wrap.querySelectorAll('.book-chip').forEach(btn => {
         btn.addEventListener('click', () => {

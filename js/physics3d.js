@@ -340,7 +340,7 @@ function _renderProps() {
         btn.className = 'flex flex-col items-center gap-0.5 px-1.5 py-1.5 rounded-lg text-[9px] font-semibold transition-all';
         btn.style.cssText = active
             ? `background:${def.css}25;color:${def.css};border:1px solid ${def.css}55;min-width:48px`
-            : 'background:transparent;color:#475569;border:1px solid #1e293b;min-width:48px';
+            : 'background:transparent;color:rgb(var(--slate-600));border:1px solid rgb(var(--slate-800));min-width:48px';
         btn.innerHTML = `<i class="fas ${def.icon} text-[10px]"></i>${def.label}`;
         btn.addEventListener('click', () => { _tool = def.id; _renderProps(); });
         palette.appendChild(btn);
@@ -383,7 +383,7 @@ function _renderProps() {
                 <span id="${labelId}" class="text-cyan-400 text-[10px] font-mono">${parseFloat(obj[key]).toFixed(2)}${unit}</span>
             </div>
             <input type="range" min="${min}" max="${max}" step="${step}" value="${obj[key]}"
-                class="w-full h-1 rounded appearance-none cursor-pointer" style="accent-color:#06b6d4">`;
+                class="w-full h-1 rounded appearance-none cursor-pointer" style="accent-color:rgb(var(--tw-cyan-500))">`;
         const sl  = row.querySelector('input');
         const lbl = row.querySelector(`#${labelId}`);
         sl.addEventListener('input', () => {
@@ -408,8 +408,8 @@ function _renderProps() {
     fixBtn.className = 'text-[10px] py-1.5 px-2 rounded-lg border flex items-center gap-1.5 w-full';
     const updateFixBtn = () => {
         fixBtn.style.cssText = obj.fixed
-            ? 'background:#1e40af22;color:#60a5fa;border-color:#1e40af55'
-            : 'background:#1e293b;color:#94a3b8;border-color:#334155';
+            ? 'background:#1e40af22;color:rgb(var(--tw-blue-400));border-color:#1e40af55'
+            : 'background:rgb(var(--slate-800));color:rgb(var(--slate-400));border-color:rgb(var(--slate-700))';
         fixBtn.innerHTML = `<i class="fas ${obj.fixed ? 'fa-lock' : 'fa-lock-open'} text-[9px]"></i> ${obj.fixed ? 'Fixed — click to release' : 'Free — click to fix'}`;
     };
     updateFixBtn();

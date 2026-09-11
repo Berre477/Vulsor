@@ -390,7 +390,7 @@ function _toggle(el, get, set, onText, offText, color) {
     const sync = () => {
         b.style.cssText = get()
             ? `background:${color}22;color:${color};border:1px solid ${color}44`
-            : 'background:transparent;color:#475569;border:1px solid #1e293b';
+            : 'background:transparent;color:rgb(var(--slate-600));border:1px solid rgb(var(--slate-800))';
         b.textContent = get() ? onText : offText;
     };
     sync();

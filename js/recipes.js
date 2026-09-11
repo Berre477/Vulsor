@@ -207,7 +207,7 @@ function renderRecipeFilter() {
         const on = m === recipeMealFilter;
         return `<button data-meal="${m}" class="recipe-chip text-[10px] px-2 py-1 rounded-full transition-colors"
             style="${on ? `background:rgba(249,115,22,0.18);color:${RECIPE_ACCENT};border:1px solid rgba(249,115,22,0.35)`
-                        : 'background:rgba(30,41,59,0.6);color:#94a3b8;border:1px solid rgba(51,65,85,0.6)'}">${m}</button>`;
+                        : 'background:rgb(var(--slate-800) / 0.6);color:rgb(var(--slate-400));border:1px solid rgb(var(--slate-700) / 0.6)'}">${m}</button>`;
     }).join('');
     wrap.querySelectorAll('.recipe-chip').forEach(btn => {
         btn.addEventListener('click', () => {

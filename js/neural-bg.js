@@ -37,6 +37,25 @@
 
     const rand = (a, b) => a + Math.random() * (b - a);
 
+    // Light background themes flip the page to near-white, and white stars on
+    // white paper vanish. Every style takes its "starlight" colours from here
+    // so the same scene reads as ink on paper when the theme is light. The
+    // accent-tinted parts already work on both.
+    const isLight = () => document.documentElement.dataset.theme === 'light';
+    const INK = {
+        star:      () => isLight() ? '51,65,85'   : '214,228,255',   // small distant stars
+        starHi:    () => isLight() ? '30,41,59'   : '226,236,255',   // brighter / bent stars
+        nebStar:   () => isLight() ? '30,41,59'   : '235,243,255',
+        streak:    () => isLight() ? '51,65,85'   : '215,230,255',   // warp lines
+        coreWarm:  () => isLight() ? '150,95,35'  : '255,241,214',   // galaxy core
+        coreMid:   () => isLight() ? '170,110,40' : '255,196,120',
+        coreEdge:  () => isLight() ? '190,130,60' : '255,170,90',
+        armWarm:   () => isLight() ? '160,100,40' : '255,232,196',
+        armCool:   () => isLight() ? '60,80,120'  : '186,214,255',
+        // Additive blending brightens toward white — invisible on a light page.
+        blend:     () => isLight() ? 'multiply' : 'lighter',
+    };
+
     // ── Styles ─────────────────────────────────────────────────────────
     // Each has: build() to (re)seed for the current size, draw(t) to paint.
 
@@ -140,7 +159,7 @@
                     }
                     ctx.fillStyle = p.big
                         ? `rgba(${a},${alpha.toFixed(3)})`
-                        : `rgba(214,228,255,${(alpha * 0.85).toFixed(3)})`;
+                        : `rgba(${INK.star()},${(alpha * 0.85).toFixed(3)})`;
                     ctx.beginPath(); ctx.arc(sx, sy, r, 0, 6.2832); ctx.fill();
                 }
             },
@@ -166,7 +185,7 @@
             },
             draw(t) {
                 const slow = reduceMotion() ? 0.25 : 1;
-                ctx.globalCompositeOperation = 'lighter';
+                ctx.globalCompositeOperation = INK.blend();
                 for (const b of blobs) {
                     const k = t * b.sp * slow + b.ph;
                     const cx = (b.px + Math.cos(k) * b.ax) * W;
@@ -290,7 +309,7 @@
                     const sx = cx + dx * k, sy = cy + dy * k;
                     if (sx < -20 || sx > W + 20 || sy < -20 || sy > H + 20) continue;
                     const a = (0.35 + 0.35 * Math.sin(t * 0.0015 + st.tw)) * Math.min(1, d / (R * 3));
-                    ctx.fillStyle = `rgba(226,236,255,${a.toFixed(3)})`;
+                    ctx.fillStyle = `rgba(${INK.starHi()},${a.toFixed(3)})`;
                     ctx.beginPath(); ctx.arc(sx, sy, st.r, 0, 6.2832); ctx.fill();
                 }
 
@@ -320,7 +339,7 @@
                     ctx.beginPath(); ctx.arc(pos.x, pos.y, size, 0, 6.2832); ctx.fill();
                 };
 
-                ctx.globalCompositeOperation = 'lighter';
+                ctx.globalCompositeOperation = INK.blend();
                 const near = [];
                 for (const p of disk) {
                     const pos = place(p);
@@ -337,7 +356,7 @@
                 ctx.beginPath(); ctx.arc(cx, cy, R * 1.35, 0, 6.2832); ctx.fill();
 
                 // Photon ring.
-                ctx.globalCompositeOperation = 'lighter';
+                ctx.globalCompositeOperation = INK.blend();
                 ctx.strokeStyle = 'rgba(255,214,160,0.55)';
                 ctx.lineWidth = Math.max(1, R * 0.045);
                 ctx.beginPath(); ctx.arc(cx, cy, R * 1.02, 0, 6.2832); ctx.stroke();
@@ -380,11 +399,11 @@
                 const acc = accentRGB();
 
                 // Core glow.
-                ctx.globalCompositeOperation = 'lighter';
+                ctx.globalCompositeOperation = INK.blend();
                 const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, maxR * 0.42);
-                g.addColorStop(0,   'rgba(255,241,214,0.30)');
-                g.addColorStop(0.35,'rgba(255,196,120,0.11)');
-                g.addColorStop(1,   'rgba(255,170,90,0)');
+                g.addColorStop(0,   `rgba(${INK.coreWarm()},0.30)`);
+                g.addColorStop(0.35,`rgba(${INK.coreMid()},0.11)`);
+                g.addColorStop(1,   `rgba(${INK.coreEdge()},0)`);
                 ctx.fillStyle = g;
                 ctx.beginPath(); ctx.arc(cx, cy, maxR * 0.42, 0, 6.2832); ctx.fill();
 
@@ -399,8 +418,8 @@
                     const a = (0.55 - p.r * 0.30) * p.w * tw;
                     // Warm core, cooler accent-tinted arms.
                     const col = p.r < 0.28
-                        ? `255,232,196`
-                        : (Math.random() < 0.5 ? acc : '186,214,255');
+                        ? INK.armWarm()
+                        : (Math.random() < 0.5 ? acc : INK.armCool());
                     ctx.fillStyle = `rgba(${col},${a.toFixed(3)})`;
                     ctx.beginPath(); ctx.arc(x, y, (1.5 - p.r * 0.8) * p.w, 0, 6.2832); ctx.fill();
                 }
@@ -434,7 +453,7 @@
             },
             draw(t) {
                 const slow = reduceMotion() ? 0.25 : 1;
-                ctx.globalCompositeOperation = 'lighter';
+                ctx.globalCompositeOperation = INK.blend();
                 for (const c of clouds) {
                     const k = t * c.sp * slow + c.ph;
                     const x = (c.px + Math.cos(k) * c.ax) * W;
@@ -448,7 +467,7 @@
                 }
                 for (const p of pts) {
                     const a = 0.35 + 0.4 * Math.sin(t * 0.0014 + p.tw);
-                    ctx.fillStyle = `rgba(235,243,255,${Math.max(0, a).toFixed(3)})`;
+                    ctx.fillStyle = `rgba(${INK.nebStar()},${Math.max(0, a).toFixed(3)})`;
                     ctx.beginPath();
                     ctx.arc(p.x, p.y, p.r, 0, 6.2832);
                     ctx.fill();
@@ -486,7 +505,7 @@
                     if (a < 0.02) continue;
                     ctx.strokeStyle = near > 0.72
                         ? `rgba(${acc},${a.toFixed(3)})`
-                        : `rgba(215,230,255,${a.toFixed(3)})`;
+                        : `rgba(${INK.streak()},${a.toFixed(3)})`;
                     ctx.lineWidth = Math.max(0.6, near * 2.2 * p.w);
                     ctx.beginPath();
                     ctx.moveTo(cx + ca * r0, cy + sa * r0);

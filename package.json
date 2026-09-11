@@ -13,7 +13,7 @@
     "deploy": "bash build-extras/deploy-to-applications.sh",
     "set-default": "swift build-extras/set-default-browser.swift",
     "set-default-md": "swift build-extras/set-default-markdown.swift",
-    "build:css": "tailwindcss -c tailwind.config.js -i build-extras/tailwind-input.css -o css/tailwind.css --minify"
+    "build:css": "node build-extras/gen-palette.js && tailwindcss -c tailwind.config.js -i build-extras/tailwind-input.css -o css/tailwind.css --minify"
   },
   "author": "Alexander Home",
   "license": "ISC",

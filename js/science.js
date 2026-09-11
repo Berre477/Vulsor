@@ -898,7 +898,7 @@ function ptRenderGrid(filterQuery) {
     legendData.forEach(([cat, label], i) => {
         const lc = document.createElement('div');
         lc.style.cssText = `grid-column:${i * 2 - 1 < 1 ? 1 : (i < 9 ? i * 2 - 1 : i * 2 - 1)}; grid-row:12;
-            display:flex; align-items:center; gap:3px; font-size:8px; color:#94a3b8; grid-column:${(i % 9) + 1};
+            display:flex; align-items:center; gap:3px; font-size:8px; color:rgb(var(--slate-400)); grid-column:${(i % 9) + 1};
             grid-row:${12 + Math.floor(i / 9)};`;
         lc.innerHTML = `<span style="width:8px;height:8px;border-radius:2px;background:${PT_CATEGORY_COLORS[cat]};flex-shrink:0;display:inline-block"></span>${label}`;
         grid.appendChild(lc);
@@ -911,7 +911,7 @@ function ptShowDetail(z) {
     const [sym, name, , period, group, mass, cat] = e;
     document.getElementById('pt-detail').innerHTML = `
         <div class="flex items-start gap-4">
-            <div style="background:${PT_CATEGORY_COLORS[cat]};color:#0f172a" class="rounded-xl p-3 w-20 text-center">
+            <div style="background:${PT_CATEGORY_COLORS[cat]};color:rgb(var(--slate-900))" class="rounded-xl p-3 w-20 text-center">
                 <div class="text-[9px] opacity-70">${z}</div>
                 <div class="text-2xl font-bold leading-tight">${sym}</div>
                 <div class="text-[9px] mt-0.5">${mass}</div>

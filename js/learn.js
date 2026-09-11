@@ -231,7 +231,7 @@ function learnRenderDetail() {
     const ac = t.color || LEARN_ACCENT;
     const due = learnDueCards(t).length;
     const tabBtn = (id, label) => `<button data-tab="${id}" class="learn-tab text-xs font-medium px-3 py-1.5 rounded-lg transition-colors"
-        style="${learnTab === id ? `background:${learnHex(ac,0.16)};color:${ac}` : 'color:#94a3b8'}">${label}</button>`;
+        style="${learnTab === id ? `background:${learnHex(ac,0.16)};color:${ac}` : 'color:rgb(var(--slate-400))'}">${label}</button>`;
 
     wrap.innerHTML = `
     <div class="max-w-3xl w-full mx-auto px-8 py-7">
@@ -297,7 +297,7 @@ function learnRenderOverview(t, ac) {
         else rl.innerHTML = t.resources.map(r => `
             <div class="flex items-center gap-3 py-2 px-2 rounded-lg hover:bg-slate-800/40 group">
                 <button data-toggle="${r.id}" class="w-4 h-4 rounded shrink-0 flex items-center justify-center border transition-colors"
-                    style="${r.done ? `background:${ac};border-color:${ac}` : 'border-color:#475569'}">
+                    style="${r.done ? `background:${ac};border-color:${ac}` : 'border-color:rgb(var(--slate-600))'}">
                     ${r.done ? '<i class="fas fa-check text-[9px]" style="color:#0a0f0a"></i>' : ''}
                 </button>
                 <span class="flex-1 text-sm truncate ${r.done ? 'text-slate-500 line-through' : 'text-slate-200'}">${escapeLearn(r.title)}</span>

@@ -89,11 +89,29 @@
                 silver:   { base:'#cdd5e0', surface:'#dde4ef' },
                 white:    { base:'#f0f4fa', surface:'#ffffff' },
             };
-            const bg = BG[s.bgTheme];
-            if (bg) {
-                root.style.setProperty('--bg-base',    bg.base);
-                root.style.setProperty('--bg-surface', bg.surface);
-                document.documentElement.dataset.bg = s.bgTheme;
+            // settings.js computes the theme's full grey scale (--slate-50…950
+            // plus the semantic aliases) and persists it as `themeVars`, so it
+            // can be applied here before anything paints — no slate flash on
+            // launch, and this script never has to know how themes are built.
+            const iconPx = Number(s.homeIconSize);
+            if (iconPx >= 40 && iconPx <= 96) root.style.setProperty('--home-icon-pref', iconPx + 'px');
+
+            if (s.themeVars && typeof s.themeVars === 'object') {
+                for (const [k, v] of Object.entries(s.themeVars)) {
+                    if (/^--[\w-]+$/.test(k) && typeof v === 'string') root.style.setProperty(k, v);
+                }
+                root.dataset.bg    = s.bgTheme || 'slate';
+                root.dataset.theme = s.themeDark === false ? 'light' : 'dark';
+                root.style.colorScheme = s.themeDark === false ? 'light' : 'dark';
+            } else {
+                // Older settings file: fall back to the two surface colours so the
+                // window at least opens in roughly the right shade.
+                const bg = BG[s.bgTheme];
+                if (bg) {
+                    root.style.setProperty('--bg-base',    bg.base);
+                    root.style.setProperty('--bg-surface', bg.surface);
+                    root.dataset.bg = s.bgTheme;
+                }
             }
         } catch(e) {}
     })();
@@ -113,6 +131,7 @@
          the live DOM at every launch — 1.7 seconds before the window could appear.
          It loads last, the way the CDN's injected <style> did, so the cascade is
          unchanged. Rebuild it after adding Tailwind classes to markup. -->
+    <link rel="stylesheet" href="css/palette.css">
     <link rel="stylesheet" href="css/tailwind.css">
     <!-- Ace Editor, Chart.js: loaded on first use (js/lazy.js), not at launch -->
     <!-- Pre-load all themes so setTheme() works instantly offline -->
@@ -127,7 +146,7 @@
     <div id="main-area" class="flex-1 flex flex-col relative bg-slate-950 min-w-0">
 
         <!-- ── Browser Chrome ──────────────────────────────────── -->
-        <div id="browser-chrome" class="shrink-0 z-10 drag-region" style="background:var(--bg-base,#0a0f1a)">
+        <div id="browser-chrome" class="shrink-0 z-10 drag-region" style="background:var(--bg-base,var(--bg-base))">
 
             <!-- Row 1: Tab strip — 80px left clearance for macOS traffic lights -->
             <div id="tab-strip-row" class="flex items-end" style="padding: 8px 8px 0 80px; height:42px; gap:1px; -webkit-app-region:drag">
@@ -151,7 +170,7 @@
                 <button id="browser-home-btn" title="Home" class="browser-tool-btn"><i class="fas fa-home" style="font-size:11px"></i></button>
 
                 <!-- Address / breadcrumb bar — drag this to move the window -->
-                <div id="browser-address-bar" class="flex-1 flex items-center gap-2 h-7 rounded-lg px-3" style="background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.07); min-width:0; -webkit-app-region:drag; cursor:default">
+                <div id="browser-address-bar" class="flex-1 flex items-center gap-2 h-7 rounded-lg px-3" style="background:rgb(var(--ink-rgb) / 0.05); border:1px solid rgb(var(--ink-rgb) / 0.07); min-width:0; -webkit-app-region:drag; cursor:default">
                     <i id="browser-addr-icon" class="fas fa-home text-slate-500" style="font-size:10px; flex-shrink:0"></i>
                     <span id="browser-addr-text" class="text-slate-400 text-xs truncate flex-1">Vulsor · New Tab</span>
                 </div>
@@ -218,7 +237,7 @@
                         <button id="home-omnibox-go" title="Go"><i class="fas fa-arrow-right"></i></button>
                     </div>
                     <!-- Autocomplete dropdown (shared suggestion engine) -->
-                    <div id="home-suggest" style="display:none; position:fixed; z-index:45; background:#111827; border:1px solid rgba(148,163,184,0.25); border-radius:12px; box-shadow:0 16px 40px rgba(0,0,0,0.55); overflow:hidden; padding:4px"></div>
+                    <div id="home-suggest" style="display:none; position:fixed; z-index:45; background:#111827; border:1px solid rgb(var(--slate-400) / 0.25); border-radius:12px; box-shadow:0 16px 40px rgba(0,0,0,0.55); overflow:hidden; padding:4px"></div>
                 </div>
 
                 <!-- App shortcuts grid -->
@@ -447,7 +466,7 @@
                     <!-- Overall progress bar -->
                     <div class="flex items-center gap-2 mb-2">
                         <div class="flex-1 h-1.5 rounded-full bg-slate-800 overflow-hidden">
-                            <div id="todo-progress-fill" class="h-full rounded-full transition-all duration-500" style="width:0%;background:linear-gradient(90deg,#22c55e,#84cc16)"></div>
+                            <div id="todo-progress-fill" class="h-full rounded-full transition-all duration-500" style="width:0%;background:linear-gradient(90deg,rgb(var(--tw-green-500)),rgb(var(--tw-lime-500)))"></div>
                         </div>
                         <span id="todo-progress-pct" class="text-[10px] text-slate-500 font-medium tabular-nums w-8 text-right">0%</span>
                     </div>
@@ -778,67 +797,67 @@
                                     <div id="vault-new-menu" class="vault-menu hidden">
                                         <div class="vault-menu-label">Create</div>
                                         <button id="vault-new-doc-btn" class="vault-menu-item">
-                                            <i class="fas fa-file-alt" style="color:#f87171"></i>
+                                            <i class="fas fa-file-alt" style="color:rgb(var(--tw-red-400))"></i>
                                             <span>Document</span><em>Rich text</em>
                                         </button>
                                         <button id="vault-new-note-btn" class="vault-menu-item" title="A note you can fully re-style — background, font colour, size &amp; more">
-                                            <i class="fas fa-note-sticky" style="color:#eab308"></i>
+                                            <i class="fas fa-note-sticky" style="color:rgb(var(--tw-yellow-500))"></i>
                                             <span>Custom Note</span><em>Styleable</em>
                                         </button>
                                         <button id="vault-new-code-btn" class="vault-menu-item">
-                                            <i class="fas fa-code" style="color:#22d3ee"></i>
+                                            <i class="fas fa-code" style="color:rgb(var(--tw-cyan-400))"></i>
                                             <span>Code File</span><em>Editor &amp; run</em>
                                         </button>
                                         <button id="vault-new-notebook-btn" class="vault-menu-item">
-                                            <i class="fas fa-book-open" style="color:#fb923c"></i>
+                                            <i class="fas fa-book-open" style="color:rgb(var(--tw-orange-400))"></i>
                                             <span>Notebook</span><em>Cells &amp; output</em>
                                         </button>
 
                                         <div class="vault-menu-sep"></div>
                                         <div class="vault-menu-label">Bring in</div>
                                         <button id="vault-import-docx-btn" class="vault-menu-item" title="Import a Word / Google Docs .docx file">
-                                            <i class="fas fa-file-import" style="color:#60a5fa"></i>
+                                            <i class="fas fa-file-import" style="color:rgb(var(--tw-blue-400))"></i>
                                             <span>Word Document</span><em>.docx</em>
                                         </button>
                                         <button id="vault-new-website-btn" class="vault-menu-item" title="Add a website link — opens in the built-in browser">
-                                            <i class="fas fa-globe" style="color:#60a5fa"></i>
+                                            <i class="fas fa-globe" style="color:rgb(var(--tw-blue-400))"></i>
                                             <span>Website Link</span><em>Opens in browser</em>
                                         </button>
 
                                         <div class="vault-menu-sep"></div>
                                         <div class="vault-menu-label">Tools</div>
                                         <button id="vault-new-project-btn" class="vault-menu-item">
-                                            <i class="fas fa-cube" style="color:#a855f7"></i>
+                                            <i class="fas fa-cube" style="color:rgb(var(--tw-purple-500))"></i>
                                             <span>Project</span><em>Code workspace</em>
                                         </button>
                                         <button id="vault-new-molecule-btn" class="vault-menu-item"
                                                 onclick="_sciCreateFile('New Molecule','isMolecule','.mol.json',{atoms:[],bonds:[],nextId:1})">
-                                            <i class="fas fa-atom" style="color:#34d399"></i>
+                                            <i class="fas fa-atom" style="color:rgb(var(--tw-emerald-400))"></i>
                                             <span>Molecule</span><em>2D builder</em>
                                         </button>
                                         <button id="vault-new-periodic-btn" class="vault-menu-item"
                                                 onclick="_sciCreateFile('New Periodic Table','isPeriodic','.pt.json',{notes:{}})">
-                                            <i class="fas fa-th" style="color:#fbbf24"></i>
+                                            <i class="fas fa-th" style="color:rgb(var(--tw-amber-400))"></i>
                                             <span>Periodic Table</span><em>118 elements</em>
                                         </button>
                                         <button id="vault-new-dna-btn" class="vault-menu-item"
                                                 onclick="_sciCreateFile('New Sequence','isDna','.dna.json',{type:'dna',seq:''})">
-                                            <i class="fas fa-dna" style="color:#f472b6"></i>
+                                            <i class="fas fa-dna" style="color:rgb(var(--tw-pink-400))"></i>
                                             <span>DNA / RNA</span><em>Sequence tool</em>
                                         </button>
                                         <button id="vault-new-anatomy-btn" class="vault-menu-item"
                                                 onclick="_sciCreateFile('New Anatomy Atlas','isAnatomy','.anat.json',{notes:{}})">
-                                            <i class="fas fa-heartbeat" style="color:#f87171"></i>
+                                            <i class="fas fa-heartbeat" style="color:rgb(var(--tw-red-400))"></i>
                                             <span>Anatomy Atlas</span><em>Body explorer</em>
                                         </button>
                                         <button id="vault-new-chessstrategy-btn" class="vault-menu-item"
                                                 onclick="_sciCreateFile('New Strategy Board','isChessStrategy','.chess.json',{pieces:{},arrows:[],highlights:{},notes:''})">
-                                            <i class="fas fa-chess" style="color:#f59e0b"></i>
+                                            <i class="fas fa-chess" style="color:rgb(var(--tw-amber-500))"></i>
                                             <span>Strategy Board</span><em>Arrows &amp; analysis</em>
                                         </button>
                                         <button id="vault-new-graph-btn" class="vault-menu-item"
                                                 onclick="_sciCreateFile('New Graph','isGraph','.graph.json',{mode:'2d',graphs:[],view2d:{},view3d:{}})">
-                                            <i class="fas fa-chart-line" style="color:#38bdf8"></i>
+                                            <i class="fas fa-chart-line" style="color:rgb(var(--tw-sky-400))"></i>
                                             <span>Graph / Plotter</span><em>2D &amp; 3D</em>
                                         </button>
                                     </div>
@@ -1226,7 +1245,7 @@
                                         contenteditable="true"
                                         class="flex-1 outline-none px-[72px] py-[96px] text-[#111] text-[15px] leading-relaxed docs-editor-content"
                                         spellcheck="true"
-                                        style="font-family:'Inter',sans-serif;min-height:1056px;caret-color:#dc2626">
+                                        style="font-family:'Inter',sans-serif;min-height:1056px;caret-color:rgb(var(--tw-red-600))">
                                         <p><br></p>
                                     </div>
                                 </div>
@@ -1369,7 +1388,7 @@
                         </div>
 
                         <!-- Molecule Builder area -->
-                        <div id="vault-molecule-area" class="flex flex-col flex-1 min-h-0" style="display:none; background:var(--bg-base,#0f172a)">
+                        <div id="vault-molecule-area" class="flex flex-col flex-1 min-h-0" style="display:none; background:var(--bg-base,rgb(var(--slate-900)))">
                             <!-- Toolbar row -->
                             <div class="border-b border-slate-800/80 px-4 py-2 flex items-center gap-2 shrink-0 flex-wrap">
                                 <i class="fas fa-atom text-emerald-400 text-[11px]"></i>
@@ -1417,7 +1436,7 @@
                         </div>
 
                         <!-- Periodic Table area -->
-                        <div id="vault-periodic-area" class="flex flex-col flex-1 min-h-0" style="display:none; background:var(--bg-base,#0f172a); -webkit-app-region:no-drag">
+                        <div id="vault-periodic-area" class="flex flex-col flex-1 min-h-0" style="display:none; background:var(--bg-base,rgb(var(--slate-900))); -webkit-app-region:no-drag">
                             <div class="px-4 py-3 border-b border-slate-800/80 flex items-center gap-3 shrink-0 flex-wrap">
                                 <i class="fas fa-th text-yellow-400 text-[11px]"></i>
                                 <span class="text-slate-300 text-xs font-medium">Periodic Table of Elements</span>
@@ -1440,7 +1459,7 @@
                         </div>
 
                         <!-- DNA / RNA area -->
-                        <div id="vault-dna-area" class="flex flex-col flex-1 min-h-0 overflow-y-auto chat-scroll" style="display:none; background:var(--bg-base,#0f172a)">
+                        <div id="vault-dna-area" class="flex flex-col flex-1 min-h-0 overflow-y-auto chat-scroll" style="display:none; background:var(--bg-base,rgb(var(--slate-900)))">
                             <div class="px-4 py-3 border-b border-slate-800/80 flex items-center gap-3 shrink-0 flex-wrap">
                                 <i class="fas fa-dna text-pink-400 text-[11px]"></i>
                                 <span class="text-slate-300 text-xs font-medium">Sequence Workbench</span>
@@ -1468,7 +1487,7 @@
                         </div>
 
                         <!-- Anatomy Explorer area -->
-                        <div id="vault-anatomy-area" class="flex flex-1 min-h-0 overflow-hidden" style="display:none; background:var(--bg-base,#0f172a); -webkit-app-region:no-drag">
+                        <div id="vault-anatomy-area" class="flex flex-1 min-h-0 overflow-hidden" style="display:none; background:var(--bg-base,rgb(var(--slate-900))); -webkit-app-region:no-drag">
                             <!-- Left: systems + parts browser -->
                             <div class="border-r border-slate-800/80 shrink-0 flex flex-col overflow-y-auto chat-scroll" style="width:clamp(160px,16vw,240px); min-width:0">
                                 <div class="px-3 py-2.5 border-b border-slate-800/80 shrink-0 flex flex-col gap-2">
@@ -1518,7 +1537,7 @@
                         </div>
 
                         <!-- ═══ Chess Strategy Board ═══ -->
-                        <div id="vault-chessstrategy-area" class="flex flex-1 min-h-0 overflow-hidden" style="display:none; background:var(--bg-base,#0f172a); -webkit-app-region:no-drag">
+                        <div id="vault-chessstrategy-area" class="flex flex-1 min-h-0 overflow-hidden" style="display:none; background:var(--bg-base,rgb(var(--slate-900))); -webkit-app-region:no-drag">
                             <!-- Left: tools + piece palette -->
                             <div class="border-r border-slate-800/80 shrink-0 flex flex-col overflow-y-auto chat-scroll" style="width:clamp(140px,14vw,190px); -webkit-app-region:no-drag">
                                 <div class="px-3 py-2.5 border-b border-slate-800/80 flex items-center gap-2 shrink-0">
@@ -1540,11 +1559,11 @@
                                     <div class="flex flex-col gap-1">
                                         <span class="text-[9px] text-slate-500 uppercase tracking-wide px-1">Color</span>
                                         <div class="flex gap-1.5 flex-wrap px-1">
-                                            <button data-strat-color="#f87171" class="strat-color-btn w-5 h-5 rounded-full outline-2 outline-offset-1" style="background:#f87171" title="Red"></button>
-                                            <button data-strat-color="#fbbf24" class="strat-color-btn w-5 h-5 rounded-full" style="background:#fbbf24" title="Yellow"></button>
-                                            <button data-strat-color="#4ade80" class="strat-color-btn w-5 h-5 rounded-full" style="background:#4ade80" title="Green"></button>
-                                            <button data-strat-color="#60a5fa" class="strat-color-btn w-5 h-5 rounded-full" style="background:#60a5fa" title="Blue"></button>
-                                            <button data-strat-color="#c084fc" class="strat-color-btn w-5 h-5 rounded-full" style="background:#c084fc" title="Purple"></button>
+                                            <button data-strat-color="#f87171" class="strat-color-btn w-5 h-5 rounded-full outline-2 outline-offset-1" style="background:rgb(var(--tw-red-400))" title="Red"></button>
+                                            <button data-strat-color="#fbbf24" class="strat-color-btn w-5 h-5 rounded-full" style="background:rgb(var(--tw-amber-400))" title="Yellow"></button>
+                                            <button data-strat-color="#4ade80" class="strat-color-btn w-5 h-5 rounded-full" style="background:rgb(var(--tw-green-400))" title="Green"></button>
+                                            <button data-strat-color="#60a5fa" class="strat-color-btn w-5 h-5 rounded-full" style="background:rgb(var(--tw-blue-400))" title="Blue"></button>
+                                            <button data-strat-color="#c084fc" class="strat-color-btn w-5 h-5 rounded-full" style="background:rgb(var(--tw-purple-400))" title="Purple"></button>
                                             <button data-strat-color="#ffffff" class="strat-color-btn w-5 h-5 rounded-full border border-slate-600" style="background:#ffffff" title="White"></button>
                                         </div>
                                     </div>
@@ -1592,10 +1611,10 @@
                         <!-- ═══ End Chess Strategy Board ═══ -->
 
                         <!-- ═══ Physics Sandbox (Vault) ═══ -->
-                        <div id="vault-physics-area" class="flex flex-col flex-1 min-h-0 overflow-hidden" style="display:none; background:var(--bg-base,#0f172a); -webkit-app-region:no-drag">
+                        <div id="vault-physics-area" class="flex flex-col flex-1 min-h-0 overflow-hidden" style="display:none; background:var(--bg-base,rgb(var(--slate-900))); -webkit-app-region:no-drag">
 
                             <!-- Top bar -->
-                            <div class="border-b border-slate-800/80 shrink-0 flex items-center gap-2 px-3 py-2" style="background:var(--bg-surface,#0f172a); -webkit-app-region:no-drag">
+                            <div class="border-b border-slate-800/80 shrink-0 flex items-center gap-2 px-3 py-2" style="background:var(--bg-surface,rgb(var(--slate-900))); -webkit-app-region:no-drag">
                                 <i class="fas fa-atom text-cyan-400 text-sm shrink-0"></i>
                                 <div class="min-w-0 flex-1">
                                     <div id="phys-sim-title" class="text-sm font-bold text-white truncate">Physics Sandbox</div>
@@ -1610,7 +1629,7 @@
                                     <i class="fas fa-tachometer-alt text-[10px] text-slate-500"></i>
                                     <input id="phys-speed-slider" type="range" min="0.1" max="4" step="0.1" value="1"
                                            class="w-14 h-1 rounded appearance-none cursor-pointer"
-                                           style="accent-color:#06b6d4; -webkit-app-region:no-drag" title="Speed">
+                                           style="accent-color:rgb(var(--tw-cyan-500)); -webkit-app-region:no-drag" title="Speed">
                                     <span id="phys-speed-label" class="text-[10px] font-mono text-cyan-400 w-7 text-right">1.0×</span>
                                 </div>
                                 <button id="phys-play-btn" class="w-7 h-7 rounded-lg flex items-center justify-center text-slate-400 hover:text-white hover:bg-slate-700/70 transition-colors" style="-webkit-app-region:no-drag" title="Pause">
@@ -1627,7 +1646,7 @@
                             </div>
 
                             <!-- 2D: Bottom toolbar + settings -->
-                            <div id="phys-2d-controls-bar" class="border-t border-slate-800/80 shrink-0 px-3 py-2 overflow-y-auto" style="background:var(--bg-surface,#0f172a);max-height:150px; -webkit-app-region:no-drag">
+                            <div id="phys-2d-controls-bar" class="border-t border-slate-800/80 shrink-0 px-3 py-2 overflow-y-auto" style="background:var(--bg-surface,rgb(var(--slate-900)));max-height:150px; -webkit-app-region:no-drag">
                                 <div id="phys-controls" style="-webkit-app-region:no-drag"></div>
                             </div>
 
@@ -1636,7 +1655,7 @@
                                 <!-- Three.js canvas fills this div -->
                                 <div id="phys3d-wrap" class="flex-1 min-h-0 relative overflow-hidden" style="-webkit-app-region:no-drag"></div>
                                 <!-- Properties / tool panel -->
-                                <div class="shrink-0 flex flex-col border-l border-slate-800/80 overflow-hidden" style="width:200px; background:var(--bg-surface,#0f172a); -webkit-app-region:no-drag">
+                                <div class="shrink-0 flex flex-col border-l border-slate-800/80 overflow-hidden" style="width:200px; background:var(--bg-surface,rgb(var(--slate-900))); -webkit-app-region:no-drag">
                                     <div class="px-3 py-2 border-b border-slate-800/80 shrink-0 flex items-center justify-between">
                                         <span class="text-slate-300 text-[11px] font-medium flex items-center gap-1.5">
                                             <i class="fas fa-cube text-cyan-400 text-[10px]"></i> Objects
@@ -1651,10 +1670,10 @@
                         <!-- ═══ End Physics Sandbox ═══ -->
 
                         <!-- ═══ Graph / Plotter ═══ -->
-                        <div id="vault-graph-area" class="flex flex-col flex-1 min-h-0 overflow-hidden" style="display:none; background:var(--bg-base,#0f172a); -webkit-app-region:no-drag">
+                        <div id="vault-graph-area" class="flex flex-col flex-1 min-h-0 overflow-hidden" style="display:none; background:var(--bg-base,rgb(var(--slate-900))); -webkit-app-region:no-drag">
 
                             <!-- Top bar -->
-                            <div class="border-b border-slate-800/80 shrink-0 flex items-center gap-2 px-3 py-2" style="background:var(--bg-surface,#0f172a); -webkit-app-region:no-drag">
+                            <div class="border-b border-slate-800/80 shrink-0 flex items-center gap-2 px-3 py-2" style="background:var(--bg-surface,rgb(var(--slate-900))); -webkit-app-region:no-drag">
                                 <i class="fas fa-chart-line text-sky-400 text-sm shrink-0"></i>
                                 <div class="min-w-0 flex-1">
                                     <div class="text-sm font-bold text-white truncate">Graph Plotter</div>
@@ -1671,7 +1690,7 @@
                             <div class="flex flex-1 min-h-0 overflow-hidden" style="-webkit-app-region:no-drag">
 
                                 <!-- Left: expression list -->
-                                <div id="graph-sidebar" class="shrink-0 flex flex-col border-r border-slate-800/80 overflow-hidden" style="width:220px; background:var(--bg-surface,#0f172a); -webkit-app-region:no-drag">
+                                <div id="graph-sidebar" class="shrink-0 flex flex-col border-r border-slate-800/80 overflow-hidden" style="width:220px; background:var(--bg-surface,rgb(var(--slate-900))); -webkit-app-region:no-drag">
                                     <div class="px-3 py-2 border-b border-slate-800/80 shrink-0 flex items-center justify-between">
                                         <span class="text-slate-300 text-[11px] font-medium">Functions</span>
                                         <button id="graph-add-expr" class="w-6 h-6 flex items-center justify-center rounded-lg bg-sky-600/30 hover:bg-sky-600/50 text-sky-300 transition-colors" title="Add expression">
@@ -1735,7 +1754,7 @@
                     <div id="vault-ai-messages" class="flex-1 overflow-y-auto chat-scroll px-3 py-3 flex flex-col gap-2.5 min-h-0"></div>
 
                     <div class="border-t border-slate-800/60 p-2.5 shrink-0">
-                        <div class="flex items-end gap-2 rounded-xl px-2.5 py-2" style="background:rgba(148,163,184,.07);border:1px solid rgba(148,163,184,.14)">
+                        <div class="flex items-end gap-2 rounded-xl px-2.5 py-2" style="background:rgb(var(--slate-400) / .07);border:1px solid rgb(var(--slate-400) / .14)">
                             <textarea id="vault-ai-input" rows="1" placeholder="Ask about this file…"
                                 class="flex-1 bg-transparent text-slate-200 text-xs outline-none resize-none placeholder-slate-600 leading-relaxed chat-scroll"
                                 style="max-height:120px"></textarea>
@@ -1838,7 +1857,7 @@
                     </div>
 
                     <div class="px-5 py-3 border-b border-slate-800/70 shrink-0">
-                        <div class="flex items-center gap-2 rounded-xl px-3 py-2" style="background:rgba(148,163,184,.08);border:1px solid rgba(148,163,184,.16)">
+                        <div class="flex items-center gap-2 rounded-xl px-3 py-2" style="background:rgb(var(--slate-400) / .08);border:1px solid rgb(var(--slate-400) / .16)">
                             <i class="fas fa-magnifying-glass text-slate-600 text-[11px] shrink-0"></i>
                             <input id="vault-ask-input" type="text" placeholder="Ask anything about your notes…"
                                 class="flex-1 bg-transparent text-slate-100 text-sm outline-none placeholder-slate-600 min-w-0">
@@ -1898,7 +1917,7 @@
         <div id="view-finance" class="app-view flex-1 overflow-hidden relative">
 
             <!-- Header -->
-            <div class="border-b border-slate-800/80 flex items-center justify-between px-6 py-3 shrink-0" style="background:var(--bg-surface,#0f172a)">
+            <div class="border-b border-slate-800/80 flex items-center justify-between px-6 py-3 shrink-0" style="background:var(--bg-surface,rgb(var(--slate-900)))">
                 <div class="flex items-center gap-3">
                     <div class="w-8 h-8 rounded-xl bg-green-600/20 border border-green-600/30 flex items-center justify-center shrink-0">
                         <i class="fas fa-wallet text-green-400 text-sm"></i>
@@ -2050,10 +2069,10 @@
         <div id="view-journal" class="app-view flex-1 overflow-hidden relative">
 
             <!-- Header -->
-            <div class="border-b border-slate-800/80 flex items-center justify-between px-6 py-3 shrink-0" style="background:var(--bg-surface,#0f172a)">
+            <div class="border-b border-slate-800/80 flex items-center justify-between px-6 py-3 shrink-0" style="background:var(--bg-surface,rgb(var(--slate-900)))">
                 <div class="flex items-center gap-3">
-                    <div id="journal-header-icon-wrap" class="w-8 h-8 rounded-xl flex items-center justify-center shrink-0" style="background:rgba(236,72,153,0.2);border:1px solid rgba(236,72,153,0.3)">
-                        <i id="journal-header-icon" class="fas fa-book-open text-sm" style="color:#ec4899"></i>
+                    <div id="journal-header-icon-wrap" class="w-8 h-8 rounded-xl flex items-center justify-center shrink-0" style="background:rgb(var(--tw-pink-500) / 0.2);border:1px solid rgb(var(--tw-pink-500) / 0.3)">
+                        <i id="journal-header-icon" class="fas fa-book-open text-sm" style="color:rgb(var(--tw-pink-500))"></i>
                     </div>
                     <div>
                         <h2 class="text-slate-100 font-semibold text-sm leading-none">Journal</h2>
@@ -2119,10 +2138,10 @@
         <div id="view-writer" class="app-view flex-1 overflow-hidden relative">
 
             <!-- Header -->
-            <div class="border-b border-slate-800/80 flex items-center justify-between px-6 py-3 shrink-0" style="background:var(--bg-surface,#0f172a)">
+            <div class="border-b border-slate-800/80 flex items-center justify-between px-6 py-3 shrink-0" style="background:var(--bg-surface,rgb(var(--slate-900)))">
                 <div class="flex items-center gap-3">
-                    <div class="w-8 h-8 rounded-xl flex items-center justify-center shrink-0" style="background:rgba(225,29,72,0.2);border:1px solid rgba(225,29,72,0.3)">
-                        <i class="fas fa-pen-nib text-sm" style="color:#e11d48"></i>
+                    <div class="w-8 h-8 rounded-xl flex items-center justify-center shrink-0" style="background:rgb(var(--tw-rose-600) / 0.2);border:1px solid rgb(var(--tw-rose-600) / 0.3)">
+                        <i class="fas fa-pen-nib text-sm" style="color:rgb(var(--tw-rose-600))"></i>
                     </div>
                     <div>
                         <h2 class="text-slate-100 font-semibold text-sm leading-none">Writer</h2>
@@ -2133,7 +2152,7 @@
                     <button id="writer-new-paper-btn" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700/60 text-slate-300 text-xs font-medium transition-colors flex items-center gap-1.5">
                         <i class="fas fa-file-lines text-[10px]"></i> New paper
                     </button>
-                    <button id="writer-new-book-btn" class="px-3 py-1.5 rounded-lg border text-xs font-medium transition-colors flex items-center gap-1.5" style="background:rgba(225,29,72,0.15);border-color:rgba(225,29,72,0.25);color:#fb7185">
+                    <button id="writer-new-book-btn" class="px-3 py-1.5 rounded-lg border text-xs font-medium transition-colors flex items-center gap-1.5" style="background:rgb(var(--tw-rose-600) / 0.15);border-color:rgb(var(--tw-rose-600) / 0.25);color:rgb(var(--tw-rose-400))">
                         <i class="fas fa-book text-[10px]"></i> New book
                     </button>
                 </div>
@@ -2155,8 +2174,8 @@
 
                     <!-- Empty state -->
                     <div id="writer-empty" class="flex-1 flex flex-col items-center justify-center text-center px-8">
-                        <div class="w-16 h-16 rounded-2xl flex items-center justify-center mb-4" style="background:rgba(225,29,72,0.12);border:1px solid rgba(225,29,72,0.22)">
-                            <i class="fas fa-pen-nib text-2xl" style="color:#e11d48"></i>
+                        <div class="w-16 h-16 rounded-2xl flex items-center justify-center mb-4" style="background:rgb(var(--tw-rose-600) / 0.12);border:1px solid rgb(var(--tw-rose-600) / 0.22)">
+                            <i class="fas fa-pen-nib text-2xl" style="color:rgb(var(--tw-rose-600))"></i>
                         </div>
                         <p class="text-slate-300 text-sm font-semibold mb-1">Start writing</p>
                         <p class="text-slate-600 text-xs max-w-xs leading-relaxed">Create a book with chapters or a single paper. Everything auto-saves to your Documents.</p>
@@ -2228,17 +2247,17 @@
         <div id="view-lab" class="app-view flex-1 overflow-hidden relative">
 
             <!-- Header -->
-            <div class="border-b border-slate-800/80 flex items-center justify-between px-6 py-3 shrink-0" style="background:var(--bg-surface,#0f172a)">
+            <div class="border-b border-slate-800/80 flex items-center justify-between px-6 py-3 shrink-0" style="background:var(--bg-surface,rgb(var(--slate-900)))">
                 <div class="flex items-center gap-3">
-                    <div class="w-8 h-8 rounded-xl flex items-center justify-center shrink-0" style="background:rgba(20,184,166,0.2);border:1px solid rgba(20,184,166,0.3)">
-                        <i class="fas fa-flask text-sm" style="color:#14b8a6"></i>
+                    <div class="w-8 h-8 rounded-xl flex items-center justify-center shrink-0" style="background:rgb(var(--tw-teal-500) / 0.2);border:1px solid rgb(var(--tw-teal-500) / 0.3)">
+                        <i class="fas fa-flask text-sm" style="color:rgb(var(--tw-teal-500))"></i>
                     </div>
                     <div>
                         <h2 class="text-slate-100 font-semibold text-sm leading-none">Lab</h2>
                         <p class="text-slate-600 text-[10px] mt-0.5">Chemistry lab reports</p>
                     </div>
                 </div>
-                <button id="lab-new-btn" class="px-3 py-1.5 rounded-lg text-xs font-medium transition-colors" style="background:rgba(20,184,166,0.15);border:1px solid rgba(20,184,166,0.3);color:#14b8a6">
+                <button id="lab-new-btn" class="px-3 py-1.5 rounded-lg text-xs font-medium transition-colors" style="background:rgb(var(--tw-teal-500) / 0.15);border:1px solid rgb(var(--tw-teal-500) / 0.3);color:rgb(var(--tw-teal-500))">
                     <i class="fas fa-plus text-[10px] mr-1"></i>New report
                 </button>
             </div>
@@ -2262,12 +2281,12 @@
                 <div class="flex-1 flex flex-col min-w-0 overflow-hidden relative">
                     <!-- Empty state -->
                     <div id="lab-empty" class="flex-1 flex-col items-center justify-center text-center px-6" style="display:none">
-                        <div class="w-14 h-14 rounded-2xl flex items-center justify-center mb-4" style="background:rgba(20,184,166,0.12);border:1px solid rgba(20,184,166,0.25)">
-                            <i class="fas fa-flask text-xl" style="color:#14b8a6"></i>
+                        <div class="w-14 h-14 rounded-2xl flex items-center justify-center mb-4" style="background:rgb(var(--tw-teal-500) / 0.12);border:1px solid rgb(var(--tw-teal-500) / 0.25)">
+                            <i class="fas fa-flask text-xl" style="color:rgb(var(--tw-teal-500))"></i>
                         </div>
                         <p class="text-slate-300 text-sm font-semibold mb-1">No report open</p>
                         <p class="text-slate-600 text-xs mb-4">Create your first lab report to get started.</p>
-                        <button onclick="labCreate()" class="px-3.5 py-1.5 rounded-lg text-xs font-medium transition-colors" style="background:rgba(20,184,166,0.15);border:1px solid rgba(20,184,166,0.3);color:#14b8a6">
+                        <button onclick="labCreate()" class="px-3.5 py-1.5 rounded-lg text-xs font-medium transition-colors" style="background:rgb(var(--tw-teal-500) / 0.15);border:1px solid rgb(var(--tw-teal-500) / 0.3);color:rgb(var(--tw-teal-500))">
                             <i class="fas fa-plus text-[10px] mr-1"></i>New report
                         </button>
                     </div>
@@ -2289,17 +2308,17 @@
         <div id="view-recipes" class="app-view flex-1 overflow-hidden relative">
 
             <!-- Header -->
-            <div class="border-b border-slate-800/80 flex items-center justify-between px-6 py-3 shrink-0" style="background:var(--bg-surface,#0f172a)">
+            <div class="border-b border-slate-800/80 flex items-center justify-between px-6 py-3 shrink-0" style="background:var(--bg-surface,rgb(var(--slate-900)))">
                 <div class="flex items-center gap-3">
-                    <div class="w-8 h-8 rounded-xl flex items-center justify-center shrink-0" style="background:rgba(249,115,22,0.2);border:1px solid rgba(249,115,22,0.3)">
-                        <i class="fas fa-utensils text-sm" style="color:#f97316"></i>
+                    <div class="w-8 h-8 rounded-xl flex items-center justify-center shrink-0" style="background:rgb(var(--tw-orange-500) / 0.2);border:1px solid rgb(var(--tw-orange-500) / 0.3)">
+                        <i class="fas fa-utensils text-sm" style="color:rgb(var(--tw-orange-500))"></i>
                     </div>
                     <div>
                         <h2 class="text-slate-100 font-semibold text-sm leading-none">Recipes</h2>
                         <p class="text-slate-600 text-[10px] mt-0.5">Cook up meals &amp; dishes</p>
                     </div>
                 </div>
-                <button id="recipes-new-btn" class="px-3 py-1.5 rounded-lg text-xs font-medium transition-colors" style="background:rgba(249,115,22,0.15);border:1px solid rgba(249,115,22,0.3);color:#f97316">
+                <button id="recipes-new-btn" class="px-3 py-1.5 rounded-lg text-xs font-medium transition-colors" style="background:rgb(var(--tw-orange-500) / 0.15);border:1px solid rgb(var(--tw-orange-500) / 0.3);color:rgb(var(--tw-orange-500))">
                     <i class="fas fa-plus text-[10px] mr-1"></i>New recipe
                 </button>
             </div>
@@ -2324,10 +2343,10 @@
         <div id="view-books" class="app-view flex-1 overflow-hidden relative">
 
             <!-- Header -->
-            <div class="border-b border-slate-800/80 flex items-center justify-between px-6 py-3 shrink-0" style="background:var(--bg-surface,#0f172a)">
+            <div class="border-b border-slate-800/80 flex items-center justify-between px-6 py-3 shrink-0" style="background:var(--bg-surface,rgb(var(--slate-900)))">
                 <div class="flex items-center gap-3">
-                    <div class="w-8 h-8 rounded-xl flex items-center justify-center shrink-0" style="background:rgba(180,83,9,0.2);border:1px solid rgba(180,83,9,0.3)">
-                        <i class="fas fa-book text-sm" style="color:#b45309"></i>
+                    <div class="w-8 h-8 rounded-xl flex items-center justify-center shrink-0" style="background:rgb(var(--tw-amber-700) / 0.2);border:1px solid rgb(var(--tw-amber-700) / 0.3)">
+                        <i class="fas fa-book text-sm" style="color:rgb(var(--tw-amber-700))"></i>
                     </div>
                     <div>
                         <h2 class="text-slate-100 font-semibold text-sm leading-none">Books</h2>
@@ -2335,7 +2354,7 @@
                     </div>
                     <div id="books-stats" class="ml-4 pl-4 border-l border-slate-800/60"></div>
                 </div>
-                <button id="books-new-btn" class="px-3 py-1.5 rounded-lg text-xs font-medium transition-colors" style="background:rgba(180,83,9,0.15);border:1px solid rgba(180,83,9,0.3);color:#b45309">
+                <button id="books-new-btn" class="px-3 py-1.5 rounded-lg text-xs font-medium transition-colors" style="background:rgb(var(--tw-amber-700) / 0.15);border:1px solid rgb(var(--tw-amber-700) / 0.3);color:rgb(var(--tw-amber-700))">
                     <i class="fas fa-plus text-[10px] mr-1"></i>New book
                 </button>
             </div>
@@ -2360,17 +2379,17 @@
         <div id="view-learn" class="app-view flex-1 overflow-hidden relative">
 
             <!-- Header -->
-            <div class="border-b border-slate-800/80 flex items-center justify-between px-6 py-3 shrink-0" style="background:var(--bg-surface,#0f172a)">
+            <div class="border-b border-slate-800/80 flex items-center justify-between px-6 py-3 shrink-0" style="background:var(--bg-surface,rgb(var(--slate-900)))">
                 <div class="flex items-center gap-3">
-                    <div class="w-8 h-8 rounded-xl flex items-center justify-center shrink-0" style="background:rgba(132,204,22,0.2);border:1px solid rgba(132,204,22,0.3)">
-                        <i class="fas fa-lightbulb text-sm" style="color:#84cc16"></i>
+                    <div class="w-8 h-8 rounded-xl flex items-center justify-center shrink-0" style="background:rgb(var(--tw-lime-500) / 0.2);border:1px solid rgb(var(--tw-lime-500) / 0.3)">
+                        <i class="fas fa-lightbulb text-sm" style="color:rgb(var(--tw-lime-500))"></i>
                     </div>
                     <div>
                         <h2 class="text-slate-100 font-semibold text-sm leading-none">Learn</h2>
                         <p class="text-slate-600 text-[10px] mt-0.5">Topics &amp; flashcards</p>
                     </div>
                 </div>
-                <button id="learn-new-btn" class="px-3 py-1.5 rounded-lg text-xs font-medium transition-colors" style="background:rgba(132,204,22,0.15);border:1px solid rgba(132,204,22,0.3);color:#84cc16">
+                <button id="learn-new-btn" class="px-3 py-1.5 rounded-lg text-xs font-medium transition-colors" style="background:rgb(var(--tw-lime-500) / 0.15);border:1px solid rgb(var(--tw-lime-500) / 0.3);color:rgb(var(--tw-lime-500))">
                     <i class="fas fa-plus text-[10px] mr-1"></i>New topic
                 </button>
             </div>
@@ -2394,7 +2413,7 @@
         <div id="view-countdown" class="app-view flex-1 overflow-hidden relative" style="flex-direction:column">
 
             <!-- Header -->
-            <div class="border-b border-slate-800/80 flex items-center gap-3 px-6 py-3 shrink-0" style="background:var(--bg-surface,#0f172a)">
+            <div class="border-b border-slate-800/80 flex items-center gap-3 px-6 py-3 shrink-0" style="background:var(--bg-surface,rgb(var(--slate-900)))">
                 <div class="w-8 h-8 rounded-xl bg-amber-500/20 border border-amber-500/30 flex items-center justify-center shrink-0">
                     <i class="fas fa-hourglass-half text-amber-400 text-sm"></i>
                 </div>
@@ -2445,7 +2464,7 @@
         <div id="view-audiobook" class="app-view flex-1 overflow-hidden relative" style="flex-direction:column">
 
             <!-- Header -->
-            <div class="border-b border-slate-800/80 flex items-center gap-3 px-6 py-3 shrink-0" style="background:var(--bg-surface,#0f172a)">
+            <div class="border-b border-slate-800/80 flex items-center gap-3 px-6 py-3 shrink-0" style="background:var(--bg-surface,rgb(var(--slate-900)))">
                 <div class="w-8 h-8 rounded-xl bg-violet-500/20 border border-violet-500/30 flex items-center justify-center shrink-0">
                     <i class="fas fa-headphones text-violet-300 text-sm"></i>
                 </div>
@@ -2460,7 +2479,7 @@
             </div>
 
             <!-- Status line -->
-            <div id="ab-status" class="px-6 py-2 text-xs shrink-0" style="display:none; color:#94a3b8"></div>
+            <div id="ab-status" class="px-6 py-2 text-xs shrink-0" style="display:none; color:rgb(var(--slate-400))"></div>
 
             <!-- Library shelf -->
             <div id="ab-shelf" class="flex-1 overflow-y-auto chat-scroll">
@@ -2492,7 +2511,7 @@
                 </div>
 
                 <!-- Transport bar -->
-                <div class="border-t border-slate-800/80 px-6 py-3 shrink-0" style="background:var(--bg-surface,#0f172a)">
+                <div class="border-t border-slate-800/80 px-6 py-3 shrink-0" style="background:var(--bg-surface,rgb(var(--slate-900)))">
                     <div class="max-w-3xl mx-auto">
                         <!-- Progress -->
                         <div class="flex items-center gap-3 mb-2.5">
@@ -2811,7 +2830,7 @@
                             <button id="ws-draw-undo"  class="w-9 h-9 rounded-md hover:bg-slate-800 text-slate-400 hover:text-white flex items-center justify-center" title="Undo (⌘Z)"><i class="fas fa-undo text-xs"></i></button>
                             <button id="ws-draw-clear" class="w-9 h-9 rounded-md hover:bg-red-600/20 text-slate-400 hover:text-red-400 flex items-center justify-center" title="Clear all"><i class="fas fa-times text-xs"></i></button>
                         </div>
-                        <div class="flex-1 relative overflow-auto bg-slate-800/40" id="ws-draw-canvas-wrap" style="background-image:linear-gradient(to right,rgba(255,255,255,0.04) 1px,transparent 1px),linear-gradient(to bottom,rgba(255,255,255,0.04) 1px,transparent 1px);background-size:24px 24px">
+                        <div class="flex-1 relative overflow-auto bg-slate-800/40" id="ws-draw-canvas-wrap" style="background-image:linear-gradient(to right,rgb(var(--ink-rgb) / 0.04) 1px,transparent 1px),linear-gradient(to bottom,rgb(var(--ink-rgb) / 0.04) 1px,transparent 1px);background-size:24px 24px">
                             <canvas id="ws-draw-canvas" width="2000" height="1400" class="bg-white shadow-2xl mx-auto my-6 cursor-crosshair block"></canvas>
                         </div>
                     </div>
@@ -2997,9 +3016,9 @@
                     <!-- Microphone: sing through the speakers -->
                     <button id="karaoke-mic-btn" onclick="kMicToggle()" title="Turn on the microphone" class="karaoke-ctrl-btn"><i class="fas fa-microphone text-[10px]"></i></button>
                     <div id="karaoke-mic-extras" class="hidden flex items-center gap-1.5">
-                        <input type="range" min="0.2" max="3" step="0.1" value="1.4" style="width:56px;accent-color:#34d399" oninput="kMicSetVolume(this.value)" title="Mic volume">
-                        <div style="width:42px;height:5px;border-radius:3px;background:rgba(148,163,184,.15);overflow:hidden" title="Mic level">
-                            <div id="karaoke-mic-meter-fill" style="width:0%;height:100%;background:#34d399;transition:width .06s"></div>
+                        <input type="range" min="0.2" max="3" step="0.1" value="1.4" style="width:56px;accent-color:rgb(var(--tw-emerald-400))" oninput="kMicSetVolume(this.value)" title="Mic volume">
+                        <div style="width:42px;height:5px;border-radius:3px;background:rgb(var(--slate-400) / .15);overflow:hidden" title="Mic level">
+                            <div id="karaoke-mic-meter-fill" style="width:0%;height:100%;background:rgb(var(--tw-emerald-400));transition:width .06s"></div>
                         </div>
                         <button id="karaoke-mic-reverb-btn" onclick="kMicToggleReverb()" title="Echo effect on your voice" class="karaoke-ctrl-btn k-on"><i class="fas fa-water text-[10px]"></i></button>
                     </div>
@@ -3088,7 +3107,7 @@
         <!-- ── CHESS ─────────────────────────────────────────────── -->
         <div id="view-chess" class="app-view flex-1 overflow-hidden" style="flex-direction:row">
             <!-- Left sidebar: game setup, controls, history -->
-            <div class="border-r border-slate-800/80 shrink-0 flex flex-col chess-sidebar chat-scroll" style="width:clamp(170px,18vw,280px); background:var(--bg-surface,#0f172a); overflow-y:auto; min-height:0">
+            <div class="border-r border-slate-800/80 shrink-0 flex flex-col chess-sidebar chat-scroll" style="width:clamp(170px,18vw,280px); background:var(--bg-surface,rgb(var(--slate-900))); overflow-y:auto; min-height:0">
                 <div class="px-4 py-3 border-b border-slate-800/80 flex items-center gap-2 shrink-0">
                     <i class="fas fa-chess-knight text-amber-400 text-sm"></i>
                     <h2 class="text-white font-bold text-sm">Chess</h2>
@@ -3355,7 +3374,7 @@
                 <!-- Learn tab -->
                 <div id="chess-learn-pane" class="flex-1 flex min-h-0" style="display:none">
                     <!-- Topics sidebar -->
-                    <div class="border-r border-slate-800/80 shrink-0 flex flex-col" style="width:clamp(160px,16vw,240px); background:var(--bg-surface,#0f172a)">
+                    <div class="border-r border-slate-800/80 shrink-0 flex flex-col" style="width:clamp(160px,16vw,240px); background:var(--bg-surface,rgb(var(--slate-900)))">
                         <div class="px-3 py-2.5 border-b border-slate-800/80 flex items-center gap-2 shrink-0">
                             <i class="fas fa-book text-amber-400 text-[11px]"></i>
                             <span class="text-slate-300 text-xs font-medium">Lessons</span>
@@ -3393,7 +3412,7 @@
 
                 <!-- Header -->
                 <div class="flex items-center gap-3 mb-6">
-                    <i class="fas fa-sliders-h" style="color:#f43f5e;font-size:1.1rem"></i>
+                    <i class="fas fa-sliders-h" style="color:rgb(var(--tw-rose-500));font-size:1.1rem"></i>
                     <h1 class="text-white font-bold text-xl">Tuner</h1>
                 </div>
 
@@ -3413,7 +3432,7 @@
                 <div class="flex justify-center mb-6">
                     <button id="tuner-toggle-btn" onclick="tunerToggle()"
                         class="flex items-center justify-center text-white font-semibold text-sm py-3 px-8 rounded-2xl transition-colors shadow-lg gap-2"
-                        style="background:#dc2626;box-shadow:0 4px 18px rgba(220,38,38,.25)">
+                        style="background:rgb(var(--tw-red-600));box-shadow:0 4px 18px rgb(var(--tw-red-600) / .25)">
                         <i class="fas fa-microphone text-xs"></i>Start Tuner
                     </button>
                 </div>
@@ -3443,9 +3462,9 @@
                     <div class="mb-1">
                         <canvas id="tuner-canvas" style="width:100%;height:180px;display:block"></canvas>
                         <div class="flex justify-between px-1 -mt-1 text-xs font-semibold select-none">
-                            <span style="color:#60a5fa">♭ Flat</span>
+                            <span style="color:rgb(var(--tw-blue-400))">♭ Flat</span>
                             <span class="text-slate-500">In Tune</span>
-                            <span style="color:#f87171">Sharp ♯</span>
+                            <span style="color:rgb(var(--tw-red-400))">Sharp ♯</span>
                         </div>
                     </div>
 
@@ -3453,7 +3472,7 @@
                     <div class="flex flex-col items-center mt-5 mb-6">
                         <div class="flex items-end gap-1">
                             <span id="tuner-note" style="font-size:4.5rem;font-weight:800;line-height:1;color:#fff;font-variant-numeric:tabular-nums">--</span>
-                            <span id="tuner-octave" style="font-size:1.6rem;font-weight:600;color:#94a3b8;margin-bottom:6px"></span>
+                            <span id="tuner-octave" style="font-size:1.6rem;font-weight:600;color:rgb(var(--slate-400));margin-bottom:6px"></span>
                         </div>
                         <p id="tuner-freq" class="text-slate-500 text-sm mt-1" style="min-height:1.25rem"></p>
                     </div>
@@ -3500,7 +3519,7 @@
             <!-- Header -->
             <div class="px-6 py-4 border-b border-slate-800/80 flex items-center justify-between shrink-0 bg-slate-900/40">
                 <div class="flex items-center gap-3">
-                    <i class="fas fa-dumbbell" style="color:#10b981"></i>
+                    <i class="fas fa-dumbbell" style="color:rgb(var(--tw-emerald-500))"></i>
                     <h2 class="text-slate-100 text-lg font-semibold">Workouts</h2>
                     <span id="workout-stats" class="text-slate-500 text-[11px] tabular-nums"></span>
                 </div>
@@ -3523,8 +3542,8 @@
         <!-- ════════════════════════════════════════════════ -->
         <div id="view-news" class="app-view flex-1 overflow-hidden relative" style="flex-direction:column">
             <style>
-                .news-card{display:flex;flex-direction:column;background:rgba(15,23,42,.5);border:1px solid rgba(30,41,59,.8);border-radius:14px;overflow:hidden;cursor:pointer;transition:border-color .15s, transform .15s}
-                .news-card:hover{border-color:rgba(148,163,184,.35);transform:translateY(-2px)}
+                .news-card{display:flex;flex-direction:column;background:rgb(var(--slate-900) / .5);border:1px solid rgb(var(--slate-800) / .8);border-radius:14px;overflow:hidden;cursor:pointer;transition:border-color .15s, transform .15s}
+                .news-card:hover{border-color:rgb(var(--slate-400) / .35);transform:translateY(-2px)}
                 /* Fixed height (not aspect-ratio): aspect-ratio resolves to 0 during
                    grid intrinsic row sizing, which collapses every auto row to 0. */
                 .news-thumb{height:168px;background:#0b1020;overflow:hidden;position:relative;flex-shrink:0}
@@ -3542,7 +3561,7 @@
             <!-- Header -->
             <div class="px-6 py-4 border-b border-slate-800/80 flex items-center justify-between shrink-0 bg-slate-900/40 flex-wrap gap-2">
                 <div class="flex items-center gap-3">
-                    <i class="fas fa-newspaper" style="color:#dc2626"></i>
+                    <i class="fas fa-newspaper" style="color:rgb(var(--tw-red-600))"></i>
                     <h2 class="text-slate-100 text-lg font-semibold">News</h2>
                     <span id="news-status" class="text-slate-500 text-[11px]"></span>
                 </div>
@@ -3571,7 +3590,7 @@
             <div class="flex flex-col shrink-0 border-r border-slate-800/80 bg-slate-900/30" style="width:250px">
                 <div class="px-4 py-3 border-b border-slate-800/60 shrink-0">
                     <div class="flex items-center gap-2 mb-3">
-                        <i class="fas fa-chalkboard-teacher text-xs" style="color:#6366f1"></i>
+                        <i class="fas fa-chalkboard-teacher text-xs" style="color:rgb(var(--tw-indigo-500))"></i>
                         <span class="text-slate-100 text-sm font-semibold">Courses</span>
                     </div>
                     <div class="flex gap-1.5">
@@ -3583,7 +3602,7 @@
                 <div id="crs-course-list" class="flex-1 overflow-y-auto chat-scroll p-2 flex flex-col gap-1"></div>
             </div>
             <!-- Main -->
-            <div id="crs-main" class="flex-1 min-w-0" style="background:var(--bg-base,#0f172a)"></div>
+            <div id="crs-main" class="flex-1 min-w-0" style="background:var(--bg-base,rgb(var(--slate-900)))"></div>
         </div>
 
         <!-- ════════════════════════════════════════════════ -->
@@ -3594,7 +3613,7 @@
             <div id="research-sidebar" class="flex flex-col shrink-0 border-r border-slate-800/80 bg-slate-900/30" style="width:210px">
                 <div class="px-4 py-3 border-b border-slate-800/60 flex items-center justify-between shrink-0">
                     <div class="flex items-center gap-2">
-                        <i class="fas fa-brain text-xs" style="color:#8b5cf6"></i>
+                        <i class="fas fa-brain text-xs" style="color:rgb(var(--tw-violet-500))"></i>
                         <span class="text-slate-100 text-sm font-semibold">Research</span>
                     </div>
                     <button id="research-apikey-btn" class="w-7 h-7 flex items-center justify-center rounded-lg text-slate-500 hover:text-slate-200 hover:bg-slate-800 transition-colors" title="API Key settings">
@@ -3602,7 +3621,7 @@
                     </button>
                 </div>
                 <div class="px-3 py-2 shrink-0">
-                    <button id="research-new-btn" class="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold text-white transition-colors" style="background:rgba(139,92,246,0.25);border:1px solid rgba(139,92,246,0.4)">
+                    <button id="research-new-btn" class="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold text-white transition-colors" style="background:rgb(var(--tw-violet-500) / 0.25);border:1px solid rgb(var(--tw-violet-500) / 0.4)">
                         <i class="fas fa-plus text-[10px]"></i> New Notebook
                     </button>
                 </div>
@@ -3670,7 +3689,7 @@
             <!-- Header -->
             <div class="px-6 py-4 border-b border-slate-800/60 flex items-center justify-between gap-4 shrink-0 relative z-10 flex-wrap" style="background:rgba(5,6,13,0.6)">
                 <div class="flex items-center gap-3 shrink-0">
-                    <i class="fas fa-meteor" style="color:#818cf8"></i>
+                    <i class="fas fa-meteor" style="color:rgb(var(--tw-indigo-400))"></i>
                     <h2 class="text-slate-100 text-lg font-semibold">Cosmos</h2>
                 </div>
                 <div class="relative flex-1 min-w-[180px] max-w-md">
@@ -3680,16 +3699,16 @@
                     <button id="cosmos-search-clear" class="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white text-xs" style="display:none"><i class="fas fa-times"></i></button>
                 </div>
                 <div class="flex items-center gap-2">
-                    <button id="cosmos-tab-discover" class="px-3 py-2 rounded-xl text-xs font-semibold text-white transition-colors" style="background:rgba(99,102,241,0.3);border:1px solid rgba(99,102,241,0.5)">
+                    <button id="cosmos-tab-discover" class="px-3 py-2 rounded-xl text-xs font-semibold text-white transition-colors" style="background:rgb(var(--tw-indigo-500) / 0.3);border:1px solid rgb(var(--tw-indigo-500) / 0.5)">
                         <i class="fas fa-meteor text-[10px] mr-1"></i> Discover
                     </button>
-                    <button id="cosmos-tab-favs" class="px-3 py-2 rounded-xl text-xs font-semibold text-slate-300 transition-colors" style="background:rgba(30,41,59,0.6);border:1px solid rgba(148,163,184,0.2)">
+                    <button id="cosmos-tab-favs" class="px-3 py-2 rounded-xl text-xs font-semibold text-slate-300 transition-colors" style="background:rgb(var(--slate-800) / 0.6);border:1px solid rgb(var(--slate-400) / 0.2)">
                         <i class="fas fa-heart text-[10px] mr-1"></i> Favorites
                     </button>
-                    <button id="cosmos-shuffle" class="flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold text-white transition-colors" style="background:rgba(99,102,241,0.3);border:1px solid rgba(99,102,241,0.5)">
+                    <button id="cosmos-shuffle" class="flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold text-white transition-colors" style="background:rgb(var(--tw-indigo-500) / 0.3);border:1px solid rgb(var(--tw-indigo-500) / 0.5)">
                         <i class="fas fa-shuffle text-[10px]"></i> Surprise me
                     </button>
-                    <button id="cosmos-key-btn" class="w-9 h-9 flex items-center justify-center rounded-xl text-slate-400 hover:text-white transition-colors" title="NASA API key" style="background:rgba(30,41,59,0.6);border:1px solid rgba(148,163,184,0.2)">
+                    <button id="cosmos-key-btn" class="w-9 h-9 flex items-center justify-center rounded-xl text-slate-400 hover:text-white transition-colors" title="NASA API key" style="background:rgb(var(--slate-800) / 0.6);border:1px solid rgb(var(--slate-400) / 0.2)">
                         <i class="fas fa-key text-[11px]"></i>
                     </button>
                 </div>
@@ -3735,12 +3754,12 @@
         <!-- ════════════════════════════════════════════════ -->
         <!-- CAMERA VIEW                                      -->
         <!-- ════════════════════════════════════════════════ -->
-        <div id="view-camera" class="app-view flex-1 overflow-hidden" style="flex-direction:row; background:#0a0b12">
+        <div id="view-camera" class="app-view flex-1 overflow-hidden" style="flex-direction:row; background:var(--bg-base)">
             <!-- Left: camera + controls -->
             <div class="flex-1 flex flex-col min-w-0">
                 <div class="px-6 py-3 border-b border-slate-800/70 flex items-center justify-between shrink-0 bg-slate-900/40">
                     <div class="flex items-center gap-3">
-                        <i class="fas fa-video" style="color:#ef4444"></i>
+                        <i class="fas fa-video" style="color:rgb(var(--tw-red-500))"></i>
                         <h2 class="text-slate-100 text-lg font-semibold">Camera</h2>
                         <span id="camera-whisper-status" class="text-[11px] text-slate-500"></span>
                     </div>
@@ -3752,7 +3771,7 @@
                         <video id="camera-preview" autoplay muted playsinline class="max-w-full max-h-full rounded-2xl bg-black shadow-2xl" style="object-fit:contain; transform:scaleX(-1)"></video>
                         <!-- live subtitle overlay -->
                         <div id="camera-subtitle" class="absolute bottom-6 left-1/2 -translate-x-1/2 max-w-[80%] text-center px-4 py-2 rounded-xl text-white text-base font-medium" style="background:rgba(0,0,0,0.6); display:none; text-shadow:0 1px 3px rgba(0,0,0,0.9)"></div>
-                        <div id="camera-rec-dot" class="absolute top-4 left-4 flex items-center gap-2 px-3 py-1.5 rounded-full" style="background:rgba(239,68,68,0.85); display:none">
+                        <div id="camera-rec-dot" class="absolute top-4 left-4 flex items-center gap-2 px-3 py-1.5 rounded-full" style="background:rgb(var(--tw-red-500) / 0.85); display:none">
                             <span class="w-2 h-2 rounded-full bg-white camera-pulse"></span>
                             <span class="text-white text-xs font-semibold">REC</span>
                         </div>
@@ -3760,7 +3779,7 @@
                 </div>
                 <!-- Controls -->
                 <div class="px-6 py-4 border-t border-slate-800/70 shrink-0 flex items-center justify-center gap-4 bg-slate-900/40">
-                    <button id="camera-record-btn" class="flex items-center gap-2 px-6 py-3 rounded-2xl text-white text-sm font-semibold transition-colors" style="background:#ef4444">
+                    <button id="camera-record-btn" class="flex items-center gap-2 px-6 py-3 rounded-2xl text-white text-sm font-semibold transition-colors" style="background:rgb(var(--tw-red-500))">
                         <i class="fas fa-circle text-[10px]"></i> Start recording
                     </button>
                 </div>
@@ -3780,10 +3799,10 @@
         <!-- ════════════════════════════════════════════════ -->
         <!-- EDITOR VIEW (timeline video editor)              -->
         <!-- ════════════════════════════════════════════════ -->
-        <div id="view-editor" class="app-view flex-1 overflow-hidden" style="flex-direction:column; background:#0b0c12">
+        <div id="view-editor" class="app-view flex-1 overflow-hidden" style="flex-direction:column; background:var(--bg-base)">
             <!-- Top: toolbar -->
             <div class="px-5 py-2.5 border-b border-slate-800/70 flex items-center gap-2 shrink-0 bg-slate-900/50">
-                <i class="fas fa-film" style="color:#f59e0b"></i>
+                <i class="fas fa-film" style="color:rgb(var(--tw-amber-500))"></i>
                 <h2 class="text-slate-100 text-sm font-semibold mr-2">Editor</h2>
                 <button onclick="edSplit()" class="ed-tool-btn" title="Split at playhead (S)"><i class="fas fa-i-cursor mr-1"></i>Split</button>
                 <button onclick="edDeleteSelected()" class="ed-tool-btn" title="Delete selected (⌫)"><i class="fas fa-trash mr-1"></i>Delete</button>
@@ -3796,7 +3815,7 @@
                 </div>
                 <div class="flex-1"></div>
                 <span id="ed-status" class="text-slate-500 text-[11px] mr-2"></span>
-                <button onclick="edExport()" id="ed-export-btn" class="px-4 py-1.5 rounded-lg text-white text-xs font-semibold transition-colors" style="background:#f59e0b">
+                <button onclick="edExport()" id="ed-export-btn" class="px-4 py-1.5 rounded-lg text-white text-xs font-semibold transition-colors" style="background:rgb(var(--tw-amber-500))">
                     <i class="fas fa-file-export mr-1.5"></i>Export
                 </button>
             </div>
@@ -3830,7 +3849,7 @@
                     <div id="ed-timeline" class="relative" style="min-width:100%; height:100%">
                         <div id="ed-ruler" class="sticky top-0 z-20 h-6 border-b border-slate-800/70 bg-slate-900/80" style="min-width:100%"></div>
                         <div id="ed-tracks"></div>
-                        <div id="ed-playhead" class="absolute top-0 bottom-0 z-30 pointer-events-none" style="width:2px;background:#f59e0b;left:0"></div>
+                        <div id="ed-playhead" class="absolute top-0 bottom-0 z-30 pointer-events-none" style="width:2px;background:rgb(var(--tw-amber-500));left:0"></div>
                     </div>
                 </div>
             </div>
@@ -3839,7 +3858,7 @@
         <!-- ════════════════════════════════════════════════ -->
         <!-- MAIL VIEW                                        -->
         <!-- ════════════════════════════════════════════════ -->
-        <div id="view-mail" class="app-view flex-1 overflow-hidden" style="flex-direction:row; background:#0b0e14">
+        <div id="view-mail" class="app-view flex-1 overflow-hidden" style="flex-direction:row; background:var(--bg-base)">
             <!-- Accounts sidebar -->
             <div class="shrink-0 border-r border-slate-800/70 flex flex-col bg-slate-900/40" style="width:220px">
                 <div class="px-4 py-3 border-b border-slate-800/60 flex items-center justify-between shrink-0">
@@ -3848,7 +3867,7 @@
                 </div>
                 <div id="mail-account-list" class="flex flex-col gap-1 p-2 overflow-y-auto chat-scroll"></div>
                 <div class="mt-auto p-2 border-t border-slate-800/60">
-                    <button id="mail-compose-btn" class="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-xl text-white text-xs font-semibold" style="background:rgba(14,165,233,0.3);border:1px solid rgba(14,165,233,0.5)"><i class="fas fa-pen text-[10px]"></i> Compose</button>
+                    <button id="mail-compose-btn" class="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-xl text-white text-xs font-semibold" style="background:rgb(var(--tw-sky-500) / 0.3);border:1px solid rgb(var(--tw-sky-500) / 0.5)"><i class="fas fa-pen text-[10px]"></i> Compose</button>
                 </div>
             </div>
             <!-- Inbox list -->
@@ -3900,7 +3919,7 @@
         <!-- ════════════════════════════════════════════════ -->
         <!-- CALCULATOR VIEW                                  -->
         <!-- ════════════════════════════════════════════════ -->
-        <div id="view-rts" class="app-view flex-1 overflow-hidden relative" style="flex-direction:column; background:#0f172a">
+        <div id="view-rts" class="app-view flex-1 overflow-hidden relative" style="flex-direction:column; background:rgb(var(--slate-900))">
             <div class="flex-1 flex items-center justify-center p-4 overflow-y-auto">
                 <div id="calc-wrap" class="w-full" style="max-width:420px">
 
@@ -4018,16 +4037,16 @@
         <!-- ════════════════════════════════════════════════ -->
         <!-- NETWORK VIEW — LAN messaging & file sharing       -->
         <!-- ════════════════════════════════════════════════ -->
-        <div id="view-network" class="app-view flex-1 overflow-hidden" style="flex-direction:row; background:#0b0e14">
+        <div id="view-network" class="app-view flex-1 overflow-hidden" style="flex-direction:row; background:var(--bg-base)">
             <!-- Left: my identity + discovered devices -->
-            <div style="width:280px; border-right:1px solid rgba(255,255,255,0.06); display:flex; flex-direction:column; flex-shrink:0">
+            <div style="width:280px; border-right:1px solid rgb(var(--ink-rgb) / 0.06); display:flex; flex-direction:column; flex-shrink:0">
                 <div style="padding:16px 16px 12px">
                     <div style="display:flex; align-items:center; gap:8px; margin-bottom:14px">
-                        <i class="fas fa-network-wired" style="color:#22d3ee"></i>
+                        <i class="fas fa-network-wired" style="color:rgb(var(--tw-cyan-400))"></i>
                         <h2 class="text-slate-100 text-base font-semibold">Network</h2>
                     </div>
                     <!-- This device -->
-                    <div style="background:rgba(34,211,238,0.06); border:1px solid rgba(34,211,238,0.18); border-radius:14px; padding:12px">
+                    <div style="background:rgb(var(--tw-cyan-400) / 0.06); border:1px solid rgb(var(--tw-cyan-400) / 0.18); border-radius:14px; padding:12px">
                         <p class="text-slate-500 text-[10px] uppercase tracking-widest font-semibold mb-2">This device</p>
                         <div style="display:flex; gap:8px; margin-bottom:8px">
                             <input id="net-my-name" placeholder="Device name"
@@ -4052,7 +4071,7 @@
                     </div>
                     <p class="text-slate-600 text-[10px] mt-1">Used for public servers + auto-updates. e.g. 203.0.113.10 or my-server.duckdns.org</p>
                     <label style="display:flex; align-items:center; gap:8px; margin-top:10px; cursor:pointer">
-                        <input type="checkbox" id="net-host-toggle" onchange="netToggleHost(this.checked)" style="width:15px; height:15px; accent-color:#22d3ee; cursor:pointer">
+                        <input type="checkbox" id="net-host-toggle" onchange="netToggleHost(this.checked)" style="width:15px; height:15px; accent-color:rgb(var(--tw-cyan-400)); cursor:pointer">
                         <span class="text-slate-300 text-xs font-medium">Host public servers on this computer</span>
                     </label>
                     <p class="text-slate-600 text-[10px] mt-1">Turn on to make this machine the host (port 8480). Others reach it via your address above.</p>
@@ -4075,7 +4094,7 @@
                 <div style="padding:0 16px 6px">
                     <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:1.5px">
                         <p class="text-slate-500 text-[10px] uppercase tracking-widest font-semibold">Public servers</p>
-                        <span id="net-hub-status" class="text-[9px] font-semibold" style="color:#64748b">connecting…</span>
+                        <span id="net-hub-status" class="text-[9px] font-semibold" style="color:rgb(var(--slate-500))">connecting…</span>
                     </div>
                     <button onclick="netOpenCreateModal()"
                         class="w-full flex items-center justify-center gap-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium py-1.5 transition-colors border border-slate-700/60">
@@ -4090,9 +4109,9 @@
 
             <!-- Right: conversation -->
             <div style="flex:1; display:flex; flex-direction:column; min-width:0">
-                <div id="net-convo-head" style="padding:14px 18px; border-bottom:1px solid rgba(255,255,255,0.06); min-height:58px; display:flex; align-items:center"></div>
+                <div id="net-convo-head" style="padding:14px 18px; border-bottom:1px solid rgb(var(--ink-rgb) / 0.06); min-height:58px; display:flex; align-items:center"></div>
                 <div id="net-convo" class="flex-1 overflow-y-auto chat-scroll" style="padding:18px"></div>
-                <div id="net-composer" style="display:none; padding:12px 16px; border-top:1px solid rgba(255,255,255,0.06); gap:10px; align-items:flex-end">
+                <div id="net-composer" style="display:none; padding:12px 16px; border-top:1px solid rgb(var(--ink-rgb) / 0.06); gap:10px; align-items:flex-end">
                     <div style="display:flex; gap:10px; align-items:flex-end; width:100%">
                         <button onclick="netSendFile()" title="Send a file"
                             class="w-10 h-10 flex-shrink-0 flex items-center justify-center rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-colors">
@@ -4115,8 +4134,8 @@
         <!-- SUDOKU VIEW                                       -->
         <!-- ════════════════════════════════════════════════ -->
         <style>
-            .sdk-pad { background:#ffffff; color:#0f766e; font-size:26px; font-weight:700; padding:14px 0; border-radius:10px; border:1px solid #cbd5e1; transition:background .1s; }
-            .sdk-pad:hover { background:#f1f5f9; }
+            .sdk-pad { background:#ffffff; color:#0f766e; font-size:26px; font-weight:700; padding:14px 0; border-radius:10px; border:1px solid rgb(var(--slate-300)); transition:background .1s; }
+            .sdk-pad:hover { background:rgb(var(--slate-100)); }
             .sdk-pad:active { background:#99f6e4; }
         </style>
         <div id="view-sudoku" class="app-view flex-1 overflow-y-auto chat-scroll" style="background:#e2e8f0">
@@ -4176,28 +4195,28 @@
 
         <!-- ── Galaxy simulation ─────────────────────────────────── -->
         <!-- ▓▓ BROWSER ▓▓ -->
-        <div id="view-browser" class="app-view flex-1 overflow-hidden" style="flex-direction:column; background:#0b0e14">
+        <div id="view-browser" class="app-view flex-1 overflow-hidden" style="flex-direction:column; background:var(--bg-base)">
             <!-- Web tab strip — web pages now live in the top-level app tab
                  strip, so this internal strip is hidden. New-tab / private
                  buttons remain reachable via ⌘T / ⌘⇧N. -->
-            <div class="flex items-end gap-1 px-2 pt-2" style="background:#0b0e14; display:none">
+            <div class="flex items-end gap-1 px-2 pt-2" style="background:var(--bg-base); display:none">
                 <div id="browser-tabs" class="flex items-end gap-1 overflow-x-auto" style="max-width:calc(100% - 44px); scrollbar-width:none"></div>
                 <button id="browser-newtab" title="New tab (⌘T)"
                         class="flex-none w-8 h-8 mb-0.5 flex items-center justify-center rounded-lg text-slate-400 hover:text-white transition-colors"
-                        style="background:rgba(30,41,59,0.5)"><i class="fas fa-plus text-xs"></i></button>
+                        style="background:rgb(var(--slate-800) / 0.5)"><i class="fas fa-plus text-xs"></i></button>
                 <button id="browser-newprivate" title="New private tab (⌘⇧N)"
                         class="flex-none w-8 h-8 mb-0.5 flex items-center justify-center rounded-lg text-purple-400 hover:text-purple-200 transition-colors"
-                        style="background:rgba(88,28,135,0.25); border:1px solid rgba(168,85,247,0.25)"><i class="fas fa-user-secret text-xs"></i></button>
+                        style="background:rgb(var(--tw-purple-900) / 0.25); border:1px solid rgb(var(--tw-purple-500) / 0.25)"><i class="fas fa-user-secret text-xs"></i></button>
             </div>
             <!-- Toolbar -->
-            <div class="flex items-center gap-1.5 px-3 py-2" style="background:#0e1320; border-bottom:1px solid rgba(148,163,184,0.12)">
+            <div class="flex items-center gap-1.5 px-3 py-2" style="background:var(--bg-elev); border-bottom:1px solid rgb(var(--slate-400) / 0.12)">
                 <button id="browser-back" title="Back" class="w-8 h-8 flex items-center justify-center rounded-lg text-slate-300 hover:text-white hover:bg-slate-800 transition-colors"><i class="fas fa-arrow-left text-sm"></i></button>
                 <button id="browser-fwd" title="Forward" class="w-8 h-8 flex items-center justify-center rounded-lg text-slate-300 hover:text-white hover:bg-slate-800 transition-colors"><i class="fas fa-arrow-right text-sm"></i></button>
                 <button id="browser-reload" title="Reload" class="w-8 h-8 flex items-center justify-center rounded-lg text-slate-300 hover:text-white hover:bg-slate-800 transition-colors"><i class="fas fa-arrow-rotate-right text-sm"></i></button>
-                <div class="flex-1 flex items-center gap-2 px-3 mx-1" style="background:#1a2234; border:1px solid rgba(148,163,184,0.18); border-radius:999px; height:34px">
-                    <i id="browser-secure" class="fas fa-magnifying-glass" title="Site security info" style="color:#64748b; font-size:11px; cursor:pointer"></i>
+                <div class="flex-1 flex items-center gap-2 px-3 mx-1" style="background:var(--bg-elev); border:1px solid rgb(var(--slate-400) / 0.18); border-radius:999px; height:34px">
+                    <i id="browser-secure" class="fas fa-magnifying-glass" title="Site security info" style="color:rgb(var(--slate-500)); font-size:11px; cursor:pointer"></i>
                     <input id="browser-url" type="text" placeholder="Search or enter address" spellcheck="false" autocomplete="off"
-                           class="flex-1 bg-transparent outline-none text-sm" style="color:#e2e8f0">
+                           class="flex-1 bg-transparent outline-none text-sm" style="color:rgb(var(--slate-200))">
                 </div>
                 <button id="browser-history-btn" title="History (⌘Y)" class="w-8 h-8 flex items-center justify-center rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"><i class="fas fa-clock-rotate-left text-xs"></i></button>
                 <button id="browser-open-ext" title="Open in system browser" class="w-8 h-8 flex items-center justify-center rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"><i class="fas fa-arrow-up-right-from-square text-xs"></i></button>
@@ -4207,38 +4226,38 @@
             </div>
             <!-- Site security info popover -->
             <div id="browser-siteinfo" style="display:none; position:absolute; top:96px; left:120px; z-index:40; flex-direction:column; gap:8px; width:320px;
-                    background:#111827; border:1px solid rgba(148,163,184,0.25); border-radius:14px; padding:14px; box-shadow:0 16px 40px rgba(0,0,0,0.55)">
+                    background:#111827; border:1px solid rgb(var(--slate-400) / 0.25); border-radius:14px; padding:14px; box-shadow:0 16px 40px rgba(0,0,0,0.55)">
                 <div id="browser-siteinfo-status" class="text-sm font-semibold"></div>
                 <div id="browser-siteinfo-host" class="text-xs text-slate-400" style="line-height:1.5; word-break:break-word"></div>
                 <button id="browser-siteinfo-cleardata" class="text-xs font-semibold px-3 py-2 rounded-lg text-slate-300 hover:text-white transition-colors self-start"
-                        style="background:rgba(30,41,59,0.8); border:1px solid rgba(148,163,184,0.2)"><i class="fas fa-broom mr-1.5"></i>Clear cookies & browsing data</button>
+                        style="background:rgb(var(--slate-800) / 0.8); border:1px solid rgb(var(--slate-400) / 0.2)"><i class="fas fa-broom mr-1.5"></i>Clear cookies & browsing data</button>
             </div>
             <!-- History panel -->
             <div id="browser-history" style="display:none; position:absolute; top:96px; right:14px; z-index:40; flex-direction:column; width:380px; max-height:60%;
-                    background:#111827; border:1px solid rgba(148,163,184,0.25); border-radius:14px; box-shadow:0 16px 40px rgba(0,0,0,0.55); overflow:hidden">
-                <div class="flex items-center gap-2 px-3 py-2.5" style="border-bottom:1px solid rgba(148,163,184,0.15)">
+                    background:#111827; border:1px solid rgb(var(--slate-400) / 0.25); border-radius:14px; box-shadow:0 16px 40px rgba(0,0,0,0.55); overflow:hidden">
+                <div class="flex items-center gap-2 px-3 py-2.5" style="border-bottom:1px solid rgb(var(--slate-400) / 0.15)">
                     <i class="fas fa-clock-rotate-left text-xs text-slate-400"></i>
                     <span class="text-sm font-semibold text-slate-200 flex-1">History</span>
                     <button id="browser-history-clear" class="text-xs text-slate-400 hover:text-white px-2 py-1 rounded-lg hover:bg-slate-800 transition-colors">Clear history</button>
                     <button id="browser-history-cleardata" class="text-xs text-slate-400 hover:text-white px-2 py-1 rounded-lg hover:bg-slate-800 transition-colors" title="Also clears cookies, sign-ins and cache"><i class="fas fa-broom mr-1"></i>Clear all data</button>
                 </div>
-                <div class="px-3 py-2" style="border-bottom:1px solid rgba(148,163,184,0.1)">
+                <div class="px-3 py-2" style="border-bottom:1px solid rgb(var(--slate-400) / 0.1)">
                     <input id="browser-history-search" type="text" placeholder="Search history…" spellcheck="false"
-                           class="w-full bg-transparent outline-none text-xs px-3 py-2 rounded-lg" style="background:#1a2234; border:1px solid rgba(148,163,184,0.15); color:#e2e8f0">
+                           class="w-full bg-transparent outline-none text-xs px-3 py-2 rounded-lg" style="background:var(--bg-elev); border:1px solid rgb(var(--slate-400) / 0.15); color:rgb(var(--slate-200))">
                 </div>
                 <div id="browser-history-list" class="flex-1 overflow-y-auto chat-scroll px-1.5 py-1.5"></div>
             </div>
             <!-- Password manager (quick popover; full manager lives on the Settings page) -->
             <div id="browser-passwords" style="display:none; position:absolute; top:96px; right:14px; z-index:42; flex-direction:column; width:420px; max-height:70%;
-                    background:#111827; border:1px solid rgba(148,163,184,0.25); border-radius:14px; box-shadow:0 16px 40px rgba(0,0,0,0.55); overflow:hidden">
-                <div class="flex items-center gap-2 px-3 py-2.5" style="border-bottom:1px solid rgba(148,163,184,0.15)">
+                    background:#111827; border:1px solid rgb(var(--slate-400) / 0.25); border-radius:14px; box-shadow:0 16px 40px rgba(0,0,0,0.55); overflow:hidden">
+                <div class="flex items-center gap-2 px-3 py-2.5" style="border-bottom:1px solid rgb(var(--slate-400) / 0.15)">
                     <i class="fas fa-key text-xs text-slate-400"></i>
                     <span class="text-sm font-semibold text-slate-200 flex-1">Passwords</span>
-                    <span id="browser-pw-lock" class="text-[10px] px-1.5 py-0.5 rounded" style="background:rgba(52,211,153,0.15); color:#34d399"><i class="fas fa-lock mr-1"></i>Encrypted</span>
+                    <span id="browser-pw-lock" class="text-[10px] px-1.5 py-0.5 rounded" style="background:rgb(var(--tw-emerald-400) / 0.15); color:rgb(var(--tw-emerald-400))"><i class="fas fa-lock mr-1"></i>Encrypted</span>
                     <button id="browser-pw-add-btn" class="text-xs font-semibold text-indigo-300 hover:text-white px-2 py-1 rounded-lg hover:bg-slate-800 transition-colors"><i class="fas fa-plus mr-1"></i>Add</button>
                 </div>
                 <!-- Add/edit form (hidden by default) -->
-                <div id="browser-pw-form" class="px-3 py-2.5" style="display:none; border-bottom:1px solid rgba(148,163,184,0.12); background:rgba(30,41,59,0.3)">
+                <div id="browser-pw-form" class="px-3 py-2.5" style="display:none; border-bottom:1px solid rgb(var(--slate-400) / 0.12); background:rgb(var(--slate-800) / 0.3)">
                     <input id="browser-pw-site" type="text" placeholder="Website (e.g. github.com)" spellcheck="false" class="bw-pw-input">
                     <input id="browser-pw-user" type="text" placeholder="Username or email" spellcheck="false" class="bw-pw-input">
                     <div class="flex items-center gap-2">
@@ -4246,36 +4265,36 @@
                     </div>
                     <div class="flex items-center justify-end gap-2 mt-2.5">
                         <button id="browser-pw-cancel" class="text-xs text-slate-400 hover:text-white px-3 py-1.5 rounded-lg hover:bg-slate-800">Cancel</button>
-                        <button id="browser-pw-save" class="text-xs font-semibold text-white px-3 py-1.5 rounded-lg" style="background:#4f46e5">Save</button>
+                        <button id="browser-pw-save" class="text-xs font-semibold text-white px-3 py-1.5 rounded-lg" style="background:rgb(var(--tw-indigo-600))">Save</button>
                     </div>
                 </div>
-                <div class="px-3 py-2" style="border-bottom:1px solid rgba(148,163,184,0.1)">
+                <div class="px-3 py-2" style="border-bottom:1px solid rgb(var(--slate-400) / 0.1)">
                     <input id="browser-pw-search" type="text" placeholder="Search passwords…" spellcheck="false"
-                           class="w-full bg-transparent outline-none text-xs px-3 py-2 rounded-lg" style="background:#1a2234; border:1px solid rgba(148,163,184,0.15); color:#e2e8f0">
+                           class="w-full bg-transparent outline-none text-xs px-3 py-2 rounded-lg" style="background:var(--bg-elev); border:1px solid rgb(var(--slate-400) / 0.15); color:rgb(var(--slate-200))">
                 </div>
                 <div id="browser-pw-list" class="flex-1 overflow-y-auto chat-scroll px-1.5 py-1.5"></div>
             </div>
             <!-- Save-password prompt bar -->
             <div id="browser-pw-prompt" style="display:none; position:absolute; top:96px; left:50%; transform:translateX(-50%); z-index:43; align-items:center; gap:12px;
-                    background:#111827; border:1px solid rgba(129,140,248,0.4); border-radius:12px; padding:10px 14px; box-shadow:0 16px 40px rgba(0,0,0,0.55); max-width:90%">
-                <i class="fas fa-key" style="color:#818cf8; font-size:13px"></i>
+                    background:#111827; border:1px solid rgb(var(--tw-indigo-400) / 0.4); border-radius:12px; padding:10px 14px; box-shadow:0 16px 40px rgba(0,0,0,0.55); max-width:90%">
+                <i class="fas fa-key" style="color:rgb(var(--tw-indigo-400)); font-size:13px"></i>
                 <span class="text-xs text-slate-200">Save password for <b id="browser-pw-prompt-host"></b>?</span>
-                <button id="browser-pw-prompt-save" class="text-xs font-semibold text-white px-3 py-1.5 rounded-lg" style="background:#4f46e5">Save</button>
+                <button id="browser-pw-prompt-save" class="text-xs font-semibold text-white px-3 py-1.5 rounded-lg" style="background:rgb(var(--tw-indigo-600))">Save</button>
                 <button id="browser-pw-prompt-never" class="text-xs text-slate-400 hover:text-white px-2 py-1.5 rounded-lg hover:bg-slate-800">Never</button>
                 <button id="browser-pw-prompt-dismiss" class="text-slate-500 hover:text-white px-1"><i class="fas fa-xmark"></i></button>
             </div>
             <!-- Address-bar autocomplete (search suggestions + history) -->
-            <div id="browser-suggest" style="display:none; position:fixed; z-index:45; background:#111827; border:1px solid rgba(148,163,184,0.25); border-radius:12px; box-shadow:0 16px 40px rgba(0,0,0,0.55); overflow:hidden; padding:4px"></div>
+            <div id="browser-suggest" style="display:none; position:fixed; z-index:45; background:#111827; border:1px solid rgb(var(--slate-400) / 0.25); border-radius:12px; box-shadow:0 16px 40px rgba(0,0,0,0.55); overflow:hidden; padding:4px"></div>
             <!-- Pages -->
-            <div id="browser-pages" class="flex-1 relative" style="background:#0b0e14">
+            <div id="browser-pages" class="flex-1 relative" style="background:var(--bg-base)">
                 <div id="browser-error" style="display:none; position:absolute; top:10px; left:50%; transform:translateX(-50%); z-index:20; align-items:center; gap:10px;
-                        background:rgba(127,29,29,0.92); border:1px solid rgba(248,113,113,0.4); border-radius:12px; padding:8px 14px; max-width:80%">
-                    <i class="fas fa-triangle-exclamation" style="color:#fca5a5; font-size:12px"></i>
-                    <span id="browser-error-msg" class="text-xs" style="color:#fecaca; overflow:hidden; text-overflow:ellipsis; white-space:nowrap"></span>
-                    <button id="browser-error-retry" class="text-xs font-semibold px-2.5 py-1 rounded-lg" style="background:rgba(248,113,113,0.2); color:#fff">Retry</button>
+                        background:rgb(var(--tw-red-900) / 0.92); border:1px solid rgb(var(--tw-red-400) / 0.4); border-radius:12px; padding:8px 14px; max-width:80%">
+                    <i class="fas fa-triangle-exclamation" style="color:rgb(var(--tw-red-300)); font-size:12px"></i>
+                    <span id="browser-error-msg" class="text-xs" style="color:rgb(var(--tw-red-200)); overflow:hidden; text-overflow:ellipsis; white-space:nowrap"></span>
+                    <button id="browser-error-retry" class="text-xs font-semibold px-2.5 py-1 rounded-lg" style="background:rgb(var(--tw-red-400) / 0.2); color:#fff">Retry</button>
                 </div>
                 <div id="browser-start" class="absolute inset-0 flex-col items-center justify-center gap-5" style="display:none">
-                    <i class="fas fa-globe" style="font-size:42px; color:#334155"></i>
+                    <i class="fas fa-globe" style="font-size:42px; color:rgb(var(--slate-700))"></i>
                     <p class="text-slate-500 text-sm">Search or enter an address above</p>
                     <div class="flex items-center gap-3">
                         <button data-bw-url="https://www.google.com" class="bw-quicklink"><i class="fab fa-google mr-1.5"></i>Google</button>
@@ -4286,21 +4305,21 @@
                 </div>
             </div>
             <!-- Downloads bar -->
-            <div id="browser-dlbar" style="display:none; flex-wrap:wrap; gap:8px; padding:8px 12px; background:#0e1320; border-top:1px solid rgba(148,163,184,0.15)"></div>
+            <div id="browser-dlbar" style="display:none; flex-wrap:wrap; gap:8px; padding:8px 12px; background:var(--bg-elev); border-top:1px solid rgb(var(--slate-400) / 0.15)"></div>
         </div>
 
         <!-- ▓▓ SETTINGS (full page) ▓▓ -->
         <div id="view-settings" class="app-view flex-1 overflow-y-auto chat-scroll" style="flex-direction:column">
             <div style="max-width:820px; width:100%; margin:0 auto; padding:32px 28px 60px">
                 <div class="flex items-center gap-3 mb-1">
-                    <i class="fas fa-gear" style="font-size:22px; color:#818cf8"></i>
+                    <i class="fas fa-gear" style="font-size:22px; color:rgb(var(--tw-indigo-400))"></i>
                     <h1 class="text-2xl font-bold text-slate-100">Settings</h1>
                 </div>
                 <p class="text-sm text-slate-500 mb-7">Browser privacy, history and saved passwords.</p>
 
                 <!-- Privacy & Search -->
                 <section class="sp-card">
-                    <h2 class="sp-h2"><i class="fas fa-shield-halved mr-2" style="color:#818cf8"></i>Privacy &amp; Search</h2>
+                    <h2 class="sp-h2"><i class="fas fa-shield-halved mr-2" style="color:rgb(var(--tw-indigo-400))"></i>Privacy &amp; Search</h2>
                     <label class="sp-row"><span><i class="fas fa-shield-halved sp-ico"></i>Block ads &amp; trackers <span id="sp-adblock-count" class="text-xs text-slate-500 ml-1"></span></span><input id="sp-adblock" type="checkbox" class="bw-switch"></label>
                     <label class="sp-row"><span><i class="fas fa-ban sp-ico"></i>Block pop-ups <span id="sp-popup-count" class="text-xs text-slate-500 ml-1"></span></span><input id="sp-popup" type="checkbox" class="bw-switch"></label>
                     <label class="sp-row"><span><i class="fas fa-clock-rotate-left sp-ico"></i>Save browsing history</span><input id="sp-savehist" type="checkbox" class="bw-switch"></label>
@@ -4313,15 +4332,15 @@
                         </select>
                     </div>
                     <div class="sp-row" style="border:none">
-                        <span><i class="fas fa-broom sp-ico" style="color:#fca5a5"></i>Clear all browsing data</span>
-                        <button id="sp-cleardata" class="text-xs font-semibold px-3 py-1.5 rounded-lg text-rose-200 hover:text-white transition-colors" style="background:rgba(127,29,29,0.4); border:1px solid rgba(248,113,113,0.3)">Clear data</button>
+                        <span><i class="fas fa-broom sp-ico" style="color:rgb(var(--tw-red-300))"></i>Clear all browsing data</span>
+                        <button id="sp-cleardata" class="text-xs font-semibold px-3 py-1.5 rounded-lg text-rose-200 hover:text-white transition-colors" style="background:rgb(var(--tw-red-900) / 0.4); border:1px solid rgb(var(--tw-red-400) / 0.3)">Clear data</button>
                     </div>
                 </section>
 
                 <!-- History -->
                 <section class="sp-card">
                     <div class="flex items-center mb-3">
-                        <h2 class="sp-h2 flex-1" style="margin:0"><i class="fas fa-clock-rotate-left mr-2" style="color:#818cf8"></i>History <span id="sp-history-count" class="text-xs font-normal text-slate-500"></span></h2>
+                        <h2 class="sp-h2 flex-1" style="margin:0"><i class="fas fa-clock-rotate-left mr-2" style="color:rgb(var(--tw-indigo-400))"></i>History <span id="sp-history-count" class="text-xs font-normal text-slate-500"></span></h2>
                         <button id="sp-history-clear" class="text-xs text-slate-400 hover:text-white px-2.5 py-1.5 rounded-lg hover:bg-slate-800 transition-colors">Clear history</button>
                     </div>
                     <input id="sp-history-search" type="text" placeholder="Search history…" spellcheck="false" class="sp-search">
@@ -4331,8 +4350,8 @@
                 <!-- Passwords -->
                 <section class="sp-card">
                     <div class="flex items-center gap-2 mb-3">
-                        <h2 class="sp-h2 flex-1" style="margin:0"><i class="fas fa-key mr-2" style="color:#818cf8"></i>Passwords</h2>
-                        <span id="sp-pw-lock" class="text-[10px] px-1.5 py-0.5 rounded" style="background:rgba(52,211,153,0.15); color:#34d399"><i class="fas fa-lock mr-1"></i>Encrypted</span>
+                        <h2 class="sp-h2 flex-1" style="margin:0"><i class="fas fa-key mr-2" style="color:rgb(var(--tw-indigo-400))"></i>Passwords</h2>
+                        <span id="sp-pw-lock" class="text-[10px] px-1.5 py-0.5 rounded" style="background:rgb(var(--tw-emerald-400) / 0.15); color:rgb(var(--tw-emerald-400))"><i class="fas fa-lock mr-1"></i>Encrypted</span>
                         <button id="sp-pw-add-btn" class="text-xs font-semibold text-indigo-300 hover:text-white px-3 py-1.5 rounded-lg hover:bg-slate-800 transition-colors"><i class="fas fa-plus mr-1"></i>Add</button>
                     </div>
                     <div id="sp-pw-form" style="display:none" class="mb-3 p-3 rounded-xl" >
@@ -4341,7 +4360,7 @@
                         <input id="sp-pw-pass" type="text" placeholder="Password" spellcheck="false" class="bw-pw-input" style="margin-bottom:0">
                         <div class="flex items-center justify-end gap-2 mt-3">
                             <button id="sp-pw-cancel" class="text-xs text-slate-400 hover:text-white px-3 py-1.5 rounded-lg hover:bg-slate-800">Cancel</button>
-                            <button id="sp-pw-save" class="text-xs font-semibold text-white px-3 py-1.5 rounded-lg" style="background:#4f46e5">Save</button>
+                            <button id="sp-pw-save" class="text-xs font-semibold text-white px-3 py-1.5 rounded-lg" style="background:rgb(var(--tw-indigo-600))">Save</button>
                         </div>
                     </div>
                     <input id="sp-pw-search" type="text" placeholder="Search passwords…" spellcheck="false" class="sp-search">
@@ -4361,39 +4380,39 @@
 
             <!-- Planet info card (filled by js/galaxy.js on click) -->
             <div id="galaxy-info" style="display:none; position:absolute; top:16px; right:18px; width:240px;
-                        background:rgba(10,8,24,0.72); border:1px solid rgba(96,165,250,0.3); border-radius:12px;
+                        background:rgba(10,8,24,0.72); border:1px solid rgb(var(--tw-blue-400) / 0.3); border-radius:12px;
                         padding:12px 14px; backdrop-filter:blur(8px)"></div>
 
             <!-- Title overlay -->
             <div style="position:absolute; top:16px; left:18px; pointer-events:none">
                 <div style="display:flex; align-items:center; gap:8px">
-                    <i class="fas fa-rocket" style="color:#c084fc; font-size:16px"></i>
-                    <span id="galaxy-title" style="color:#e9d5ff; font-size:15px; font-weight:600; letter-spacing:0.5px">Milky Way</span>
+                    <i class="fas fa-rocket" style="color:rgb(var(--tw-purple-400)); font-size:16px"></i>
+                    <span id="galaxy-title" style="color:rgb(var(--tw-purple-200)); font-size:15px; font-weight:600; letter-spacing:0.5px">Milky Way</span>
                 </div>
                 <div id="galaxy-sub" style="color:#8b8ba7; font-size:11px; margin-top:3px">Drag to orbit · right-drag to pan · click a galaxy to fly there · click the ☉ Sun for the Solar System</div>
             </div>
 
             <!-- Controls -->
             <div style="position:absolute; bottom:16px; left:18px; display:flex; align-items:center; gap:14px; flex-wrap:wrap;
-                        background:rgba(10,8,24,0.55); border:1px solid rgba(168,85,247,0.25); border-radius:12px; padding:8px 14px; backdrop-filter:blur(8px)">
+                        background:rgba(10,8,24,0.55); border:1px solid rgb(var(--tw-purple-500) / 0.25); border-radius:12px; padding:8px 14px; backdrop-filter:blur(8px)">
                 <button id="galaxy-mode-btn" onclick="window.galaxyToggleMode && galaxyToggleMode()"
-                        style="color:#fde68a; font-size:11px; font-weight:600; background:rgba(168,85,247,0.12);
-                               border:1px solid rgba(168,85,247,0.45); border-radius:8px; padding:5px 12px; cursor:pointer">☉ Enter Solar System</button>
+                        style="color:rgb(var(--tw-amber-200)); font-size:11px; font-weight:600; background:rgb(var(--tw-purple-500) / 0.12);
+                               border:1px solid rgb(var(--tw-purple-500) / 0.45); border-radius:8px; padding:5px 12px; cursor:pointer">☉ Enter Solar System</button>
                 <div style="display:flex; align-items:center; gap:7px">
                     <label style="color:#a5b4c4; font-size:10px; width:34px">Spin</label>
                     <input type="range" min="0" max="3" step="0.05" value="1"
-                           style="width:96px; height:3px; accent-color:#c084fc; cursor:pointer"
+                           style="width:96px; height:3px; accent-color:rgb(var(--tw-purple-400)); cursor:pointer"
                            oninput="window.galaxySetSpin && galaxySetSpin(parseFloat(this.value))">
                 </div>
                 <div style="display:flex; align-items:center; gap:7px">
                     <label style="color:#a5b4c4; font-size:10px; width:34px">Stars</label>
                     <input type="range" min="8000" max="120000" step="2000" value="30000"
-                           style="width:96px; height:3px; accent-color:#60a5fa; cursor:pointer"
+                           style="width:96px; height:3px; accent-color:rgb(var(--tw-blue-400)); cursor:pointer"
                            oninput="window.galaxySetStars && galaxySetStars(parseInt(this.value))">
                 </div>
                 <button onclick="window.galaxyResetView && galaxyResetView()"
-                        style="color:#c4b5fd; font-size:11px; font-weight:600; background:transparent;
-                               border:1px solid rgba(168,85,247,0.35); border-radius:8px; padding:5px 12px; cursor:pointer">↺ Reset view</button>
+                        style="color:rgb(var(--tw-violet-300)); font-size:11px; font-weight:600; background:transparent;
+                               border:1px solid rgb(var(--tw-purple-500) / 0.35); border-radius:8px; padding:5px 12px; cursor:pointer">↺ Reset view</button>
             </div>
         </div>
 
@@ -4567,12 +4586,12 @@
             width: 28px; height: 28px;
             display: inline-flex; align-items: center; justify-content: center;
             border-radius: 7px;
-            color: #94a3b8; font-size: 12px;
+            color: rgb(var(--slate-400)); font-size: 12px;
             transition: background .12s, color .12s;
         }
-        .writer-fmt:hover { background: rgba(148,163,184,0.15); color: #e2e8f0; }
-        .writer-doc h1 { font-size: 1.7em; font-weight: 700; margin: .7em 0 .35em; color: #f1f5f9; line-height: 1.25; }
-        .writer-doc h2 { font-size: 1.3em; font-weight: 700; margin: .6em 0 .3em; color: #e2e8f0; line-height: 1.3; }
+        .writer-fmt:hover { background: rgb(var(--slate-400) / 0.15); color: rgb(var(--slate-200)); }
+        .writer-doc h1 { font-size: 1.7em; font-weight: 700; margin: .7em 0 .35em; color: rgb(var(--slate-100)); line-height: 1.25; }
+        .writer-doc h2 { font-size: 1.3em; font-weight: 700; margin: .6em 0 .3em; color: rgb(var(--slate-200)); line-height: 1.3; }
         .writer-doc p  { margin: 0 0 .75em; }
         .writer-doc ul { list-style: disc;    margin: 0 0 .75em 1.4em; }
         .writer-doc ol { list-style: decimal; margin: 0 0 .75em 1.4em; }
@@ -4580,17 +4599,17 @@
         .writer-doc blockquote {
             border-left: 3px solid rgba(225,29,72,0.5);
             padding: .1em 0 .1em 1em; margin: 0 0 .75em;
-            color: #cbd5e1; font-style: italic;
+            color: rgb(var(--slate-300)); font-style: italic;
         }
-        .writer-doc:empty::before { content: attr(data-placeholder); color: #475569; pointer-events: none; }
+        .writer-doc:empty::before { content: attr(data-placeholder); color: rgb(var(--slate-600)); pointer-events: none; }
         .writer-doc a { color: #fb7185; text-decoration: underline; }
         .writer-chapter-tab {
             padding: 3px 10px; border-radius: 999px; font-size: 11px; font-weight: 500;
-            white-space: nowrap; cursor: pointer; color: #94a3b8;
-            background: rgba(148,163,184,0.08); border: 1px solid transparent;
+            white-space: nowrap; cursor: pointer; color: rgb(var(--slate-400));
+            background: rgb(var(--slate-400) / 0.08); border: 1px solid transparent;
             transition: background .12s, color .12s;
         }
-        .writer-chapter-tab:hover { background: rgba(148,163,184,0.16); color: #e2e8f0; }
+        .writer-chapter-tab:hover { background: rgb(var(--slate-400) / 0.16); color: rgb(var(--slate-200)); }
         .writer-chapter-tab.active {
             background: rgba(225,29,72,0.15); border-color: rgba(225,29,72,0.3); color: #fb7185;
         }
@@ -4662,9 +4681,29 @@
                     <p class="text-slate-600 text-[10px] mt-1.5">Shows a background image on the Home page.</p>
                 </div>
 
+                <!-- Home icon size -->
+                <div>
+                    <div class="flex items-center justify-between mb-2">
+                        <p class="text-slate-400 text-[10px] uppercase tracking-widest font-semibold">Home icon size</p>
+                        <span id="home-icon-size-val" class="text-slate-500 text-[11px] tabular-nums">60 px</span>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <i class="fas fa-th text-slate-500" style="font-size:10px"></i>
+                        <input id="home-icon-size" type="range" min="40" max="96" step="2" value="60" class="flex-1 accent-slider" aria-label="Home icon size">
+                        <i class="fas fa-th-large text-slate-400" style="font-size:16px"></i>
+                    </div>
+                    <div id="home-icon-size-presets" class="flex items-center gap-1.5 mt-2.5">
+                        <button data-size="44" class="home-size-preset">Small</button>
+                        <button data-size="60" class="home-size-preset">Default</button>
+                        <button data-size="76" class="home-size-preset">Large</button>
+                        <button data-size="92" class="home-size-preset">Huge</button>
+                    </div>
+                    <p class="text-slate-600 text-[10px] mt-1.5">Size of the app and site shortcuts on the Home page.</p>
+                </div>
+
                 <!-- Category tile background (grey) -->
                 <div>
-                    <p class="text-slate-400 text-[10px] uppercase tracking-widest font-semibold mb-3">Category Tiles</p>
+                    <p class="text-slate-400 text-[10px] uppercase tracking-widest font-semibold mb-3">Home tile shade</p>
                     <div id="cat-tile-grid" class="flex flex-wrap gap-2.5 mb-3"></div>
                     <div class="flex items-center gap-3 mt-1">
                         <input id="cat-tile-custom" type="color"
@@ -4752,88 +4791,88 @@
     <script src="js/main.js"></script>
 <!-- ── WhatsApp Assistant ── -->
 <div id="wa-bot-overlay" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(8,10,18,.75);backdrop-filter:blur(3px);align-items:center;justify-content:center">
-    <div style="width:440px;max-width:92vw;max-height:88vh;overflow-y:auto;background:#0f141e;border:1px solid rgba(148,163,184,.16);border-radius:18px;box-shadow:0 24px 80px rgba(0,0,0,.6)">
+    <div style="width:440px;max-width:92vw;max-height:88vh;overflow-y:auto;background:var(--bg-surface);border:1px solid rgb(var(--slate-400) / .16);border-radius:18px;box-shadow:0 24px 80px rgba(0,0,0,.6)">
         <!-- header -->
-        <div style="display:flex;align-items:center;gap:10px;padding:16px 18px;border-bottom:1px solid rgba(148,163,184,.1)">
-            <i class="fab fa-whatsapp" style="color:#22c55e;font-size:18px"></i>
+        <div style="display:flex;align-items:center;gap:10px;padding:16px 18px;border-bottom:1px solid rgb(var(--slate-400) / .1)">
+            <i class="fab fa-whatsapp" style="color:rgb(var(--tw-green-500));font-size:18px"></i>
             <div style="font-weight:700;color:#fff;font-size:15px">WhatsApp Assistant</div>
             <div style="flex:1"></div>
-            <span id="wa-bot-status-pill" style="font-size:10.5px;font-weight:600;padding:3px 9px;border-radius:999px;background:rgba(148,163,184,.14);color:#94a3b8">Off</span>
-            <button id="wa-bot-close" title="Close" style="background:rgba(148,163,184,.12);color:#cbd5e1;border:none;border-radius:9px;width:30px;height:30px;cursor:pointer;margin-left:6px"><i class="fas fa-xmark"></i></button>
+            <span id="wa-bot-status-pill" style="font-size:10.5px;font-weight:600;padding:3px 9px;border-radius:999px;background:rgb(var(--slate-400) / .14);color:rgb(var(--slate-400))">Off</span>
+            <button id="wa-bot-close" title="Close" style="background:rgb(var(--slate-400) / .12);color:rgb(var(--slate-300));border:none;border-radius:9px;width:30px;height:30px;cursor:pointer;margin-left:6px"><i class="fas fa-xmark"></i></button>
         </div>
 
         <div style="padding:16px 18px;display:flex;flex-direction:column;gap:14px">
-            <div style="background:rgba(34,197,94,.06);border:1px solid rgba(34,197,94,.18);border-radius:12px;padding:12px 14px">
-                <div style="color:#cbd5e1;font-size:11.5px;font-weight:700;margin-bottom:7px">How to set this up</div>
-                <ol style="color:#94a3b8;font-size:11.5px;line-height:1.75;margin:0;padding-left:17px">
+            <div style="background:rgb(var(--tw-green-500) / .06);border:1px solid rgb(var(--tw-green-500) / .18);border-radius:12px;padding:12px 14px">
+                <div style="color:rgb(var(--slate-300));font-size:11.5px;font-weight:700;margin-bottom:7px">How to set this up</div>
+                <ol style="color:rgb(var(--slate-400));font-size:11.5px;line-height:1.75;margin:0;padding-left:17px">
                     <li>Add the people it's allowed to talk to, below.</li>
                     <li>Choose how it sends — using the WhatsApp app already on this Mac needs no linking at all.</li>
-                    <li>Press <b style="color:#cbd5e1">Start chat</b> next to a name, say what it should talk about, and it writes and sends the first message.</li>
-                    <li><b style="color:#cbd5e1">To have it answer their replies</b>, press the button at the bottom and scan the QR once. Sending works without this; replying does not — nothing can read incoming WhatsApp messages out of the desktop app.</li>
+                    <li>Press <b style="color:rgb(var(--slate-300))">Start chat</b> next to a name, say what it should talk about, and it writes and sends the first message.</li>
+                    <li><b style="color:rgb(var(--slate-300))">To have it answer their replies</b>, press the button at the bottom and scan the QR once. Sending works without this; replying does not — nothing can read incoming WhatsApp messages out of the desktop app.</li>
                 </ol>
             </div>
-            <p style="color:#64748b;font-size:11px;line-height:1.6;margin:0">
+            <p style="color:rgb(var(--slate-500));font-size:11px;line-height:1.6;margin:0">
                 It says it's Vulsor, an AI, if anyone asks. Automating a personal number can risk a WhatsApp ban — use sparingly.
             </p>
 
             <!-- QR / link area -->
             <div id="wa-bot-qr-box" style="display:none;flex-direction:column;align-items:center;gap:8px;background:#fff;border-radius:14px;padding:14px">
                 <img id="wa-bot-qr-img" alt="WhatsApp QR" style="width:240px;height:240px;display:block">
-                <div style="color:#0f172a;font-size:11px;text-align:center;line-height:1.5">Open WhatsApp on your phone → <b>Settings → Linked Devices → Link a Device</b>, then scan this.</div>
+                <div style="color:rgb(var(--slate-900));font-size:11px;text-align:center;line-height:1.5">Open WhatsApp on your phone → <b>Settings → Linked Devices → Link a Device</b>, then scan this.</div>
             </div>
 
             <!-- Whitelist -->
             <div>
-                <label style="display:block;color:#cbd5e1;font-size:12px;font-weight:600;margin-bottom:6px">Allowed contacts (the AI only replies to these)</label>
+                <label style="display:block;color:rgb(var(--slate-300));font-size:12px;font-weight:600;margin-bottom:6px">Allowed contacts (the AI only replies to these)</label>
                 <div style="display:flex;gap:6px;margin-bottom:8px">
-                    <input id="wa-bot-add-input" type="text" placeholder="Name or +country number…" style="flex:1;background:rgba(148,163,184,.08);color:#fff;font-size:12px;border:1px solid rgba(148,163,184,.18);border-radius:9px;padding:8px 11px;outline:none">
-                    <button id="wa-bot-add-btn" style="background:#16a34a;color:#fff;font-size:12px;font-weight:600;border:none;border-radius:9px;padding:8px 14px;cursor:pointer">Add</button>
+                    <input id="wa-bot-add-input" type="text" placeholder="Name or +country number…" style="flex:1;background:rgb(var(--slate-400) / .08);color:#fff;font-size:12px;border:1px solid rgb(var(--slate-400) / .18);border-radius:9px;padding:8px 11px;outline:none">
+                    <button id="wa-bot-add-btn" style="background:rgb(var(--tw-green-600));color:#fff;font-size:12px;font-weight:600;border:none;border-radius:9px;padding:8px 14px;cursor:pointer">Add</button>
                 </div>
                 <div id="wa-bot-list" style="display:flex;flex-direction:column;gap:5px"></div>
-                <div id="wa-bot-list-empty" style="color:#475569;font-size:11px;padding:4px 2px">No contacts yet — add at least one. Type a name from your Contacts, or a number with country code (e.g. 4791234567).</div>
+                <div id="wa-bot-list-empty" style="color:rgb(var(--slate-600));font-size:11px;padding:4px 2px">No contacts yet — add at least one. Type a name from your Contacts, or a number with country code (e.g. 4791234567).</div>
             </div>
 
             <!-- How messages get sent -->
             <div>
-                <label style="display:block;color:#cbd5e1;font-size:12px;font-weight:600;margin-bottom:6px">Send using</label>
-                <select id="wa-bot-delivery" style="width:100%;background:rgba(148,163,184,.08);color:#fff;font-size:12px;border:1px solid rgba(148,163,184,.18);border-radius:9px;padding:8px 11px;outline:none">
+                <label style="display:block;color:rgb(var(--slate-300));font-size:12px;font-weight:600;margin-bottom:6px">Send using</label>
+                <select id="wa-bot-delivery" style="width:100%;background:rgb(var(--slate-400) / .08);color:#fff;font-size:12px;border:1px solid rgb(var(--slate-400) / .18);border-radius:9px;padding:8px 11px;outline:none">
                     <option value="app">The WhatsApp app on this Mac — nothing to link</option>
                     <option value="linked">Link Vulsor as its own device (QR) — enables auto-replies</option>
                 </select>
-                <p id="wa-bot-delivery-note" style="color:#64748b;font-size:11px;line-height:1.55;margin:7px 0 0"></p>
+                <p id="wa-bot-delivery-note" style="color:rgb(var(--slate-500));font-size:11px;line-height:1.55;margin:7px 0 0"></p>
             </div>
 
             <!-- Brain: local Ollama or cloud Gemini -->
             <div>
-                <label style="display:block;color:#cbd5e1;font-size:12px;font-weight:600;margin-bottom:6px">Brain</label>
-                <select id="wa-bot-provider" style="width:100%;background:rgba(148,163,184,.08);color:#fff;font-size:12px;border:1px solid rgba(148,163,184,.18);border-radius:9px;padding:8px 11px;outline:none;margin-bottom:10px">
+                <label style="display:block;color:rgb(var(--slate-300));font-size:12px;font-weight:600;margin-bottom:6px">Brain</label>
+                <select id="wa-bot-provider" style="width:100%;background:rgb(var(--slate-400) / .08);color:#fff;font-size:12px;border:1px solid rgb(var(--slate-400) / .18);border-radius:9px;padding:8px 11px;outline:none;margin-bottom:10px">
                     <option value="ollama">Ollama — on this Mac, private, needs the daemon running</option>
                     <option value="gemini">Gemini — cloud, needs an API key</option>
                 </select>
                 <div id="wa-bot-gemini-row" style="display:none">
-                    <label style="display:block;color:#cbd5e1;font-size:12px;font-weight:600;margin-bottom:6px">Gemini API key <span id="wa-bot-key-state" style="color:#475569;font-weight:400"></span></label>
-                    <input id="wa-bot-gemini-key" type="password" placeholder="paste your key…" autocomplete="off" style="width:100%;background:rgba(148,163,184,.08);color:#fff;font-size:12px;border:1px solid rgba(148,163,184,.18);border-radius:9px;padding:8px 11px;outline:none;margin-bottom:10px">
+                    <label style="display:block;color:rgb(var(--slate-300));font-size:12px;font-weight:600;margin-bottom:6px">Gemini API key <span id="wa-bot-key-state" style="color:rgb(var(--slate-600));font-weight:400"></span></label>
+                    <input id="wa-bot-gemini-key" type="password" placeholder="paste your key…" autocomplete="off" style="width:100%;background:rgb(var(--slate-400) / .08);color:#fff;font-size:12px;border:1px solid rgb(var(--slate-400) / .18);border-radius:9px;padding:8px 11px;outline:none;margin-bottom:10px">
                 </div>
             </div>
 
             <!-- Persona -->
             <div>
-                <label style="display:block;color:#cbd5e1;font-size:12px;font-weight:600;margin-bottom:6px">Your name <span style="color:#475569;font-weight:400">(so it can sign off as you — optional)</span></label>
-                <input id="wa-bot-owner" type="text" placeholder="e.g. Alex" style="width:100%;background:rgba(148,163,184,.08);color:#fff;font-size:12px;border:1px solid rgba(148,163,184,.18);border-radius:9px;padding:8px 11px;outline:none;margin-bottom:10px">
-                <label style="display:block;color:#cbd5e1;font-size:12px;font-weight:600;margin-bottom:6px">Reply style <span style="color:#475569;font-weight:400">(optional instructions)</span></label>
-                <textarea id="wa-bot-instruction" rows="2" placeholder="e.g. Keep it brief and friendly. Don't make plans without checking with me." style="width:100%;background:rgba(148,163,184,.08);color:#fff;font-size:12px;border:1px solid rgba(148,163,184,.18);border-radius:9px;padding:8px 11px;outline:none;resize:vertical"></textarea>
+                <label style="display:block;color:rgb(var(--slate-300));font-size:12px;font-weight:600;margin-bottom:6px">Your name <span style="color:rgb(var(--slate-600));font-weight:400">(so it can sign off as you — optional)</span></label>
+                <input id="wa-bot-owner" type="text" placeholder="e.g. Alex" style="width:100%;background:rgb(var(--slate-400) / .08);color:#fff;font-size:12px;border:1px solid rgb(var(--slate-400) / .18);border-radius:9px;padding:8px 11px;outline:none;margin-bottom:10px">
+                <label style="display:block;color:rgb(var(--slate-300));font-size:12px;font-weight:600;margin-bottom:6px">Reply style <span style="color:rgb(var(--slate-600));font-weight:400">(optional instructions)</span></label>
+                <textarea id="wa-bot-instruction" rows="2" placeholder="e.g. Keep it brief and friendly. Don't make plans without checking with me." style="width:100%;background:rgb(var(--slate-400) / .08);color:#fff;font-size:12px;border:1px solid rgb(var(--slate-400) / .18);border-radius:9px;padding:8px 11px;outline:none;resize:vertical"></textarea>
             </div>
 
             <!-- Activity log -->
             <div>
-                <label style="display:block;color:#cbd5e1;font-size:12px;font-weight:600;margin-bottom:6px">Recent activity</label>
-                <div id="wa-bot-log" style="background:rgba(2,6,23,.6);border:1px solid rgba(148,163,184,.1);border-radius:10px;padding:8px 10px;height:96px;overflow-y:auto;font-size:11px;color:#64748b;font-family:ui-monospace,monospace;line-height:1.6">Idle.</div>
+                <label style="display:block;color:rgb(var(--slate-300));font-size:12px;font-weight:600;margin-bottom:6px">Recent activity</label>
+                <div id="wa-bot-log" style="background:rgb(var(--slate-950) / .6);border:1px solid rgb(var(--slate-400) / .1);border-radius:10px;padding:8px 10px;height:96px;overflow-y:auto;font-size:11px;color:rgb(var(--slate-500));font-family:ui-monospace,monospace;line-height:1.6">Idle.</div>
             </div>
 
             <!-- Actions -->
             <div style="display:flex;gap:8px;align-items:center;padding-top:2px">
-                <button id="wa-bot-toggle" style="flex:1;background:#16a34a;color:#fff;font-size:13px;font-weight:700;border:none;border-radius:10px;padding:11px;cursor:pointer">Start assistant</button>
-                <button id="wa-bot-unlink" title="Unlink this device from WhatsApp" style="background:rgba(239,68,68,.14);color:#f87171;font-size:12px;font-weight:600;border:none;border-radius:10px;padding:11px 14px;cursor:pointer">Unlink</button>
+                <button id="wa-bot-toggle" style="flex:1;background:rgb(var(--tw-green-600));color:#fff;font-size:13px;font-weight:700;border:none;border-radius:10px;padding:11px;cursor:pointer">Start assistant</button>
+                <button id="wa-bot-unlink" title="Unlink this device from WhatsApp" style="background:rgb(var(--tw-red-500) / .14);color:rgb(var(--tw-red-400));font-size:12px;font-weight:600;border:none;border-radius:10px;padding:11px 14px;cursor:pointer">Unlink</button>
             </div>
         </div>
     </div>

@@ -469,7 +469,7 @@ function _tunerSetChord(result) {
         const chordNotes = result.chord.intervals.map(i => TUNER_NOTE_NAMES[(result.root + i) % 12]);
         notesEl.innerHTML = chordNotes.map(n =>
             `<span class="inline-flex items-center justify-center rounded-lg text-xs font-bold px-3 py-1.5"
-                   style="background:rgba(244,63,94,.15);border:1px solid rgba(244,63,94,.35);color:#fda4af">${n}</span>`
+                   style="background:rgba(244,63,94,.15);border:1px solid rgba(244,63,94,.35);color:rgb(var(--tw-rose-300))">${n}</span>`
         ).join('');
     }
 
@@ -477,7 +477,7 @@ function _tunerSetChord(result) {
     if (allEl) {
         allEl.innerHTML = (result.notes || []).map(n =>
             `<span class="inline-flex items-center justify-center rounded-lg text-xs font-semibold px-2.5 py-1"
-                   style="background:#1e293b;border:1px solid #334155;color:#94a3b8">${n}</span>`
+                   style="background:rgb(var(--slate-800));border:1px solid rgb(var(--slate-700));color:rgb(var(--slate-400))">${n}</span>`
         ).join('');
     }
 }

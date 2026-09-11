@@ -50,7 +50,7 @@
             el = document.createElement('div');
             el.id = 'control-toast';
             el.style.cssText = 'position:fixed;left:50%;bottom:22px;transform:translateX(-50%);z-index:9999;'
-                + 'background:rgba(15,20,28,.96);border:1px solid rgba(148,163,184,.28);color:#e2e8f0;'
+                + 'background:rgba(15,20,28,.96);border:1px solid rgb(var(--slate-400) / .28);color:rgb(var(--slate-200));'
                 + 'font-size:12.5px;padding:9px 16px;border-radius:11px;box-shadow:0 12px 36px rgba(0,0,0,.55);'
                 + 'display:flex;align-items:center;gap:9px;opacity:0;transition:opacity .18s;pointer-events:none';
             document.body.appendChild(el);

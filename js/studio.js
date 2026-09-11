@@ -939,7 +939,7 @@ function startPlanInlineEdit(node) {
         `border-radius:5px`,
         `font:600 13px -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif`,
         `text-align:center`,
-        `color:#0f172a`,
+        `color:rgb(var(--slate-900))`,
         `z-index:9999`,
         `outline:none`,
         `padding:0 6px`,
@@ -1364,7 +1364,7 @@ function renderPlanSelectedPanel() {
             const my = svgRect.top  + v.ty + ((a.y + a.h/2 + b.y + b.h/2) / 2) * v.zoom - 15;
             const inp = document.createElement('input');
             inp.type = 'text'; inp.value = edge.label || ''; inp.placeholder = 'Arrow label…';
-            inp.style.cssText = `position:fixed;left:${mx-70}px;top:${my}px;width:140px;height:28px;background:rgba(255,255,255,.97);border:2px solid ${getAccent()};border-radius:5px;font:500 12px -apple-system,sans-serif;text-align:center;color:#0f172a;z-index:9999;outline:none;padding:0 6px;box-shadow:0 4px 24px rgba(0,0,0,.45)`;
+            inp.style.cssText = `position:fixed;left:${mx-70}px;top:${my}px;width:140px;height:28px;background:rgba(255,255,255,.97);border:2px solid ${getAccent()};border-radius:5px;font:500 12px -apple-system,sans-serif;text-align:center;color:rgb(var(--slate-900));z-index:9999;outline:none;padding:0 6px;box-shadow:0 4px 24px rgba(0,0,0,.45)`;
             document.body.appendChild(inp); inp.focus(); inp.select();
             let done = false;
             const commit = () => {

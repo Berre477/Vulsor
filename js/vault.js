@@ -595,7 +595,7 @@ function renderVaultMarkdown(raw) {
 .vmd-ic{font-family:"SF Mono",Monaco,Consolas,monospace;font-size:.875em;background:rgba(255,255,255,.08);color:#f38ba8;padding:.1em .35em;border-radius:4px;border:1px solid rgba(255,255,255,.08)}
 .vmd-pre-wrap{position:relative;margin:1.1em 0;border-radius:8px;overflow:hidden;border:1px solid rgba(255,255,255,.08)}
 .vmd-lang{position:absolute;top:8px;right:12px;font-family:"SF Mono",Monaco,Consolas,monospace;font-size:10px;color:#6b7280;text-transform:uppercase;letter-spacing:.08em;pointer-events:none}
-.vmd-pre{margin:0;padding:18px 20px;background:#0d1117;overflow-x:auto;font-family:"SF Mono",Monaco,Consolas,monospace;font-size:13px;line-height:1.6;color:#e2e8f0}
+.vmd-pre{margin:0;padding:18px 20px;background:#0d1117;overflow-x:auto;font-family:"SF Mono",Monaco,Consolas,monospace;font-size:13px;line-height:1.6;color:rgb(var(--slate-200))}
 .vmd-pre code{background:none;border:none;padding:0;color:inherit;font-size:inherit}
 /* Code colours (GitHub-dark family, tuned for the #0d1117 block background):
    c comment · k keyword · s string · n number · f function · v variable/property
@@ -622,22 +622,22 @@ function renderVaultMarkdown(raw) {
 .vmd-ul li::marker{color:#4a9eff}
 .vmd-ol li::marker{color:#7aa2f7;font-weight:600}
 .vmd-task{list-style:none;display:flex;align-items:baseline;gap:7px;margin:.3em 0}
-.vmd-cb{display:inline-flex;align-items:center;justify-content:center;width:14px;height:14px;min-width:14px;border:1.5px solid #475569;border-radius:3px;margin-top:2px;background:transparent;transition:all .15s;flex-shrink:0}
+.vmd-cb{display:inline-flex;align-items:center;justify-content:center;width:14px;height:14px;min-width:14px;border:1.5px solid rgb(var(--slate-600));border-radius:3px;margin-top:2px;background:transparent;transition:all .15s;flex-shrink:0}
 .vmd-cb-done{background:#3dba4e;border-color:#3dba4e}
 .vmd-cb-done::after{content:"✓";color:#fff;font-size:10px;line-height:1}
 .vmd-task-done{color:#6b7280;text-decoration:line-through}
 .vmd-tbl-wrap{overflow-x:auto;margin:1.1em 0;border-radius:8px;border:1px solid rgba(255,255,255,.1)}
 .vmd-tbl{border-collapse:collapse;width:100%;font-size:14px}
-.vmd-th{padding:9px 14px;background:rgba(255,255,255,.06);color:#e2e8f0;font-weight:600;text-align:left;border-bottom:1px solid rgba(255,255,255,.1);white-space:nowrap}
+.vmd-th{padding:9px 14px;background:rgba(255,255,255,.06);color:rgb(var(--slate-200));font-weight:600;text-align:left;border-bottom:1px solid rgba(255,255,255,.1);white-space:nowrap}
 .vmd-td{padding:8px 14px;border-bottom:1px solid rgba(255,255,255,.05);color:#cdd6f4}
 .vmd-tbl tbody tr:last-child .vmd-td{border-bottom:none}
 .vmd-tbl tbody tr:hover .vmd-td{background:rgba(255,255,255,.03)}
 .vmd-img{max-width:100%;border-radius:8px;margin:.5em 0;box-shadow:0 4px 24px rgba(0,0,0,.4)}
 .vmd-math-block{display:flex;justify-content:center;padding:14px 0;margin:.8em 0;overflow-x:auto}
-math{color:#e2e8f0;font-size:1.05em}
+math{color:rgb(var(--slate-200));font-size:1.05em}
 .vmd-p math,p math{font-size:1em;vertical-align:middle}
-strong{color:#f1f5f9;font-weight:600}
-em{color:#e2e8f0;font-style:italic}
+strong{color:rgb(var(--slate-100));font-weight:600}
+em{color:rgb(var(--slate-200));font-style:italic}
 del{color:#6b7280}
 </style>
 <div class="vmd-wrap">${out}</div>`;
@@ -1266,8 +1266,8 @@ function vaultPrintMd() {
   .vmd-t-y{color:#22863a!important}.vmd-t-b{color:#e36209!important}.vmd-t-o{color:#d73a49!important}
   .vmd-t-g{color:#22863a!important}.vmd-t-a{color:#6f42c1!important}
   .vmd-ic{background:#f5f5f5!important;color:#c0392b!important;border-color:#ddd!important}
-  .vmd-a{color:#2563eb!important}
-  .vmd-bq{background:#eff6ff!important;border-color:#3b82f6!important;color:#374151!important}
+  .vmd-a{color:rgb(var(--tw-blue-600))!important}
+  .vmd-bq{background:rgb(var(--tw-blue-50))!important;border-color:rgb(var(--tw-blue-500))!important;color:#374151!important}
   .vmd-callout{border-color:var(--ccolor)!important}
   .vmd-callout-body{color:#222!important;background:color-mix(in srgb,var(--ccolor) 8%,#fff)!important}
   strong{color:#000!important} del{color:#666!important}
@@ -1921,7 +1921,7 @@ function buildPDFBookView() {
         };
 
         const spine = document.createElement('div');
-        spine.style.cssText = `width:8px;align-self:stretch;flex-shrink:0;background:linear-gradient(to right,rgba(0,0,0,0.35),rgba(100,116,139,0.15),rgba(0,0,0,0.35))`;
+        spine.style.cssText = `width:8px;align-self:stretch;flex-shrink:0;background:linear-gradient(to right,rgba(0,0,0,0.35),rgb(var(--slate-500) / 0.15),rgba(0,0,0,0.35))`;
 
         // Left side
         const leftWrap = document.createElement('div');
@@ -2484,11 +2484,11 @@ function openVaultFile(id) {
                 }
             } catch(_) {}
             altEl.innerHTML =
-                `<div class="w-full h-full flex flex-col items-center justify-center p-4 gap-3" style="background:#0a0b12">
+                `<div class="w-full h-full flex flex-col items-center justify-center p-4 gap-3" style="background:var(--bg-base)">
                     <video id="vault-video-el" src="${fileUrl}" controls playsinline
                         class="max-w-full rounded-xl shadow-2xl bg-black" style="max-height:calc(100% - 52px)">${trackHtml}</video>
                     <button onclick="openVideoEditor('${file.id}')"
-                        class="px-4 py-2 rounded-xl text-white text-xs font-semibold transition-colors shrink-0" style="background:#dc2626">
+                        class="px-4 py-2 rounded-xl text-white text-xs font-semibold transition-colors shrink-0" style="background:rgb(var(--tw-red-600))">
                         <i class="fas fa-scissors mr-1.5"></i> Edit video
                     </button>
                 </div>`;
@@ -2665,7 +2665,7 @@ except Exception as e:
         } catch(e) {
             altEl.innerHTML = `
                 <div class="flex flex-col items-center justify-center h-full gap-4 text-center p-8">
-                    <i class="fas fa-file-powerpoint text-5xl" style="color:#f97316;opacity:.4"></i>
+                    <i class="fas fa-file-powerpoint text-5xl" style="color:rgb(var(--tw-orange-500));opacity:.4"></i>
                     <p class="text-slate-400 text-sm font-medium">Could not parse presentation</p>
                     <p class="text-slate-600 text-xs">${escHtml((e.message||'').slice(0,200))}</p>
                     <button onclick="vaultOpenExternal('${storedPath.replace(/\\/g,'\\\\').replace(/'/g,"\\'")}') "
@@ -2707,16 +2707,16 @@ function renderPPTXViewer(altEl, storedPath) {
 
             <!-- Bottom controls -->
             <div style="display:flex;align-items:center;justify-content:center;gap:12px;padding:10px 16px;background:#0f0f1a;border-top:1px solid rgba(255,255,255,.07);flex-shrink:0">
-                <button onclick="pptxGo(-1)" style="background:rgba(255,255,255,.08);border:none;color:#94a3b8;border-radius:8px;width:32px;height:32px;cursor:pointer;font-size:13px;display:flex;align-items:center;justify-content:center">
+                <button onclick="pptxGo(-1)" style="background:rgba(255,255,255,.08);border:none;color:rgb(var(--slate-400));border-radius:8px;width:32px;height:32px;cursor:pointer;font-size:13px;display:flex;align-items:center;justify-content:center">
                     <i class="fas fa-chevron-left"></i>
                 </button>
-                <span id="pptx-page-info" style="color:#64748b;font-size:11px;min-width:80px;text-align:center"></span>
-                <button onclick="pptxGo(1)" style="background:rgba(255,255,255,.08);border:none;color:#94a3b8;border-radius:8px;width:32px;height:32px;cursor:pointer;font-size:13px;display:flex;align-items:center;justify-content:center">
+                <span id="pptx-page-info" style="color:rgb(var(--slate-500));font-size:11px;min-width:80px;text-align:center"></span>
+                <button onclick="pptxGo(1)" style="background:rgba(255,255,255,.08);border:none;color:rgb(var(--slate-400));border-radius:8px;width:32px;height:32px;cursor:pointer;font-size:13px;display:flex;align-items:center;justify-content:center">
                     <i class="fas fa-chevron-right"></i>
                 </button>
                 <div style="width:1px;height:16px;background:rgba(255,255,255,.1)"></div>
                 <button onclick="vaultOpenExternal('${storedPath.replace(/\\/g,'\\\\').replace(/'/g,"\\'")}') "
-                    style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);color:#94a3b8;border-radius:8px;padding:0 12px;height:32px;cursor:pointer;font-size:10px;font-weight:600">
+                    style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);color:rgb(var(--slate-400));border-radius:8px;padding:0 12px;height:32px;cursor:pointer;font-size:10px;font-weight:600">
                     <i class="fas fa-external-link-alt" style="margin-right:5px;font-size:9px"></i>Open in Keynote
                 </button>
             </div>
@@ -2993,7 +2993,7 @@ function vaultDocExportHtml(file, body) {
 <style>body{max-width:800px;margin:40px auto;padding:0 40px;${pageCss}}
 table{border-collapse:collapse;width:100%}td,th{border:1px solid #ccc;padding:6px 10px}
 h1,h2,h3{margin:1.2em 0 0.4em}hr{border:none;border-top:2px solid #e5e7eb;margin:1.5em 0}
-a{color:#2563eb}img{max-width:100%}
+a{color:rgb(var(--tw-blue-600))}img{max-width:100%}
 @media print{@page{margin:1.5cm}body{-webkit-print-color-adjust:exact;print-color-adjust:exact}}</style>
 </head><body>${body}</body></html>`;
 }
@@ -3193,7 +3193,7 @@ function renderVaultDocsList() {
         return `<div class="vault-sidebar-doc group flex items-center gap-2 px-2 py-1.5 rounded-lg cursor-pointer transition-all ${
             isOpen ? 'bg-slate-800 text-slate-200' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50'
         }" data-id="${f.id}" title="${f.originalName}">
-            <i class="fas fa-file-alt text-[10px] shrink-0" style="color:#f87171"></i>
+            <i class="fas fa-file-alt text-[10px] shrink-0" style="color:rgb(var(--tw-red-400))"></i>
             <span class="text-xs flex-1 truncate">${f.originalName}</span>
             <button class="vault-sidebar-doc-del opacity-0 group-hover:opacity-100 text-slate-600 hover:text-red-400 transition-all text-[9px] shrink-0" data-id="${f.id}">
                 <i class="fas fa-times"></i>
@@ -3589,7 +3589,7 @@ function _vaultShowToast(html) {
     const toast = document.createElement('div');
     toast.id = 'vault-move-toast';
     toast.className = 'fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium shadow-xl pointer-events-none';
-    toast.style.cssText = 'background:#1e293b;border:1px solid #334155;color:#e2e8f0;transition:opacity .3s';
+    toast.style.cssText = 'background:rgb(var(--slate-800));border:1px solid rgb(var(--slate-700));color:rgb(var(--slate-200));transition:opacity .3s';
     toast.innerHTML = html;
     document.body.appendChild(toast);
     setTimeout(() => { toast.style.opacity = '0'; setTimeout(() => toast.remove(), 300); }, 2200);
@@ -4315,13 +4315,13 @@ function openVaultContextMenu(x, y, items) {
     menu.className = 'vault-ctx-menu';
     menu.style.cssText =
         'position:fixed;z-index:9999;min-width:200px;padding:6px;border-radius:12px;' +
-        'background:#0f172a;border:1px solid rgba(148,163,184,0.18);' +
+        'background:rgb(var(--slate-900));border:1px solid rgb(var(--slate-400) / 0.18);' +
         'box-shadow:0 12px 36px rgba(0,0,0,0.55);font-size:12px;user-select:none;';
 
     items.forEach(it => {
         if (it.separator) {
             const sep = document.createElement('div');
-            sep.style.cssText = 'height:1px;margin:5px 6px;background:rgba(148,163,184,0.15);';
+            sep.style.cssText = 'height:1px;margin:5px 6px;background:rgb(var(--slate-400) / 0.15);';
             menu.appendChild(sep);
             return;
         }

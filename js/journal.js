@@ -75,7 +75,7 @@ function renderJournalSidebar() {
             isActive ? 'border' : 'hover:bg-slate-800/50'
         }" data-date="${d}" ${isActive ? 'data-active="true" style="background:rgba(var(--accent-rgb),0.10);border-color:rgba(var(--accent-rgb),0.20)"' : ''}>
             <div class="flex items-center justify-between mb-0.5">
-                <span class="text-xs font-semibold" style="${isActive ? 'color:var(--accent-light)' : 'color:#cbd5e1'}">${journalFmtShort(d)}</span>
+                <span class="text-xs font-semibold" style="${isActive ? 'color:var(--accent-light)' : 'color:rgb(var(--slate-300))'}">${journalFmtShort(d)}</span>
                 ${isToday ? '<span class="entry-today-badge text-[9px] px-1.5 py-0.5 rounded-full font-medium" style="background:rgba(var(--accent-rgb),0.20);color:var(--accent-light)">Today</span>' : ''}
             </div>
             ${preview

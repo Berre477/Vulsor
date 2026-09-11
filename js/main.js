@@ -327,7 +327,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (tab.key === 'browser') {
                     const m = (window.bwMeta && window.bwMeta(tab.instanceData && tab.instanceData.bwId)) || {};
                     if (m.loading)
-                        iconHtml = `<span class="tab-favicon" style="background:transparent"><i class="fas fa-circle-notch fa-spin" style="font-size:9px; color:#818cf8"></i></span>`;
+                        iconHtml = `<span class="tab-favicon" style="background:transparent"><i class="fas fa-circle-notch fa-spin" style="font-size:9px; color:rgb(var(--tw-indigo-400))"></i></span>`;
                     else if (m.favicon)
                         // lazy + async: a favicon is a network fetch, and an eager
                         // <img> holds back the page's load event — which is what the
@@ -928,13 +928,13 @@ document.addEventListener('DOMContentLoaded', () => {
             _popupCount++; _popupLast = (d && d.url) || '';
             if (!_popupToast) {
                 _popupToast = document.createElement('div');
-                _popupToast.style.cssText = 'position:fixed; bottom:20px; left:50%; transform:translateX(-50%); z-index:9999; display:flex; align-items:center; gap:12px; background:#111827; border:1px solid rgba(129,140,248,0.4); border-radius:12px; padding:10px 14px; box-shadow:0 16px 40px rgba(0,0,0,0.55); font-size:12px; color:#e2e8f0';
+                _popupToast.style.cssText = 'position:fixed; bottom:20px; left:50%; transform:translateX(-50%); z-index:9999; display:flex; align-items:center; gap:12px; background:#111827; border:1px solid rgba(129,140,248,0.4); border-radius:12px; padding:10px 14px; box-shadow:0 16px 40px rgba(0,0,0,0.55); font-size:12px; color:rgb(var(--slate-200))';
                 document.body.appendChild(_popupToast);
             }
-            _popupToast.innerHTML = `<i class="fas fa-ban" style="color:#f87171"></i>
+            _popupToast.innerHTML = `<i class="fas fa-ban" style="color:rgb(var(--tw-red-400))"></i>
                 <span>Blocked <b>${_popupCount}</b> pop-up${_popupCount > 1 ? 's' : ''}</span>
-                <button id="popup-open" style="font-weight:600; color:#a5b4fc; background:none; border:none; cursor:pointer">Open last</button>
-                <button id="popup-x" style="color:#64748b; background:none; border:none; cursor:pointer"><i class="fas fa-xmark"></i></button>`;
+                <button id="popup-open" style="font-weight:600; color:rgb(var(--tw-indigo-300)); background:none; border:none; cursor:pointer">Open last</button>
+                <button id="popup-x" style="color:rgb(var(--slate-500)); background:none; border:none; cursor:pointer"><i class="fas fa-xmark"></i></button>`;
             _popupToast.querySelector('#popup-open').onclick = () => { if (_popupLast) _openBrowserTab(_popupLast, { background: false }); _dismissPopupToast(); };
             _popupToast.querySelector('#popup-x').onclick = _dismissPopupToast;
             clearTimeout(_popupTimer);
@@ -1068,20 +1068,20 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('home-icon-modal')?.remove();
             const overlay = document.createElement('div');
             overlay.id = 'home-icon-modal';
-            overlay.style.cssText = 'position:fixed; inset:0; z-index:650; background:rgba(2,6,23,0.6); display:flex; align-items:center; justify-content:center;';
+            overlay.style.cssText = 'position:fixed; inset:0; z-index:650; background:rgb(var(--slate-950) / 0.6); display:flex; align-items:center; justify-content:center;';
             overlay.innerHTML = `
-                <div style="width:460px; max-width:92vw; height:520px; max-height:86vh; background:#0f172a; border:1px solid rgba(255,255,255,0.12); border-radius:16px; box-shadow:0 24px 60px rgba(0,0,0,0.6); display:flex; flex-direction:column; overflow:hidden">
-                    <div style="display:flex; align-items:center; gap:10px; padding:14px 16px; border-bottom:1px solid rgba(148,163,184,0.12)">
-                        <span style="font-size:14px; font-weight:700; color:#e2e8f0; flex:1">Choose an icon</span>
-                        <button id="home-icon-default" style="font-size:11px; color:#cbd5e1; background:rgba(255,255,255,0.06); border:none; border-radius:8px; padding:6px 12px; cursor:pointer">Use default</button>
-                        <button id="home-icon-close" style="font-size:14px; color:#94a3b8; background:none; border:none; cursor:pointer; width:26px; height:26px; border-radius:7px">✕</button>
+                <div style="width:460px; max-width:92vw; height:520px; max-height:86vh; background:rgb(var(--slate-900)); border:1px solid rgba(255,255,255,0.12); border-radius:16px; box-shadow:0 24px 60px rgba(0,0,0,0.6); display:flex; flex-direction:column; overflow:hidden">
+                    <div style="display:flex; align-items:center; gap:10px; padding:14px 16px; border-bottom:1px solid rgb(var(--slate-400) / 0.12)">
+                        <span style="font-size:14px; font-weight:700; color:rgb(var(--slate-200)); flex:1">Choose an icon</span>
+                        <button id="home-icon-default" style="font-size:11px; color:rgb(var(--slate-300)); background:rgba(255,255,255,0.06); border:none; border-radius:8px; padding:6px 12px; cursor:pointer">Use default</button>
+                        <button id="home-icon-close" style="font-size:14px; color:rgb(var(--slate-400)); background:none; border:none; cursor:pointer; width:26px; height:26px; border-radius:7px">✕</button>
                     </div>
                     <div style="padding:12px 16px 8px">
                         <input id="home-icon-search" type="text" placeholder="Search icons (e.g. github, music, heart)…" spellcheck="false" autocomplete="off"
-                            style="width:100%; background:#1e293b; border:1px solid rgba(255,255,255,0.1); border-radius:9px; padding:9px 12px; color:#e2e8f0; font-size:13px; outline:none">
+                            style="width:100%; background:rgb(var(--slate-800)); border:1px solid rgba(255,255,255,0.1); border-radius:9px; padding:9px 12px; color:rgb(var(--slate-200)); font-size:13px; outline:none">
                     </div>
                     <div id="home-icon-grid" style="flex:1; overflow-y:auto; padding:6px 12px 14px; display:grid; grid-template-columns:repeat(auto-fill,minmax(46px,1fr)); gap:6px; align-content:start"></div>
-                    <div id="home-icon-count" style="padding:6px 16px 12px; font-size:11px; color:#64748b"></div>
+                    <div id="home-icon-count" style="padding:6px 16px 12px; font-size:11px; color:rgb(var(--slate-500))"></div>
                 </div>`;
             document.body.appendChild(overlay);
             const grid = overlay.querySelector('#home-icon-grid');
@@ -1136,12 +1136,29 @@ document.addEventListener('DOMContentLoaded', () => {
         let _homeDragEl = null;
         let _archivedOpen = false;
 
+        // Default tile shade when the user hasn't picked one: a step above the
+        // theme's elevated surface, so tiles sit on any background — the old
+        // fixed slate grey looked blue on warm and neutral themes. Falls back
+        // to that grey if the variable is somehow missing.
+        function _defaultTileColor() {
+            try {
+                const v = getComputedStyle(document.documentElement).getPropertyValue('--slate-800').trim();
+                const m = v.match(/^(\d+)\s+(\d+)\s+(\d+)$/);
+                if (m) {
+                    const hex = '#' + [m[1], m[2], m[3]].map(n => (+n).toString(16).padStart(2, '0')).join('');
+                    const light = document.documentElement.dataset.theme === 'light';
+                    return _shade(hex, light ? 0.04 : 0.12);
+                }
+            } catch (_) {}
+            return '#313845';
+        }
+
         function _buildHomePage() {
             const grid = document.getElementById('home-shortcuts-grid');
             if (!grid) return;
             grid.innerHTML = '';
             const customColors = (typeof settingsData !== 'undefined' && settingsData.categoryColors) || {};
-            const tileBase = (typeof settingsData !== 'undefined' && settingsData.categoryTileColor) || '#313845';
+            const tileBase = (typeof settingsData !== 'undefined' && settingsData.categoryTileColor) || _defaultTileColor();
             const tileBg   = `linear-gradient(145deg, ${_shade(tileBase, 0.10)}, ${_shade(tileBase, -0.14)})`;
             const tileLum  = _lum(tileBase);
             const sites = _homeSites();
@@ -1178,7 +1195,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     tile.title = `${def.label} · drag to reorder · right-click for options`;
                     tile.innerHTML = `
                         <div class="home-shortcut-icon" style="background:${tileBg}; border:1px solid rgba(255,255,255,0.08); box-shadow:0 2px 6px rgba(0,0,0,0.35)">
-                            <i class="${iconCls}" style="color:${color}; font-size:22px"></i>
+                            <i class="${iconCls}" style="color:${color}"></i>
                         </div>
                         <span class="home-shortcut-label">${def.label}</span>`;
                     tile.addEventListener('click', () => _openTab(item.k));
@@ -1207,7 +1224,7 @@ document.addEventListener('DOMContentLoaded', () => {
             add.className = 'home-shortcut-tile home-add-tile';
             add.title = 'Add a website shortcut';
             add.innerHTML = `
-                <div class="home-shortcut-icon home-add-icon"><i class="fas fa-plus" style="color:#94a3b8; font-size:22px"></i></div>
+                <div class="home-shortcut-icon home-add-icon"><i class="fas fa-plus" style="color:rgb(var(--slate-400))"></i></div>
                 <span class="home-shortcut-label">Add site</span>`;
             add.addEventListener('click', () => _openSiteEditor(null));
             grid.appendChild(add);
@@ -1270,7 +1287,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const g = wrap.querySelector('.home-archived-grid');
             const customColors = settingsData.categoryColors || {};
-            const tileBase = settingsData.categoryTileColor || '#313845';
+            const tileBase = settingsData.categoryTileColor || _defaultTileColor();
             const tileBg   = `linear-gradient(145deg, ${_shade(tileBase, 0.10)}, ${_shade(tileBase, -0.14)})`;
             const tileLum  = _lum(tileBase);
             const sites = _homeSites();
@@ -1388,8 +1405,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
         function _siteIconHtml(site) {
             const srcs = _faviconSources(site.url);
-            if (!srcs.length) return `<i class="fas fa-globe" style="color:#94a3b8; font-size:22px"></i>`;
-            return `<img class="home-site-favicon" alt="" decoding="async" data-src="${_escHtml(srcs[0])}" data-fb="${_escHtml(srcs.slice(1).join('|'))}" onerror="window._favAdvance(this)" onload="window._favCheck(this)"><i class="fas fa-globe" style="display:none; color:#94a3b8; font-size:22px"></i>`;
+            if (!srcs.length) return `<i class="fas fa-globe" style="color:rgb(var(--slate-400))"></i>`;
+            return `<img class="home-site-favicon" alt="" decoding="async" data-src="${_escHtml(srcs[0])}" data-fb="${_escHtml(srcs.slice(1).join('|'))}" onerror="window._favAdvance(this)" onload="window._favCheck(this)"><i class="fas fa-globe" style="display:none; color:rgb(var(--slate-400)); font-size:22px"></i>`;
         }
 
         // ── Custom site: add / edit modal ──────────────────────
@@ -1398,21 +1415,21 @@ document.addEventListener('DOMContentLoaded', () => {
             const editing = !!site;
             const overlay = document.createElement('div');
             overlay.id = 'home-site-modal';
-            overlay.style.cssText = 'position:fixed; inset:0; z-index:600; background:rgba(2,6,23,0.6); display:flex; align-items:center; justify-content:center;';
+            overlay.style.cssText = 'position:fixed; inset:0; z-index:600; background:rgb(var(--slate-950) / 0.6); display:flex; align-items:center; justify-content:center;';
             overlay.innerHTML = `
-                <div style="width:360px; max-width:90vw; background:#0f172a; border:1px solid rgba(255,255,255,0.12); border-radius:16px; padding:18px; box-shadow:0 24px 60px rgba(0,0,0,0.6)">
-                    <div style="font-size:14px; font-weight:700; color:#e2e8f0; margin-bottom:14px">${editing ? 'Edit shortcut' : 'Add a website'}</div>
-                    <label style="font-size:11px; color:#94a3b8">Name</label>
+                <div style="width:360px; max-width:90vw; background:rgb(var(--slate-900)); border:1px solid rgba(255,255,255,0.12); border-radius:16px; padding:18px; box-shadow:0 24px 60px rgba(0,0,0,0.6)">
+                    <div style="font-size:14px; font-weight:700; color:rgb(var(--slate-200)); margin-bottom:14px">${editing ? 'Edit shortcut' : 'Add a website'}</div>
+                    <label style="font-size:11px; color:rgb(var(--slate-400))">Name</label>
                     <input id="home-site-name" type="text" placeholder="GitHub" value="${editing ? _escHtml(site.name) : ''}"
-                        style="width:100%; margin:4px 0 12px; background:#1e293b; border:1px solid rgba(255,255,255,0.1); border-radius:9px; padding:8px 10px; color:#e2e8f0; font-size:13px; outline:none">
-                    <label style="font-size:11px; color:#94a3b8">Web address</label>
+                        style="width:100%; margin:4px 0 12px; background:rgb(var(--slate-800)); border:1px solid rgba(255,255,255,0.1); border-radius:9px; padding:8px 10px; color:rgb(var(--slate-200)); font-size:13px; outline:none">
+                    <label style="font-size:11px; color:rgb(var(--slate-400))">Web address</label>
                     <input id="home-site-url" type="text" placeholder="github.com" value="${editing ? _escHtml(site.url) : ''}"
-                        style="width:100%; margin:4px 0 4px; background:#1e293b; border:1px solid rgba(255,255,255,0.1); border-radius:9px; padding:8px 10px; color:#e2e8f0; font-size:13px; outline:none">
-                    <div id="home-site-err" style="font-size:11px; color:#f87171; min-height:14px; margin-bottom:8px"></div>
+                        style="width:100%; margin:4px 0 4px; background:rgb(var(--slate-800)); border:1px solid rgba(255,255,255,0.1); border-radius:9px; padding:8px 10px; color:rgb(var(--slate-200)); font-size:13px; outline:none">
+                    <div id="home-site-err" style="font-size:11px; color:rgb(var(--tw-red-400)); min-height:14px; margin-bottom:8px"></div>
                     <div style="display:flex; justify-content:space-between; align-items:center; gap:8px">
-                        <button id="home-site-del" style="font-size:12px; color:#f87171; background:none; border:none; cursor:pointer; ${editing ? '' : 'visibility:hidden'}">Remove</button>
+                        <button id="home-site-del" style="font-size:12px; color:rgb(var(--tw-red-400)); background:none; border:none; cursor:pointer; ${editing ? '' : 'visibility:hidden'}">Remove</button>
                         <div style="display:flex; gap:8px">
-                            <button id="home-site-cancel" style="font-size:12px; color:#94a3b8; background:rgba(255,255,255,0.06); border:none; border-radius:8px; padding:7px 14px; cursor:pointer">Cancel</button>
+                            <button id="home-site-cancel" style="font-size:12px; color:rgb(var(--slate-400)); background:rgba(255,255,255,0.06); border:none; border-radius:8px; padding:7px 14px; cursor:pointer">Cancel</button>
                             <button id="home-site-save" style="font-size:12px; font-weight:600; color:#fff; background:var(--accent,#dc2626); border:none; border-radius:8px; padding:7px 16px; cursor:pointer">${editing ? 'Save' : 'Add'}</button>
                         </div>
                     </div>
@@ -1466,7 +1483,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const menu = document.createElement('div');
             menu.id = 'home-tile-menu';
             menu.style.cssText = `position:fixed; left:${Math.min(x, window.innerWidth-160)}px; top:${Math.min(y, window.innerHeight-30-items.length*32)}px;
-                z-index:600; background:#0f172a; border:1px solid rgba(255,255,255,0.12); border-radius:10px; padding:5px;
+                z-index:600; background:rgb(var(--slate-900)); border:1px solid rgba(255,255,255,0.12); border-radius:10px; padding:5px;
                 box-shadow:0 12px 32px rgba(0,0,0,0.5); min-width:150px; display:flex; flex-direction:column;`;
             menu.innerHTML = items.map((it, i) =>
                 `<button data-i="${i}" style="text-align:left; font-size:12px; color:${it.danger ? '#f87171' : '#e2e8f0'}; background:none; border:none; cursor:pointer; padding:7px 10px; border-radius:7px"><i class="fas ${it.icon} mr-2" style="width:14px"></i>${it.label}</button>`).join('');
@@ -1533,18 +1550,18 @@ document.addEventListener('DOMContentLoaded', () => {
             const pop = document.createElement('div');
             pop.id = 'category-color-popup';
             pop.style.cssText = `position:fixed; left:${Math.min(x, window.innerWidth-200)}px; top:${Math.min(y, window.innerHeight-110)}px;
-                z-index:500; background:#0f172a; border:1px solid rgba(255,255,255,0.12); border-radius:12px;
+                z-index:500; background:rgb(var(--slate-900)); border:1px solid rgba(255,255,255,0.12); border-radius:12px;
                 padding:12px; box-shadow:0 12px 32px rgba(0,0,0,0.5); display:flex; flex-direction:column; gap:8px; min-width:180px;`;
             pop.innerHTML = `
-                <div style="font-size:11px; font-weight:600; color:#e2e8f0">${def.label || 'Category'} color</div>
+                <div style="font-size:11px; font-weight:600; color:rgb(var(--slate-200))">${def.label || 'Category'} color</div>
                 <div style="display:flex; align-items:center; gap:8px">
                     <input type="color" id="cat-color-input" value="${currentColor}"
                         style="width:36px; height:36px; border:none; background:transparent; padding:0; cursor:pointer; border-radius:8px">
                     <input type="text" id="cat-color-hex" value="${currentColor}"
-                        style="flex:1; background:#1e293b; border:1px solid rgba(255,255,255,0.1); border-radius:8px; padding:6px 8px; color:#e2e8f0; font-size:12px; outline:none; font-family:monospace">
+                        style="flex:1; background:rgb(var(--slate-800)); border:1px solid rgba(255,255,255,0.1); border-radius:8px; padding:6px 8px; color:rgb(var(--slate-200)); font-size:12px; outline:none; font-family:monospace">
                 </div>
                 <div style="display:flex; justify-content:space-between; align-items:center">
-                    <button id="cat-color-reset" style="font-size:11px; color:#94a3b8; background:none; border:none; cursor:pointer">Reset</button>
+                    <button id="cat-color-reset" style="font-size:11px; color:rgb(var(--slate-400)); background:none; border:none; cursor:pointer">Reset</button>
                     <button id="cat-color-done" style="font-size:11px; font-weight:600; color:#fff; background:var(--accent,#dc2626); border:none; border-radius:7px; padding:5px 12px; cursor:pointer">Done</button>
                 </div>`;
             document.body.appendChild(pop);

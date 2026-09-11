@@ -45,7 +45,7 @@ function renderMailAccounts() {
     el.innerHTML = mailData.accounts.map(a => {
         const active = a.id===mailActiveAcct;
         return `<div class="flex items-center gap-2 px-2.5 py-2 rounded-lg cursor-pointer group ${active?'bg-sky-600/20 border border-sky-500/40':'hover:bg-slate-800/60 border border-transparent'}" onclick="mailSelectAccount('${a.id}')">
-            <div class="w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-bold text-white shrink-0" style="background:#0ea5e9">${_mEsc((a.email||'?')[0].toUpperCase())}</div>
+            <div class="w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-bold text-white shrink-0" style="background:rgb(var(--tw-sky-500))">${_mEsc((a.email||'?')[0].toUpperCase())}</div>
             <div class="min-w-0 flex-1"><div class="text-slate-200 text-[11px] font-medium truncate">${_mEsc(a.email)}</div></div>
             <button onclick="event.stopPropagation();mailRemoveAccount('${a.id}')" class="opacity-0 group-hover:opacity-100 text-slate-600 hover:text-red-400 text-[10px]"><i class="fas fa-times"></i></button>
         </div>`;
@@ -100,7 +100,7 @@ async function mailOpen(uid) {
         <div class="flex-1 overflow-y-auto chat-scroll p-6">${bodyHtml}</div>
         <div class="px-6 py-3 border-t border-slate-800/70 shrink-0 flex gap-2">
             <button onclick="mailReply()" class="px-4 py-2 rounded-xl bg-sky-600 hover:bg-sky-500 text-white text-xs font-semibold"><i class="fas fa-reply mr-1.5"></i>Reply</button>
-            <button onclick="mailReplyAI()" class="px-4 py-2 rounded-xl text-white text-xs font-semibold" style="background:#8b5cf6"><i class="fas fa-wand-magic-sparkles mr-1.5"></i>Reply with AI</button>
+            <button onclick="mailReplyAI()" class="px-4 py-2 rounded-xl text-white text-xs font-semibold" style="background:rgb(var(--tw-violet-500))"><i class="fas fa-wand-magic-sparkles mr-1.5"></i>Reply with AI</button>
         </div>`;
     if (m.html) {
         const frame = document.getElementById('mail-body-frame');
@@ -129,7 +129,7 @@ function mailCompose(prefill){
                 <input id="mc-subject" class="mail-inp" placeholder="Subject" value="${_mEsc(prefill.subject||'')}">
                 <div class="flex items-center gap-2">
                     <input id="mc-ai-prompt" class="mail-inp flex-1" placeholder="Tell the AI what to write… (e.g. politely decline, ask for a deadline)">
-                    <button onclick="mailAIWrite()" id="mc-ai-btn" class="px-3 py-2 rounded-lg text-white text-xs font-semibold shrink-0" style="background:#8b5cf6"><i class="fas fa-wand-magic-sparkles mr-1"></i>Write</button>
+                    <button onclick="mailAIWrite()" id="mc-ai-btn" class="px-3 py-2 rounded-lg text-white text-xs font-semibold shrink-0" style="background:rgb(var(--tw-violet-500))"><i class="fas fa-wand-magic-sparkles mr-1"></i>Write</button>
                 </div>
                 <textarea id="mc-body" rows="9" class="mail-inp resize-none chat-scroll" placeholder="Write your message…">${_mEsc(prefill.body||'')}</textarea>
                 <div class="flex items-center justify-between">

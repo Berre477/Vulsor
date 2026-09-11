@@ -82,16 +82,16 @@
         if (empty) empty.style.display = 'none';
         cfg.contacts.forEach((c, i) => {
             const row = document.createElement('div');
-            row.style.cssText = 'display:flex;align-items:center;gap:8px;background:rgba(148,163,184,.07);border:1px solid rgba(148,163,184,.1);border-radius:9px;padding:7px 10px';
-            row.innerHTML = `<i class="fas fa-user" style="color:#22c55e;font-size:10px"></i>
-                <span style="flex:1;color:#e2e8f0;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${(c.label || c.number).replace(/</g, '&lt;')}</span>
-                <span style="color:#64748b;font-size:11px">+${c.number}</span>`;
+            row.style.cssText = 'display:flex;align-items:center;gap:8px;background:rgb(var(--slate-400) / .07);border:1px solid rgb(var(--slate-400) / .1);border-radius:9px;padding:7px 10px';
+            row.innerHTML = `<i class="fas fa-user" style="color:rgb(var(--tw-green-500));font-size:10px"></i>
+                <span style="flex:1;color:rgb(var(--slate-200));font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${(c.label || c.number).replace(/</g, '&lt;')}</span>
+                <span style="color:rgb(var(--slate-500));font-size:11px">+${c.number}</span>`;
             // Start a conversation with this person, rather than waiting for them
             // to message first — which is all the bot could ever do before.
             const go = document.createElement('button');
             go.innerHTML = '<i class="fas fa-comment-dots" style="margin-right:5px"></i>Start chat';
             go.title = 'Have the AI message ' + (c.label || c.number) + ' first';
-            go.style.cssText = 'background:rgba(34,197,94,.14);border:1px solid rgba(34,197,94,.3);color:#4ade80;'
+            go.style.cssText = 'background:rgba(34,197,94,.14);border:1px solid rgba(34,197,94,.3);color:rgb(var(--tw-green-400));'
                              + 'cursor:pointer;font-size:11px;font-weight:600;padding:4px 9px;border-radius:7px;white-space:nowrap';
             go.onclick = () => openChat(c);
             row.appendChild(go);
@@ -99,7 +99,7 @@
             const rm = document.createElement('button');
             rm.innerHTML = '<i class="fas fa-xmark"></i>';
             rm.title = 'Remove';
-            rm.style.cssText = 'background:none;border:none;color:#64748b;cursor:pointer;font-size:12px;padding:2px 4px';
+            rm.style.cssText = 'background:none;border:none;color:rgb(var(--slate-500));cursor:pointer;font-size:12px;padding:2px 4px';
             rm.onclick = () => {
                 cfg.contacts.splice(i, 1); save(); renderList(); pushConfig();
                 try { ipcRenderer.invoke('wa-bot:reset-chat', { number: c.number }); } catch (_) {}

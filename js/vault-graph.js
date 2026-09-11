@@ -159,11 +159,11 @@ function vaultGraphBacklinksHTML(fileId) {
     try { links = vaultBacklinks(fileId); } catch (_) { return ''; }
     if (!links.length) return '';
     const items = links.map(f =>
-        `<button onclick="openVaultFile('${f.id}')" style="display:flex;align-items:center;gap:8px;width:100%;text-align:left;background:rgba(148,163,184,.06);border:1px solid rgba(148,163,184,.12);border-radius:8px;padding:7px 10px;margin:4px 0;color:#cbd5e1;font-size:12px;cursor:pointer">
-            <i class="fas fa-link" style="font-size:9px;color:#64748b"></i>${(f.originalName || '').replace(/</g, '&lt;')}
+        `<button onclick="openVaultFile('${f.id}')" style="display:flex;align-items:center;gap:8px;width:100%;text-align:left;background:rgb(var(--slate-400) / .06);border:1px solid rgb(var(--slate-400) / .12);border-radius:8px;padding:7px 10px;margin:4px 0;color:rgb(var(--slate-300));font-size:12px;cursor:pointer">
+            <i class="fas fa-link" style="font-size:9px;color:rgb(var(--slate-500))"></i>${(f.originalName || '').replace(/</g, '&lt;')}
         </button>`).join('');
     return `<div style="max-width:760px;margin:32px auto 12px;padding:0 24px">
-        <div style="display:flex;align-items:center;gap:8px;color:#64748b;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">
+        <div style="display:flex;align-items:center;gap:8px;color:rgb(var(--slate-500));font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">
             <i class="fas fa-diagram-project"></i> ${links.length} Linked note${links.length > 1 ? 's' : ''}
         </div>${items}</div>`;
 }

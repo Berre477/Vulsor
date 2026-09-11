@@ -83,7 +83,7 @@ function renderWriterSidebar() {
                 return `<div class="writer-project group px-3 py-2.5 rounded-xl cursor-pointer transition-all mb-1 ${
                     isActive ? 'border' : 'hover:bg-slate-800/50'
                 }" data-id="${p.id}" ${isActive ? 'style="background:rgba(225,29,72,0.10);border-color:rgba(225,29,72,0.22)"' : ''}>
-                    <p class="text-xs font-semibold truncate" style="${isActive ? 'color:#fb7185' : 'color:#cbd5e1'}">${writerEscHtml(p.title || 'Untitled')}</p>
+                    <p class="text-xs font-semibold truncate" style="${isActive ? 'color:rgb(var(--tw-rose-400))' : 'color:rgb(var(--slate-300))'}">${writerEscHtml(p.title || 'Untitled')}</p>
                     <p class="text-slate-600 text-[10px] mt-0.5 truncate">${chapNote}${words} word${words !== 1 ? 's' : ''}</p>
                 </div>`;
             }).join('')}

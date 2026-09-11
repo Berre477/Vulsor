@@ -93,8 +93,8 @@ const PW = (() => {
         btn.className = 'px-3 py-1.5 rounded-lg text-[11px] font-semibold transition-all';
         const sync = () => {
             btn.style.cssText = trailOn
-                ? 'background:#a78bfa33;color:#a78bfa;border:1px solid #a78bfa66'
-                : 'background:transparent;color:#475569;border:1px solid #1e293b';
+                ? 'background:#a78bfa33;color:rgb(var(--tw-violet-400));border:1px solid #a78bfa66'
+                : 'background:transparent;color:rgb(var(--slate-600));border:1px solid rgb(var(--slate-800))';
             btn.textContent = trailOn ? '✦ Trails ON' : '✦ Trails OFF';
         };
         sync();
@@ -103,7 +103,7 @@ const PW = (() => {
 
         const restartBtn = document.createElement('button');
         restartBtn.className = 'px-3 py-1.5 rounded-lg text-[11px] font-semibold transition-all';
-        restartBtn.style.cssText = 'background:transparent;color:#475569;border:1px solid #1e293b';
+        restartBtn.style.cssText = 'background:transparent;color:rgb(var(--slate-600));border:1px solid rgb(var(--slate-800))';
         restartBtn.textContent = '↺ Reset swing';
         restartBtn.onclick = () => bobs.forEach(b => { b.angle = Math.PI * 0.4; b.vel = 0; b.trail = []; });
         el.appendChild(restartBtn);
@@ -234,15 +234,15 @@ const DP = (() => {
         const w = document.createElement('div'); w.className = 'flex items-center gap-2';
         w.innerHTML = `<label class="text-[10px] text-slate-400 w-20 shrink-0">Trail length</label>
           <input type="range" min="20" max="800" step="10" value="${trailLen}"
-                 class="w-24 h-1 rounded appearance-none cursor-pointer" style="accent-color:#38bdf8">
-          <span class="text-[10px] font-mono w-8 text-right shrink-0" style="color:#38bdf8">${trailLen}</span>`;
+                 class="w-24 h-1 rounded appearance-none cursor-pointer" style="accent-color:rgb(var(--tw-sky-400))">
+          <span class="text-[10px] font-mono w-8 text-right shrink-0" style="color:rgb(var(--tw-sky-400))">${trailLen}</span>`;
         const sl = w.querySelector('input'), sp = w.querySelector('span:last-child');
         sl.oninput = () => { trailLen = parseInt(sl.value); sp.textContent = trailLen; };
         el.appendChild(w);
 
         const rb = document.createElement('button');
         rb.className = 'px-3 py-1.5 rounded-lg text-[11px] font-semibold transition-all';
-        rb.style.cssText = 'background:transparent;color:#475569;border:1px solid #1e293b';
+        rb.style.cssText = 'background:transparent;color:rgb(var(--slate-600));border:1px solid rgb(var(--slate-800))';
         rb.textContent = '↺ Reset';
         rb.onclick = () => { const L = Math.min(W,H)*0.25; pend.forEach(p=>{p.a1=Math.PI*0.75;p.a2=Math.PI*0.5;p.v1=0;p.v2=0;p.L1=L;p.L2=L;p.trail=[];}); pend[1].a1+=0.001; };
         el.appendChild(rb);
@@ -320,8 +320,8 @@ const WI = (() => {
         const fw = document.createElement('div'); fw.className = 'flex items-center gap-2';
         fw.innerHTML = `<label class="text-[10px] text-slate-400 w-16 shrink-0">Frequency</label>
           <input type="range" min="0.5" max="8" step="0.1" value="${freq}"
-                 class="w-24 h-1 rounded appearance-none cursor-pointer" style="accent-color:#38bdf8">
-          <span class="text-[10px] font-mono w-12 text-right shrink-0" style="color:#38bdf8">${freq.toFixed(1)} Hz</span>`;
+                 class="w-24 h-1 rounded appearance-none cursor-pointer" style="accent-color:rgb(var(--tw-sky-400))">
+          <span class="text-[10px] font-mono w-12 text-right shrink-0" style="color:rgb(var(--tw-sky-400))">${freq.toFixed(1)} Hz</span>`;
         const fsl = fw.querySelector('input'), fsp = fw.querySelector('span:last-child');
         fsl.oninput = () => { freq = parseFloat(fsl.value); fsp.textContent = freq.toFixed(1) + ' Hz'; };
         el.appendChild(fw);
@@ -329,7 +329,7 @@ const WI = (() => {
         // Clear sources
         const cb = document.createElement('button');
         cb.className = 'px-3 py-1.5 rounded-lg text-[11px] font-semibold transition-all';
-        cb.style.cssText = 'background:#ef444422;color:#f87171;border:1px solid #ef444444';
+        cb.style.cssText = 'background:#ef444422;color:rgb(var(--tw-red-400));border:1px solid #ef444444';
         cb.textContent = 'Clear extra sources';
         cb.onclick = () => { sources = sources.slice(0, 2); };
         el.appendChild(cb);
@@ -337,7 +337,7 @@ const WI = (() => {
         // Phase shift btn
         const pb = document.createElement('button');
         pb.className = 'px-3 py-1.5 rounded-lg text-[11px] font-semibold transition-all';
-        pb.style.cssText = 'background:transparent;color:#475569;border:1px solid #1e293b';
+        pb.style.cssText = 'background:transparent;color:rgb(var(--slate-600));border:1px solid rgb(var(--slate-800))';
         pb.textContent = '⟲ Shift phase';
         pb.onclick = () => { sources.forEach((s, i) => { s.phase = (Math.PI * i) % TWO_PI; }); };
         el.appendChild(pb);
@@ -455,8 +455,8 @@ const GAS = (() => {
         hb.className = 'px-3 py-1.5 rounded-lg text-[11px] font-semibold transition-all';
         const sync = () => {
             hb.style.cssText = heatOn
-                ? 'background:#f8717122;color:#f87171;border:1px solid #f8717144'
-                : 'background:transparent;color:#475569;border:1px solid #1e293b';
+                ? 'background:#f8717122;color:rgb(var(--tw-red-400));border:1px solid #f8717144'
+                : 'background:transparent;color:rgb(var(--slate-600));border:1px solid rgb(var(--slate-800))';
             hb.textContent = heatOn ? '🔥 Heating ON' : '🔥 Heat';
         };
         sync(); hb.onclick = () => { heatOn = !heatOn; sync(); };
@@ -464,14 +464,14 @@ const GAS = (() => {
 
         const cb = document.createElement('button');
         cb.className = 'px-3 py-1.5 rounded-lg text-[11px] font-semibold transition-all';
-        cb.style.cssText = 'background:transparent;color:#475569;border:1px solid #1e293b';
+        cb.style.cssText = 'background:transparent;color:rgb(var(--slate-600));border:1px solid rgb(var(--slate-800))';
         cb.textContent = '❄ Cool';
         cb.onclick = () => { particles.forEach(p => { p.vx *= 0.5; p.vy *= 0.5; }); };
         el.appendChild(cb);
 
         const rb = document.createElement('button');
         rb.className = 'px-3 py-1.5 rounded-lg text-[11px] font-semibold transition-all';
-        rb.style.cssText = 'background:#ef444422;color:#f87171;border:1px solid #ef444444';
+        rb.style.cssText = 'background:#ef444422;color:rgb(var(--tw-red-400));border:1px solid #ef444444';
         rb.textContent = '↺ Reset';
         rb.onclick = () => _init(W, H);
         el.appendChild(rb);
@@ -591,22 +591,22 @@ const ORB = (() => {
         const gw = document.createElement('div'); gw.className = 'flex items-center gap-2';
         gw.innerHTML = `<label class="text-[10px] text-slate-400 w-12 shrink-0">Gravity G</label>
           <input type="range" min="200" max="8000" step="100" value="${G}"
-                 class="w-24 h-1 rounded appearance-none cursor-pointer" style="accent-color:#fbbf24">
-          <span class="text-[10px] font-mono w-12 text-right shrink-0" style="color:#fbbf24">${G}</span>`;
+                 class="w-24 h-1 rounded appearance-none cursor-pointer" style="accent-color:rgb(var(--tw-amber-400))">
+          <span class="text-[10px] font-mono w-12 text-right shrink-0" style="color:rgb(var(--tw-amber-400))">${G}</span>`;
         const gsl = gw.querySelector('input'), gsp = gw.querySelector('span:last-child');
         gsl.oninput = () => { G = parseInt(gsl.value); gsp.textContent = G; };
         el.appendChild(gw);
 
         const rb = document.createElement('button');
         rb.className = 'px-3 py-1.5 rounded-lg text-[11px] font-semibold transition-all';
-        rb.style.cssText = 'background:transparent;color:#475569;border:1px solid #1e293b';
+        rb.style.cssText = 'background:transparent;color:rgb(var(--slate-600));border:1px solid rgb(var(--slate-800))';
         rb.textContent = '↺ Reset';
         rb.onclick = () => _init(W, H);
         el.appendChild(rb);
 
         const cb = document.createElement('button');
         cb.className = 'px-3 py-1.5 rounded-lg text-[11px] font-semibold transition-all';
-        cb.style.cssText = 'background:#ef444422;color:#f87171;border:1px solid #ef444444';
+        cb.style.cssText = 'background:#ef444422;color:rgb(var(--tw-red-400));border:1px solid #ef444444';
         cb.textContent = 'Clear bodies';
         cb.onclick = () => { bodies = [bodies[0]]; };
         el.appendChild(cb);
@@ -700,8 +700,8 @@ const SW = (() => {
         const fw = document.createElement('div'); fw.className = 'flex items-center gap-2';
         fw.innerHTML = `<label class="text-[10px] text-slate-400 w-16 shrink-0">Frequency</label>
           <input type="range" min="0.5" max="12" step="0.5" value="${freq}"
-                 class="w-24 h-1 rounded appearance-none cursor-pointer" style="accent-color:#4ade80">
-          <span class="text-[10px] font-mono w-12 text-right shrink-0" style="color:#4ade80">${freq.toFixed(1)} Hz</span>`;
+                 class="w-24 h-1 rounded appearance-none cursor-pointer" style="accent-color:rgb(var(--tw-green-400))">
+          <span class="text-[10px] font-mono w-12 text-right shrink-0" style="color:rgb(var(--tw-green-400))">${freq.toFixed(1)} Hz</span>`;
         const fsl = fw.querySelector('input'), fsp = fw.querySelector('span:last-child');
         fsl.oninput = () => { freq = parseFloat(fsl.value); fsp.textContent = freq.toFixed(1)+' Hz'; };
         el.appendChild(fw);
@@ -709,8 +709,8 @@ const SW = (() => {
         const aw = document.createElement('div'); aw.className = 'flex items-center gap-2';
         aw.innerHTML = `<label class="text-[10px] text-slate-400 w-16 shrink-0">Amplitude</label>
           <input type="range" min="5" max="120" step="5" value="${amplitude}"
-                 class="w-24 h-1 rounded appearance-none cursor-pointer" style="accent-color:#4ade80">
-          <span class="text-[10px] font-mono w-10 text-right shrink-0" style="color:#4ade80">${amplitude} px</span>`;
+                 class="w-24 h-1 rounded appearance-none cursor-pointer" style="accent-color:rgb(var(--tw-green-400))">
+          <span class="text-[10px] font-mono w-10 text-right shrink-0" style="color:rgb(var(--tw-green-400))">${amplitude} px</span>`;
         const asl = aw.querySelector('input'), asp = aw.querySelector('span:last-child');
         asl.oninput = () => { amplitude = parseInt(asl.value); asp.textContent = amplitude+' px'; };
         el.appendChild(aw);
@@ -719,8 +719,8 @@ const SW = (() => {
         db.className = 'px-3 py-1.5 rounded-lg text-[11px] font-semibold transition-all';
         const dsync = () => {
             db.style.cssText = driving
-                ? 'background:#4ade8022;color:#4ade80;border:1px solid #4ade8044'
-                : 'background:transparent;color:#475569;border:1px solid #1e293b';
+                ? 'background:#4ade8022;color:rgb(var(--tw-green-400));border:1px solid #4ade8044'
+                : 'background:transparent;color:rgb(var(--slate-600));border:1px solid rgb(var(--slate-800))';
             db.textContent = driving ? '〜 Drive ON' : '〜 Drive OFF';
         };
         dsync(); db.onclick = () => { driving = !driving; dsync(); };

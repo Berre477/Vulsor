@@ -149,14 +149,14 @@ function renderLabList() {
             isActive ? 'border' : 'hover:bg-slate-800/50'
         }" data-id="${r.id}" ${isActive ? 'data-active="true" style="background:rgba(20,184,166,0.12);border-color:rgba(20,184,166,0.25)"' : ''}>
             <div class="flex items-center justify-between gap-2 mb-0.5">
-                <span class="text-xs font-semibold truncate" style="${isActive ? 'color:#5eead4' : 'color:#cbd5e1'}">${labEsc(r.title || 'Untitled report')}</span>
+                <span class="text-xs font-semibold truncate" style="${isActive ? 'color:rgb(var(--tw-teal-300))' : 'color:rgb(var(--slate-300))'}">${labEsc(r.title || 'Untitled report')}</span>
                 <button class="lab-del-btn opacity-0 group-hover:opacity-100 text-slate-600 hover:text-red-400 transition shrink-0" data-del="${r.id}" title="Delete report">
                     <i class="fas fa-trash text-[10px]"></i>
                 </button>
             </div>
             <div class="flex items-center gap-2">
                 <span class="text-slate-600 text-[10px]">${labFmtDate(r.date)}</span>
-                ${r.course ? `<span class="text-[9px] px-1.5 py-0.5 rounded-full font-medium" style="background:rgba(20,184,166,0.15);color:#5eead4">${labEsc(r.course)}</span>` : ''}
+                ${r.course ? `<span class="text-[9px] px-1.5 py-0.5 rounded-full font-medium" style="background:rgba(20,184,166,0.15);color:rgb(var(--tw-teal-300))">${labEsc(r.course)}</span>` : ''}
             </div>
         </div>`;
     }).join('');

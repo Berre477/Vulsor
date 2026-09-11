@@ -164,30 +164,30 @@ function vulsorPrompt(message, defaultValue, opts) {
         back.style.cssText = 'position:fixed;inset:0;z-index:100000;background:rgba(8,10,18,.72);'
                            + 'backdrop-filter:blur(3px);display:flex;align-items:center;justify-content:center';
         const box = document.createElement('div');
-        box.style.cssText = 'width:420px;max-width:92vw;background:#0f141e;border:1px solid rgba(148,163,184,.18);'
+        box.style.cssText = 'width:420px;max-width:92vw;background:var(--bg-surface);border:1px solid rgb(var(--slate-400) / .18);'
                           + 'border-radius:16px;box-shadow:0 24px 80px rgba(0,0,0,.6);padding:18px';
         const label = document.createElement('div');
-        label.style.cssText = 'color:#e2e8f0;font-size:13px;font-weight:600;line-height:1.5;margin-bottom:4px;white-space:pre-wrap';
+        label.style.cssText = 'color:rgb(var(--slate-200));font-size:13px;font-weight:600;line-height:1.5;margin-bottom:4px;white-space:pre-wrap';
         label.textContent = message || '';
         const hint = document.createElement('div');
-        hint.style.cssText = 'color:#64748b;font-size:11px;line-height:1.5;margin-bottom:11px';
+        hint.style.cssText = 'color:rgb(var(--slate-500));font-size:11px;line-height:1.5;margin-bottom:11px';
         hint.textContent = o.hint || '';
         const input = document.createElement(o.multiline ? 'textarea' : 'input');
         if (o.multiline) input.rows = 3;
         input.value = defaultValue == null ? '' : String(defaultValue);
         if (o.placeholder) input.placeholder = o.placeholder;
-        input.style.cssText = 'width:100%;background:rgba(148,163,184,.08);color:#fff;font-size:13px;'
-                            + 'border:1px solid rgba(148,163,184,.2);border-radius:10px;padding:9px 12px;'
+        input.style.cssText = 'width:100%;background:rgb(var(--slate-400) / .08);color:#fff;font-size:13px;'
+                            + 'border:1px solid rgb(var(--slate-400) / .2);border-radius:10px;padding:9px 12px;'
                             + 'outline:none;resize:vertical;font-family:inherit';
         const row = document.createElement('div');
         row.style.cssText = 'display:flex;gap:8px;justify-content:flex-end;margin-top:14px';
         const cancel = document.createElement('button');
         cancel.textContent = 'Cancel';
-        cancel.style.cssText = 'background:rgba(148,163,184,.14);color:#cbd5e1;border:none;border-radius:9px;'
+        cancel.style.cssText = 'background:rgb(var(--slate-400) / .14);color:rgb(var(--slate-300));border:none;border-radius:9px;'
                              + 'padding:8px 15px;font-size:12px;font-weight:600;cursor:pointer';
         const ok = document.createElement('button');
         ok.textContent = o.confirmLabel || 'OK';
-        ok.style.cssText = 'background:#16a34a;color:#fff;border:none;border-radius:9px;padding:8px 17px;'
+        ok.style.cssText = 'background:rgb(var(--tw-green-600));color:#fff;border:none;border-radius:9px;padding:8px 17px;'
                          + 'font-size:12px;font-weight:700;cursor:pointer';
 
         row.append(cancel, ok);

@@ -222,7 +222,7 @@ function _vaultAIToast(msg, icon = 'fa-circle-info', color = '#f59e0b') {
     const t = document.createElement('div');
     t.id = 'vault-ai-toast';
     t.className = 'fixed bottom-6 left-1/2 -translate-x-1/2 z-[60] flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium shadow-xl pointer-events-none';
-    t.style.cssText = 'background:#1e293b;border:1px solid #334155;color:#e2e8f0;transition:opacity .3s';
+    t.style.cssText = 'background:rgb(var(--slate-800));border:1px solid rgb(var(--slate-700));color:rgb(var(--slate-200));transition:opacity .3s';
     t.innerHTML = `<i class="fas ${icon} text-sm" style="color:${color}"></i> <span>${_vaultAIEsc(msg)}</span>`;
     document.body.appendChild(t);
     setTimeout(() => { t.style.opacity = '0'; setTimeout(() => t.remove(), 300); }, 2600);
@@ -339,13 +339,13 @@ function _vaultAIBubble(role, content) {
     if (role === 'user') {
         wrap.className = 'flex justify-end';
         wrap.innerHTML = `<div class="max-w-[88%] px-3 py-2 rounded-xl rounded-br-sm text-[12px] leading-relaxed whitespace-pre-wrap"
-             style="background:rgba(var(--accent-rgb),.16);border:1px solid rgba(var(--accent-rgb),.24);color:#e2e8f0">${_vaultAIEsc(content)}</div>`;
+             style="background:rgba(var(--accent-rgb),.16);border:1px solid rgba(var(--accent-rgb),.24);color:rgb(var(--slate-200))">${_vaultAIEsc(content)}</div>`;
         return wrap;
     }
     wrap.className = 'flex justify-start';
     const box = document.createElement('div');
     box.className = 'res-md max-w-full w-full px-3 py-2 rounded-xl rounded-bl-sm text-slate-300 select-text';
-    box.style.cssText = 'background:rgba(148,163,184,.07);border:1px solid rgba(148,163,184,.13);font-size:12px';
+    box.style.cssText = 'background:rgb(var(--slate-400) / .07);border:1px solid rgb(var(--slate-400) / .13);font-size:12px';
     _vaultAIRenderMd(box, content);
     wrap.appendChild(box);
     return wrap;
@@ -381,7 +381,7 @@ async function vaultAIAsk(question) {
     wrap.className = 'flex justify-start';
     const box = document.createElement('div');
     box.className = 'res-md max-w-full w-full px-3 py-2 rounded-xl rounded-bl-sm text-slate-300 select-text';
-    box.style.cssText = 'background:rgba(148,163,184,.07);border:1px solid rgba(148,163,184,.13);font-size:12px';
+    box.style.cssText = 'background:rgb(var(--slate-400) / .07);border:1px solid rgb(var(--slate-400) / .13);font-size:12px';
     box.innerHTML = '<span class="text-slate-600 text-[11px]"><i class="fas fa-spinner fa-spin mr-1.5"></i>reading the file…</span>';
     wrap.appendChild(box);
     list.appendChild(wrap);
@@ -472,11 +472,11 @@ function _vaultAIWorkingPill(label, onCancel) {
     const pill = document.createElement('div');
     pill.id = 'vault-ai-pill';
     pill.className = 'fixed bottom-6 left-1/2 -translate-x-1/2 z-[60] flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm shadow-xl';
-    pill.style.cssText = 'background:#1e293b;border:1px solid #334155;color:#e2e8f0';
+    pill.style.cssText = 'background:rgb(var(--slate-800));border:1px solid rgb(var(--slate-700));color:rgb(var(--slate-200))';
     pill.innerHTML = `<i class="fas fa-spinner fa-spin text-[12px]" style="color:var(--accent-light)"></i>
         <span class="text-[12px] font-medium">${_vaultAIEsc(label)}</span>
         <button class="text-[11px] font-semibold px-2 py-1 rounded-lg transition-colors"
-                style="background:rgba(148,163,184,.14);color:#cbd5e1">Stop</button>`;
+                style="background:rgb(var(--slate-400) / .14);color:rgb(var(--slate-300))">Stop</button>`;
     pill.querySelector('button').onclick = () => { try { onCancel(); } catch (_) {} };
     document.body.appendChild(pill);
     return { done: () => pill.remove() };
@@ -1040,7 +1040,7 @@ function _vaultAIAskIdleState() {
             <div class="flex flex-wrap gap-1.5 justify-center mt-1">
                 ${VAULT_AI_ASK_SUGGESTIONS.map(s =>
                     `<span class="vault-ask-sugg px-2.5 py-1 rounded-lg text-[11px] cursor-pointer transition-colors"
-                           style="background:rgba(148,163,184,.09);border:1px solid rgba(148,163,184,.14);color:#94a3b8"
+                           style="background:rgb(var(--slate-400) / .09);border:1px solid rgb(var(--slate-400) / .14);color:rgb(var(--slate-400))"
                     >${_vaultAIEsc(s)}</span>`).join('')}
             </div>
         </div>`;
@@ -1083,7 +1083,7 @@ async function vaultAIAskVault(question) {
         body.innerHTML = `<div class="px-6 py-8 flex flex-col items-center gap-3">
             <i class="fas fa-spinner fa-spin text-slate-500"></i>
             <p id="vault-ask-progress" class="text-slate-500 text-xs">Reading your files…</p>
-            <div class="w-56 h-1 rounded-full overflow-hidden" style="background:rgba(148,163,184,.14)">
+            <div class="w-56 h-1 rounded-full overflow-hidden" style="background:rgb(var(--slate-400) / .14)">
                 <div id="vault-ask-bar" class="h-full transition-all" style="width:0%;background:var(--accent-light)"></div>
             </div>
         </div>`;
@@ -1163,7 +1163,7 @@ ${context}`;
         if (!/\[\d+\]/.test(reply)) {
             const warn = document.createElement('div');
             warn.className = 'mx-6 mb-5 -mt-2 px-3 py-2 rounded-lg text-[11px] leading-relaxed';
-            warn.style.cssText = 'background:rgba(245,158,11,.09);border:1px solid rgba(245,158,11,.24);color:#fbbf24';
+            warn.style.cssText = 'background:rgba(245,158,11,.09);border:1px solid rgba(245,158,11,.24);color:rgb(var(--tw-amber-400))';
             warn.innerHTML = '<i class="fas fa-triangle-exclamation mr-1.5"></i>'
                 + 'This answer cites none of your files, so it is probably general knowledge '
                 + 'rather than something from your vault. Try wording the question with the '
@@ -1194,7 +1194,7 @@ function _vaultAIRenderSources() {
             const ic = f ? vaultIcon(f.originalName, f.isDoc, f.isCode, f.isNotebook, f) : { icon: 'fa-file', color: '#94a3b8' };
             return `<button class="vault-ask-src flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] transition-colors"
                         data-id="${_vaultAIEsc(s.id)}" title="Open ${_vaultAIEsc(s.name)}"
-                        style="background:rgba(148,163,184,.09);border:1px solid rgba(148,163,184,.16);color:#cbd5e1">
+                        style="background:rgb(var(--slate-400) / .09);border:1px solid rgb(var(--slate-400) / .16);color:rgb(var(--slate-300))">
                     <span class="text-[9px] font-bold" style="color:var(--accent-light)">${s.n}</span>
                     <i class="fas ${ic.icon} text-[9px]" style="color:${ic.color}"></i>
                     <span class="truncate max-w-[180px]">${_vaultAIEsc(s.name)}</span>
@@ -1292,7 +1292,7 @@ function initVaultAI() {
         quick.innerHTML = VAULT_AI_QUICK.map(q =>
             `<button class="vault-ai-quick flex items-center gap-1.5 px-2 py-1 rounded-lg text-[10px] font-medium transition-colors"
                      data-prompt="${_vaultAIEsc(q.prompt)}"
-                     style="background:rgba(148,163,184,.09);border:1px solid rgba(148,163,184,.14);color:#94a3b8">
+                     style="background:rgb(var(--slate-400) / .09);border:1px solid rgb(var(--slate-400) / .14);color:rgb(var(--slate-400))">
                 <i class="fas ${q.icon} text-[9px]"></i>${q.label}
             </button>`).join('');
         quick.addEventListener('click', e => {

@@ -38,7 +38,20 @@ const BG_THEMES = [
     { id: 'paper',    name: 'Paper',     preview: '#faf7f2', base: '#f7f4ee', surface: '#fffdf9', elevated: '#fbf8f2', border: '#e6e0d5', borderHi: '#d3cabb', inputBg: '#fffdf9', dark: false },
 ];
 
-let settingsData = { accentIndex: 0, customAccent: null, bgTheme: 'slate', customBg: null, wallpaper: null, wallpaperFit: 'fill', homeBg: 'plexus', categoryColors: {}, categoryIcons: {}, categoryTileColor: null, homeItems: null, homeSites: [], archived: [] };
+let settingsData = { accentIndex: 0, customAccent: null, bgTheme: 'slate', customBg: null, wallpaper: null, wallpaperFit: 'fill', homeBg: 'plexus', homeIconSize: 60, categoryColors: {}, categoryIcons: {}, categoryTileColor: null, homeItems: null, homeSites: [], archived: [] };
+
+// ── Home icon size (Appearance → Home icon size) ─────────────────────
+const HOME_ICON_MIN = 40, HOME_ICON_MAX = 96, HOME_ICON_DEFAULT = 60;
+function clampHomeIconSize(v) {
+    const n = Math.round(Number(v));
+    if (!Number.isFinite(n)) return HOME_ICON_DEFAULT;
+    return Math.max(HOME_ICON_MIN, Math.min(HOME_ICON_MAX, n));
+}
+// Everything on the Home grid scales from one CSS variable (see styles.css).
+function applyHomeIconSize() {
+    const px = clampHomeIconSize(settingsData.homeIconSize);
+    document.documentElement.style.setProperty('--home-icon-pref', px + 'px');
+}
 
 // The animated home-page backgrounds, drawn by neural-bg.js. `swatch` is a
 // small CSS stand-in for the real thing, so the grid reads at a glance.
@@ -149,7 +162,129 @@ function applyAccent(accent) {
     el.textContent = generateThemeCSS(accent);
 }
 
+// ── Background themes: one grey scale, derived per theme ────────────────
+// The whole UI is written in Tailwind's `slate` utilities, and
+// tailwind.config.js compiles those to the --slate-50…950 variables. So a
+// theme is applied by computing eleven RGB stops that share the theme's hue
+// and setting them on <html>. Every surface, label, hairline and translucent
+// overlay follows — nothing has to be listed by selector, and a view added
+// later is themed automatically. The old approach (a few hundred `!important`
+// overrides against specific classes) left everything it hadn't listed in
+// slate blue, which is why warm and neutral themes looked muddy.
+
+// Lightness (%) of each Tailwind slate stop — the skeleton every theme's
+// scale is built on so contrast ratios stay where the UI was designed.
+const SLATE_L = { 50: 98, 100: 96, 200: 91, 300: 84, 400: 65, 500: 47, 600: 35, 700: 28, 800: 17, 900: 12, 950: 5 };
+const SLATE_STOPS = Object.keys(SLATE_L).map(Number);
+
+function hexToHsl(hex) {
+    let r = parseInt(hex.slice(1,3),16) / 255, g = parseInt(hex.slice(3,5),16) / 255, b = parseInt(hex.slice(5,7),16) / 255;
+    const max = Math.max(r,g,b), min = Math.min(r,g,b), l = (max + min) / 2;
+    let h = 0, s = 0;
+    if (max !== min) {
+        const d = max - min;
+        s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+        if (max === r)      h = ((g - b) / d + (g < b ? 6 : 0)) / 6;
+        else if (max === g) h = ((b - r) / d + 2) / 6;
+        else                h = ((r - g) / d + 4) / 6;
+    }
+    return { h: h * 360, s: s * 100, l: l * 100 };
+}
+function hslToRgb(h, s, l) {
+    s /= 100; l /= 100;
+    const k = n => (n + h / 30) % 12;
+    const a = s * Math.min(l, 1 - l);
+    const f = n => l - a * Math.max(-1, Math.min(k(n) - 3, Math.min(9 - k(n), 1)));
+    return [f(0), f(8), f(4)].map(v => Math.round(v * 255));
+}
+const hexToTriplet = hex => [1,3,5].map(i => parseInt(hex.slice(i,i+2),16)).join(' ');
+const tripletToHex = t => '#' + t.split(' ').map(n => (+n).toString(16).padStart(2,'0')).join('');
+
+// Compute the eleven --slate-* stops (as "r g b" strings) plus the semantic
+// aliases for a theme. Anchors the stops the theme names explicitly
+// (base/surface/elevated/borders) and fills the rest along its hue.
+function buildThemeVars(t) {
+    // Hue and saturation come from the surface colour: on near-black themes
+    // the base is too dark to carry a readable hue.
+    const ref = hexToHsl(t.surface);
+    const dark = !!t.dark;
+    // Slate's own text greys sit around 20–40% saturation; keep tinted themes
+    // in that band and let genuinely neutral ones (black, charcoal) stay grey.
+    const sat = Math.min(dark ? 24 : 12, ref.s * (dark ? 1.0 : 0.6));
+    const vars = {};
+    // The Slate theme is Tailwind's palette verbatim — no derivation drift.
+    if (t.id === 'slate') {
+        const exact = { 50:'#f8fafc',100:'#f1f5f9',200:'#e2e8f0',300:'#cbd5e1',400:'#94a3b8',500:'#64748b',600:'#475569',700:'#334155',800:'#1e293b',900:'#0f172a',950:'#020617' };
+        for (const stop of SLATE_STOPS) vars[`--slate-${stop}`] = hexToTriplet(exact[stop]);
+        return finishThemeVars(vars, t);
+    }
+    const set = (stop, hex) => { vars[`--slate-${stop}`] = hexToTriplet(hex); };
+    const derive = (stop, L) => { vars[`--slate-${stop}`] = hslToRgb(ref.h, sat, L).join(' '); };
+
+    if (dark) {
+        set(950, t.base); set(900, t.surface); set(800, t.elevated); set(700, t.borderHi);
+        // Mid greys: keep slate's lightness, but nudge them slightly lighter on
+        // very dark themes so muted text never sinks into a pure-black base.
+        const lift = ref.l < 8 ? 4 : 0;
+        for (const stop of [600, 500, 400, 300, 200, 100, 50]) derive(stop, Math.min(98, SLATE_L[stop] + (stop >= 400 ? lift : 0)));
+    } else {
+        // Light theme: the scale is mirrored — bg-slate-950 is now the lightest
+        // surface and text-slate-200 the darkest ink. The theme's named colours
+        // anchor the surfaces; ink stops are derived from the mirrored lightness.
+        // 800 doubles as "elevated chip" and "hairline" (border-slate-800), and
+        // 700 as "hover wash" and "strong hairline", so both anchor to the
+        // theme's border colours rather than its elevated surface — on a
+        // near-white theme the elevated tint is too faint to read as an edge.
+        // Keep the same lightness *distance* from the base that the dark scale
+        // has (800 is 12 points off the base, 700 is 23), so chips and
+        // hairlines read with the same weight on a light page as on a dark one.
+        // The theme's own border colours are too faint for that once they are
+        // drawn at the 60% opacity most card borders use.
+        set(950, t.base); set(900, t.surface);
+        const baseL = hexToHsl(t.base).l;
+        // 600 is dim text and icons (text-slate-600 is its main use), so it
+        // needs to be ink, not another surface; from there down the stops mirror.
+        const mirror = { 800: baseL - 12, 700: baseL - 23, 600: 60, 500: 47, 400: 32, 300: 22, 200: 13, 100: 10, 50: 8 };
+        for (const stop of [800, 700, 600, 500, 400, 300, 200, 100, 50]) derive(stop, mirror[stop]);
+    }
+
+    return finishThemeVars(vars, t);
+}
+function finishThemeVars(vars, t) {
+    const dark = !!t.dark;
+    vars['--bg-base']    = t.gradient ? 'transparent' : t.base;
+    vars['--bg-surface'] = t.surface;
+    vars['--bg-elev']    = t.elevated;
+    vars['--bg-border']  = t.border;
+    vars['--bg-borderh'] = t.borderHi;
+    vars['--input-bg']   = t.inputBg || t.elevated;
+    vars['--text-1'] = `rgb(${vars['--slate-100']})`;
+    vars['--text-2'] = `rgb(${vars['--slate-300']})`;
+    vars['--text-3'] = `rgb(${vars['--slate-400']})`;
+    vars['--text-4'] = `rgb(${vars['--slate-500']})`;
+    vars['--ink-rgb'] = dark ? '255 255 255' : '0 0 0';
+    return vars;
+}
+
 function applyBackground(theme) {
+    const root = document.documentElement;
+    const vars = buildThemeVars(theme);
+    for (const [k, v] of Object.entries(vars)) root.style.setProperty(k, v);
+    root.dataset.bg    = theme.id;
+    root.dataset.theme = theme.dark ? 'dark' : 'light';
+    root.style.colorScheme = theme.dark ? 'dark' : 'light';
+
+    // Persist the computed variables so the inline <head> script can apply
+    // them before first paint next launch (it must not depend on this file).
+    try {
+        const json = JSON.stringify(vars);
+        if (JSON.stringify(settingsData.themeVars || null) !== json) {
+            settingsData.themeVars = vars;
+            settingsData.themeDark = !!theme.dark;
+            saveSettingsData();
+        }
+    } catch (_) {}
+
     let el = document.getElementById('vulsor-bg-override');
     if (!el) {
         el = document.createElement('style');
@@ -157,354 +292,20 @@ function applyBackground(theme) {
         document.head.appendChild(el);
     }
     el.textContent = generateBackgroundCSS(theme);
-    // Store on root for other uses
-    document.documentElement.dataset.bg    = theme.id;
-    document.documentElement.dataset.theme = theme.dark ? 'dark' : 'light';
 }
 
+// The little that can't be expressed by the palette swap: the body gradient
+// for "metallic", and inline dark backgrounds on a few view shells.
 function generateBackgroundCSS(t) {
-    const light = !t.dark;
-    // For gradient (metallic) themes, content areas are transparent so the body
-    // gradient shows through; otherwise they use the solid base color.
-    const viewBg = t.gradient ? 'transparent' : t.base;
-
-    // For dark themes: only background/border overrides needed
-    const base = `
+    const body = t.gradient
+        ? `body { background-color: ${t.base} !important; background-image: ${t.gradient} !important; background-attachment: fixed !important; }
+#main-area, .app-view { background-color: transparent !important; }`
+        : `body { background-color: ${t.base} !important; background-image: none !important; }`;
+    return `
 /* ── Vulsor background theme: ${t.id} ── */
-:root {
-    --bg-base:    ${t.base};
-    --bg-surface: ${t.surface};
-    --bg-elev:    ${t.elevated};
-    --bg-border:  ${t.border};
-    --bg-borderh: ${t.borderHi};
-}
-body { background-color: ${t.base} !important; ${t.gradient ? `background-image: ${t.gradient} !important; background-attachment: fixed !important;` : 'background-image: none !important;'} }
+${body}
 #boot-screen { background-color: ${t.base} !important; }
-#app-sidebar { background-color: ${t.surface} !important; border-right-color: ${t.border} !important; }
-#main-area { background-color: ${t.gradient ? 'transparent' : t.base} !important; }
-#tab-bar { background-color: ${t.base} !important; border-bottom-color: ${t.border} !important; }
-#view-chat, #view-todos, #view-study,
-#view-vault, #view-finance, #view-journal { background-color: ${t.base} !important; }
-#voice-mode { background-color: ${t.base} !important; }
-#settings-modal > div { background-color: ${t.surface} !important; border-color: ${t.borderHi} !important; }
-#vault-folder-modal > div { background-color: ${t.surface} !important; border-color: ${t.borderHi} !important; }
-#vault-sidebar { background-color: ${t.surface} !important; border-right-color: ${t.border} !important; }
-#vault-viewer-view { background-color: ${t.base} !important; }
-#vault-notes-sidebar { background-color: ${t.surface} !important; border-left-color: ${t.border} !important; }
-.bg-slate-950 { background-color: ${t.base} !important; }
-.bg-slate-900 { background-color: ${t.surface} !important; }
-.bg-slate-800 { background-color: ${t.elevated} !important; }
-.border-slate-800 { border-color: ${t.border} !important; }
-.border-slate-700 { border-color: ${t.borderHi} !important; }
-.bg-slate-900\\/40, .bg-slate-900\\/60, .bg-slate-900\\/80 { background-color: ${t.surface} !important; }
-.bg-slate-800\\/60, .bg-slate-800\\/80 { background-color: ${t.elevated} !important; }
-#user-input { background-color: ${t.inputBg} !important; border-color: ${t.borderHi} !important; }
-#settings-btn, #new-window-btn, #share-app-btn, #commands-btn, #voice-mode-btn {
-    background-color: ${t.elevated} !important;
-    border-color: ${t.borderHi} !important;
-}`;
-
-    // ── Comprehensive dark-mode element coverage ──────────────────
-    const extra = `
-
-/* All views */
-#view-home, #view-chat, #view-todos, #view-study, #view-vault,
-#view-finance, #view-journal, #view-countdown, #view-calendar, #view-music,
-#view-karaoke, #view-chess, #view-tuner, #view-workout,
-#view-research, #view-cosmos, #view-camera { background-color: ${t.base} !important; }
-
-/* New categories: side panels, headers, surfaces */
-#research-sidebar, #res-sources-panel, #research-main .bg-slate-900\\/40,
-#workout-week-grid .wo-day-card, #camera-preview ~ * { }
-.bg-slate-900\\/30, .bg-slate-900\\/50 { background-color: ${t.surface} !important; }
-#camera-subtitle { background: rgba(0,0,0,0.6) !important; }
-.cosmos-card { background-color: ${t.surface} !important; }
-
-/* Browser chrome */
-#browser-chrome { background-color: ${t.base} !important; border-bottom-color: ${t.border} !important; }
-#tab-strip-row   { background-color: ${t.base} !important; }
-#browser-toolbar { background-color: ${t.surface} !important; border-top-color: ${t.border} !important; }
-#browser-address-bar { background-color: ${t.elevated} !important; border-color: ${t.border} !important; }
-
-/* App dock */
-#app-dock { background-color: ${t.surface} !important; border-right-color: ${t.border} !important; }
-.dock-btn { color: ${t.dark ? '#4e5a6e' : '#64748b'} !important; }
-
-/* Tabs */
-.browser-tab { background-color: ${t.dark ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.04)'} !important; }
-.browser-tab.active { background-color: ${t.surface} !important; }
-.browser-tab:hover { background-color: ${t.dark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.07)'} !important; }
-
-/* Sidebar + chat */
-#app-sidebar, #session-list { background-color: ${t.surface} !important; }
-
-/* Chess */
-.chess-sidebar { background-color: ${t.surface} !important; }
-#chess-play-pane { background-color: ${t.base} !important; }
-#chess-learn-pane { background-color: ${t.base} !important; }
-#chess-learn-pane > div > div { background-color: ${t.surface} !important; }
-
-/* Vault science areas */
-#vault-molecule-area, #vault-periodic-area, #vault-dna-area,
-#vault-anatomy-area, #vault-chessstrategy-area { background-color: ${t.base} !important; }
-#strat-canvas-wrap { background-color: ${t.base} !important; }
-#vault-chessstrategy-area > div:first-child { background-color: ${t.surface} !important; }
-#vault-chessstrategy-area > div:last-child   { background-color: ${t.surface} !important; }
-#vault-molecule-area > div, #vault-periodic-area > div,
-#vault-dna-area > div, #vault-anatomy-area > div:first-child,
-#vault-anatomy-area > div:last-child { background-color: ${t.surface} !important; }
-#mol-canvas-wrap { background-color: ${t.base} !important; }
-
-/* Vault viewer & editor */
-#vault-viewer-view { background-color: ${t.base} !important; }
-#vault-normal-view { background-color: ${t.base} !important; }
-#vault-doc-editor-area { background-color: ${t.base} !important; }
-#vault-code-lang-modal > div, #vault-folder-modal > div,
-#vault-share-modal > div, #vault-code-modal > div { background-color: ${t.surface} !important; border-color: ${t.borderHi} !important; }
-
-/* Music / Karaoke */
-#view-music .border-b, #view-karaoke .border-b { border-bottom-color: ${t.border} !important; }
-
-/* Calendar */
-.cal-cell { background-color: ${t.surface} !important; border-color: ${t.border} !important; }
-.cal-cell.today { background-color: ${t.elevated} !important; }
-.cal-header { background-color: ${t.base} !important; }
-
-/* Study */
-.study-log-row { background-color: ${t.surface} !important; border-color: ${t.border} !important; }
-.study-settings-backdrop > div { background-color: ${t.surface} !important; border-color: ${t.borderHi} !important; }
-
-/* Finance */
-.finance-row { background-color: ${t.surface} !important; border-color: ${t.border} !important; }
-
-/* Home page */
-#view-home { background-color: ${t.base} !important; }
-.home-page-inner { color: ${t.dark ? '#e2e8f0' : '#1e293b'} !important; }
-
-/* Modals */
-#settings-modal > div { background-color: ${t.surface} !important; border-color: ${t.borderHi} !important; }
-#vault-folder-modal > div { background-color: ${t.surface} !important; border-color: ${t.borderHi} !important; }
-
-/* Generic slate overrides */
-.border-slate-800\\/80, .border-slate-800\\/60 { border-color: ${t.border} !important; }
-.bg-slate-950, .bg-slate-950\\/80 { background-color: ${viewBg} !important; }
-.bg-slate-900, .bg-slate-900\\/20, .bg-slate-900\\/30, .bg-slate-900\\/40, .bg-slate-900\\/50, .bg-slate-900\\/60, .bg-slate-900\\/80 { background-color: ${t.surface} !important; }
-.bg-slate-800, .bg-slate-800\\/40, .bg-slate-800\\/50, .bg-slate-800\\/60, .bg-slate-800\\/70, .bg-slate-800\\/80 { background-color: ${t.elevated} !important; }
-.border-slate-800  { border-color: ${t.border} !important; }
-.border-slate-700  { border-color: ${t.borderHi} !important; }
-[class*="border-slate-800"] { border-color: ${t.border} !important; }
-[class*="border-slate-700"] { border-color: ${t.borderHi} !important; }
-
-/* ── Every category view follows the theme (overrides inline backgrounds) ── */
-#view-home, #view-chat, #view-todos, #view-study, #view-vault, #view-finance,
-#view-journal, #view-countdown, #view-calendar, #view-music, #view-karaoke, #view-chess, #view-tuner,
-#view-workout, #view-research, #view-cosmos, #view-camera, #view-editor, #view-mail {
-    background-color: ${viewBg} !important;
-    ${t.gradient ? 'background-image: none !important;' : ''}
-}
-/* Workout */
-#view-workout .bg-slate-900\\/40, .wo-day-card { background-color: ${t.surface} !important; }
-/* Research */
-#research-sidebar, #res-sources-panel, #research-main, #view-research .bg-slate-900\\/30,
-#view-research .bg-slate-900\\/40 { background-color: ${t.surface} !important; }
-/* Cosmos */
-#view-cosmos { background-color: ${viewBg} !important; }
-#view-cosmos > div[style*="background"] { background-color: ${t.surface} !important; }
-.cosmos-card { background-color: ${t.elevated} !important; }
-/* Camera */
-#view-camera, #view-camera > div, #view-camera .bg-slate-900\\/40 { background-color: ${viewBg} !important; }
-#view-camera .border-l, #view-camera .bg-slate-900\\/30 { background-color: ${t.surface} !important; }
-/* Editor */
-#view-editor, #view-editor > div { background-color: ${viewBg} !important; }
-#view-editor .bg-slate-900\\/30, #view-editor .bg-slate-900\\/40, #view-editor .bg-slate-900\\/50,
-#ed-bin, #ed-timeline-scroll, #ed-ruler { background-color: ${t.surface} !important; }
-/* Mail */
-#view-mail, #view-mail > div { background-color: ${viewBg} !important; }
-#view-mail .bg-slate-900\\/40, #view-mail .bg-slate-900\\/20, #view-mail .bg-slate-900\\/30,
-#mail-account-list, #mail-list, #mail-reader { background-color: ${t.surface} !important; }
-#mail-reader { background-color: ${viewBg} !important; }
-/* Dynamically-created modals (settings-backdrop) */
-.settings-backdrop > div { background-color: ${t.surface} !important; border-color: ${t.borderHi} !important; }
-/* Inputs */
-.mail-inp, .ed-ins-input, .res-md-input { background-color: ${t.inputBg} !important; border-color: ${t.borderHi} !important; }
-`;
-
-    if (!light) return base + extra;
-
-    // ── Light mode: comprehensive text + surface overrides ──
-    const tb = '#1d1d1f'; // base text (near-black)
-    const ts = '#424245'; // secondary text
-    const tm = '#6e6e73'; // muted text — light enough to recede, dark enough to read
-    const bg = t.base;
-    const su = t.surface;
-    const el = t.elevated;
-    const bd = t.border;
-    const bh = t.borderHi;
-
-    return base + `
-
-/* ══════════════════════════════════════════════════
-   LIGHT MODE — comprehensive overrides
-══════════════════════════════════════════════════ */
-
-/* ── Global text ── */
-body { color: ${tb} !important; }
-* { -webkit-font-smoothing: auto !important; }
-
-/* Slate text classes */
-.text-white, .text-slate-100, .text-slate-200 { color: ${tb} !important; }
-.text-slate-300, .text-slate-400               { color: ${ts} !important; }
-.text-slate-500, .text-slate-600,
-.text-slate-700, .text-slate-800               { color: ${tm} !important; }
-
-/* ── All inputs / textareas / selects ── */
-input, textarea, select {
-    background-color: ${su} !important;
-    color: ${tb} !important;
-    border-color: ${bh} !important;
-}
-input::placeholder, textarea::placeholder { color: ${tm} !important; }
-
-/* ── Scrollbar ── */
-.chat-scroll::-webkit-scrollbar-thumb { background: ${bh} !important; }
-
-/* ── Tab bar + browser chrome ── */
-.browser-tab span, .browser-tab i { color: ${ts} !important; }
-.browser-tab.active span, .browser-tab.active i { color: ${tb} !important; }
-#browser-addr-text { color: ${tb} !important; }
-
-/* ── App dock buttons ── */
-.tab-btn { color: ${ts} !important; }
-.tab-btn:hover { color: ${tb} !important; background: rgba(0,0,0,0.06) !important; }
-.tab-btn.active { color: ${tb} !important; }
-
-/* ── Sidebar ── */
-#app-sidebar { border-right-color: ${bd} !important; }
-#session-list { color: ${tb} !important; }
-#session-list .text-slate-300, #session-list .text-slate-400 { color: ${ts} !important; }
-#session-list [class*="text-slate"] { color: ${ts} !important; }
-.active-chat { color: ${tb} !important; }
-
-/* ── Chat ── */
-#chat-box { background-color: ${bg} !important; }
-.chat-msg { color: ${tb} !important; }
-.chat-msg p, .chat-msg li, .chat-msg span,
-.chat-msg strong, .chat-msg b,
-.chat-msg h1, .chat-msg h2, .chat-msg h3, .chat-msg h4 { color: ${tb} !important; }
-.chat-msg code {
-    background-color: ${el} !important;
-    color: #c0392b !important;
-    border-color: ${bh} !important;
-}
-.chat-msg pre { background-color: #f1f5f9 !important; border-color: ${bh} !important; }
-.chat-msg pre code { background: transparent !important; color: ${tb} !important; }
-.ai-row { background-color: ${su} !important; border-color: ${bd} !important; }
-#user-input { color: ${tb} !important; }
-#user-input::placeholder { color: ${tm} !important; }
-
-/* ── Vault sidebar ── */
-.vault-folder-row, .vault-sidebar-file { color: ${ts} !important; }
-.vault-folder-row:hover, .vault-sidebar-file:hover { color: ${tb} !important; background-color: rgba(0,0,0,0.05) !important; }
-#vault-folders-list { color: ${tb} !important; }
-#vault-notes-sidebar { color: ${tb} !important; }
-.vault-notes-input, #vault-notes-input {
-    background-color: ${su} !important;
-    color: ${tb} !important;
-}
-
-/* ── Vault viewer ── */
-#vault-viewer-view [class*="border-slate"] { border-color: ${bd} !important; }
-#vault-doc-editor { background-color: #ffffff !important; color: ${tb} !important; }
-#vault-doc-footer { background-color: ${su} !important; border-color: ${bd} !important; color: ${ts} !important; }
-#vault-doc-toolbar-row { background-color: ${su} !important; border-color: ${bd} !important; }
-.docs-tb-btn { color: ${ts} !important; }
-.docs-tb-btn:hover { background-color: rgba(0,0,0,0.06) !important; color: ${tb} !important; }
-.docs-tb-select { background-color: ${su} !important; color: ${tb} !important; border-color: ${bh} !important; }
-
-/* ── Vault grid cards ── */
-.vault-card  { background-color: ${su} !important; border-color: ${bd} !important; }
-.vault-card:hover { background-color: ${el} !important; border-color: ${bh} !important; }
-.vault-subfolder-card { background-color: ${su} !important; border-color: ${bd} !important; }
-.vault-subfolder-card:hover { background-color: ${el} !important; }
-.vault-card p, .vault-subfolder-card p { color: ${tb} !important; }
-
-/* ── Vault science / special areas ── */
-#vault-physics-area, #vault-graph-area,
-#vault-molecule-area, #vault-periodic-area,
-#vault-dna-area, #vault-anatomy-area,
-#vault-chessstrategy-area, #vault-notebook-area,
-#vault-code-area {
-    background-color: ${bg} !important;
-}
-#vault-physics-area > div,
-#vault-graph-area > div,
-#graph-sidebar, #graph-window-panel,
-#graph-matrix-wrap > div:first-child {
-    background-color: ${su} !important;
-    border-color: ${bd} !important;
-}
-#phys-2d-controls-bar,
-#phys-canvas-wrap,
-#graph-canvas-wrap { background-color: ${bg} !important; }
-#graph-canvas-2d, #graph-canvas-3d { filter: invert(0); }
-/* Math keyboard */
-#graph-mathkb { background-color: ${su} !important; border-color: ${bd} !important; }
-.mkb-key { background-color: ${el} !important; color: ${tb} !important; border-color: ${bd} !important; }
-.mkb-key:hover { background-color: ${bh} !important; }
-.mkb-tab { color: ${ts} !important; }
-/* Matrix */
-#mat-list { color: ${tb} !important; }
-.mat-cell-inp { background-color: ${el} !important; color: ${tb} !important; border-color: ${bd} !important; }
-#mat-result-area { background-color: ${bg} !important; color: ${tb} !important; }
-
-/* ── Phys controls ── */
-#phys-controls button { color: ${ts} !important; }
-
-/* ── Notebook ── */
-#notebook-editor { background-color: ${su} !important; color: ${tb} !important; }
-.notebook-cell { background-color: ${su} !important; border-color: ${bd} !important; color: ${tb} !important; }
-.notebook-cell textarea, .notebook-cell input { background-color: ${el} !important; color: ${tb} !important; }
-
-/* ── Code editor ── */
-#vault-code-area { color: ${tb} !important; }
-
-/* ── Study ── */
-#study-log-list [class*="text-slate"] { color: ${ts} !important; }
-.study-log-row { background-color: ${su} !important; border-color: ${bd} !important; }
-
-/* ── Finance ── */
-.finance-row { background-color: ${su} !important; border-color: ${bd} !important; color: ${tb} !important; }
-#view-finance [class*="text-slate-3"], #view-finance [class*="text-slate-4"] { color: ${ts} !important; }
-
-/* ── Calendar ── */
-.cal-cell { background-color: ${su} !important; border-color: ${bd} !important; color: ${tb} !important; }
-.cal-cell.today { background-color: ${el} !important; }
-
-/* ── Journal ── */
-#journal-textarea { background-color: ${su} !important; color: ${tb} !important; }
-.journal-sidebar-entry { color: ${ts} !important; }
-
-/* ── Modals ── */
-#settings-modal { color: ${tb} !important; }
-#vault-folder-modal, #vault-code-lang-modal,
-#vault-code-modal, #vault-share-modal { color: ${tb} !important; }
-#settings-modal p, #settings-modal span, #settings-modal label { color: ${ts} !important; }
-/* Settings bg toggle buttons */
-#bg-opt-dark span, #bg-opt-light span { /* handled by JS */ }
-
-/* ── Borders throughout ── */
-[class*="border-slate-800"], [class*="border-slate-700"] { border-color: ${bd} !important; }
-
-/* ── Todo ── */
-.todo-item { color: ${tb} !important; }
-.todo-category-header { color: ${ts} !important; }
-
-/* ── Music / Karaoke ── */
-#view-music [class*="text-slate"], #view-karaoke [class*="text-slate"] { color: ${ts} !important; }
-#music-player-bar { background-color: ${su} !important; border-color: ${bd} !important; }
-
-/* ── Home page ── */
-.home-page-inner, #view-home { color: ${tb} !important; }
+#user-input, .mail-inp, .ed-ins-input, .res-md-input { background-color: var(--input-bg) !important; }
 `;
 }
 
@@ -879,19 +680,52 @@ function renderSettingsModal() {
         };
     }
 
+    // ── Home icon size ──
+    const sizeInput = document.getElementById('home-icon-size');
+    if (sizeInput && !sizeInput._wired) {
+        sizeInput._wired = true;
+        const val = document.getElementById('home-icon-size-val');
+        const presets = document.getElementById('home-icon-size-presets');
+        const paint = (px) => {
+            sizeInput.value = px;
+            sizeInput.style.setProperty('--fill', ((px - HOME_ICON_MIN) / (HOME_ICON_MAX - HOME_ICON_MIN) * 100).toFixed(1) + '%');
+            if (val) val.textContent = px + ' px';
+            presets?.querySelectorAll('.home-size-preset').forEach(b => b.classList.toggle('active', Number(b.dataset.size) === px));
+        };
+        const commit = (px, save) => {
+            settingsData.homeIconSize = clampHomeIconSize(px);
+            paint(settingsData.homeIconSize);
+            applyHomeIconSize();               // live preview while dragging
+            if (save) saveSettingsData();
+        };
+        sizeInput.addEventListener('input',  () => commit(sizeInput.value, false));
+        sizeInput.addEventListener('change', () => commit(sizeInput.value, true));
+        presets?.addEventListener('click', e => {
+            const b = e.target.closest('.home-size-preset');
+            if (b) commit(b.dataset.size, true);
+        });
+        paint(clampHomeIconSize(settingsData.homeIconSize));
+    }
+
     // ── Category tile grey swatches ──
     const tileGrid = document.getElementById('cat-tile-grid');
-    const current  = settingsData.categoryTileColor || CATEGORY_TILE_GREYS[0].hex;
+    const current  = settingsData.categoryTileColor || null;   // null = follow the theme
     const _rebuildHome = () => { if (typeof window.rebuildHomePage === 'function') window.rebuildHomePage(); };
     if (tileGrid) {
-        tileGrid.innerHTML = CATEGORY_TILE_GREYS.map(g => {
-            const active = current.toLowerCase() === g.hex.toLowerCase();
+        // First swatch: "match theme" — the tile shade is derived from the
+        // active background so tiles never look blue on a warm theme.
+        const themeTile = `rgb(${getComputedStyle(document.documentElement).getPropertyValue('--slate-800').trim().split(/\s+/).join(',')})`;
+        const auto = `<div class="accent-swatch ${current ? '' : 'active'}" title="Match theme"
+            data-hex="" style="background:${themeTile}; position:relative">
+            <i class="fas fa-wand-magic-sparkles" style="position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size:10px; color:rgb(var(--slate-300))"></i></div>`;
+        tileGrid.innerHTML = auto + CATEGORY_TILE_GREYS.map(g => {
+            const active = current && current.toLowerCase() === g.hex.toLowerCase();
             return `<div class="accent-swatch ${active ? 'active' : ''}" title="${g.name}"
                 data-hex="${g.hex}" style="background:${g.hex}"></div>`;
         }).join('');
         tileGrid.querySelectorAll('.accent-swatch').forEach(sw => {
             sw.addEventListener('click', () => {
-                settingsData.categoryTileColor = sw.dataset.hex;
+                settingsData.categoryTileColor = sw.dataset.hex || null;
                 saveSettingsData();
                 _rebuildHome();
                 renderSettingsModal();
@@ -900,7 +734,7 @@ function renderSettingsModal() {
     }
     const tileCustom = document.getElementById('cat-tile-custom');
     if (tileCustom) {
-        tileCustom.value = current;
+        tileCustom.value = current || CATEGORY_TILE_GREYS[0].hex;
         tileCustom.oninput = () => {
             const hex = tileCustom.value;
             if (/^#[0-9a-fA-F]{6}$/.test(hex)) {
@@ -979,7 +813,7 @@ function applyWallpaper(src, fit) {
                 box-shadow: 0 6px 20px rgba(0,0,0,0.45);
             }
             #view-home .home-shortcut-tile:hover { background: rgba(20,28,44,0.90) !important; }
-            #view-home .home-shortcut-label { color: #e2e8f0; }
+            #view-home .home-shortcut-label { color: rgb(var(--slate-200)); }
             #view-home .home-greeting-title,
             #view-home .home-greeting-sub { text-shadow: 0 2px 14px rgba(0,0,0,0.75); }
         `;
@@ -1021,6 +855,7 @@ function initSettings() {
     applyAccent(getCurrentAccent());
     applyBackground(getCurrentBgTheme());
     applyHomeBackground();
+    applyHomeIconSize();
     if (settingsData.wallpaper) applyWallpaper(settingsData.wallpaper, settingsData.wallpaperFit);
 
     const settingsBtn    = document.getElementById('settings-btn');

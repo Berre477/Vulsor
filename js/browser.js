@@ -531,8 +531,8 @@ function _bwUpdatePwLock(scope) {
         ? '<i class="fas fa-lock mr-1"></i>Encrypted'
         : '<i class="fas fa-triangle-exclamation mr-1"></i>Not encrypted';
     lock.style.cssText = _bwPwEncrypted
-        ? 'background:rgba(52,211,153,0.15); color:#34d399'
-        : 'background:rgba(251,191,36,0.15); color:#fbbf24';
+        ? 'background:rgba(52,211,153,0.15); color:rgb(var(--tw-emerald-400))'
+        : 'background:rgba(251,191,36,0.15); color:rgb(var(--tw-amber-400))';
 }
 
 function _bwTogglePasswords() {
@@ -789,7 +789,7 @@ function _bwDlStart(d) {
     const card = document.createElement('div');
     card.className = 'bw-dl-card';
     card.innerHTML = `
-        <i class="fas fa-file-arrow-down" style="color:#818cf8; font-size:13px; flex:none"></i>
+        <i class="fas fa-file-arrow-down" style="color:rgb(var(--tw-indigo-400)); font-size:13px; flex:none"></i>
         <div style="flex:1; min-width:0">
             <div class="bw-dl-name" title="${_bwEsc(d.path)}">${_bwEsc(d.filename)}</div>
             <div class="bw-dl-sub">Downloading…</div>
@@ -1010,8 +1010,8 @@ function _bwSugRender(q, items) {
         }
         if (it.kind === 'ai') {
             return `<div class="bw-sug-item bw-sug-ai${sel}" data-i="${i}">
-                <i class="fas fa-wand-magic-sparkles bw-sug-ico" style="color:#c084fc"></i>
-                <span class="bw-sug-text">${_bwEsc(it.text)} — <span style="color:#c084fc">Ask Vulsor AI</span></span>
+                <i class="fas fa-wand-magic-sparkles bw-sug-ico" style="color:rgb(var(--tw-purple-400))"></i>
+                <span class="bw-sug-text">${_bwEsc(it.text)} — <span style="color:rgb(var(--tw-purple-400))">Ask Vulsor AI</span></span>
                 <span class="bw-sug-hint">${i === _bwSugSel ? 'Enter ↵' : 'Press ↑'}</span></div>`;
         }
         // Previous searches use a history icon; live suggestions / the default

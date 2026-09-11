@@ -202,7 +202,7 @@ function renderResearch() {
         main.innerHTML = `
             <div class="flex flex-col items-center justify-center h-full gap-5 text-center p-10">
                 <div class="w-16 h-16 rounded-2xl flex items-center justify-center" style="background:rgba(139,92,246,0.15);border:1.5px solid rgba(139,92,246,0.3)">
-                    <i class="fas fa-brain text-2xl" style="color:#8b5cf6"></i>
+                    <i class="fas fa-brain text-2xl" style="color:rgb(var(--tw-violet-500))"></i>
                 </div>
                 <div>
                     <h2 class="text-slate-100 text-xl font-bold mb-1">Research with Claude</h2>
@@ -220,7 +220,7 @@ function renderResearch() {
         main.innerHTML = `
             <div class="flex flex-col items-center justify-center h-full gap-5 text-center p-10">
                 <div class="w-14 h-14 rounded-2xl flex items-center justify-center" style="background:rgba(139,92,246,0.12);border:1.5px solid rgba(139,92,246,0.25)">
-                    <i class="fas fa-book-open text-xl" style="color:#8b5cf6"></i>
+                    <i class="fas fa-book-open text-xl" style="color:rgb(var(--tw-violet-500))"></i>
                 </div>
                 <p class="text-slate-400 text-sm">Select a notebook or create a new one</p>
                 <button onclick="resNewNotebook()" class="px-4 py-2 rounded-xl bg-violet-600 hover:bg-violet-500 text-white text-xs font-semibold transition-colors">
@@ -293,7 +293,7 @@ function renderResearch() {
                             onkeydown="if((event.metaKey||event.ctrlKey)&&event.key==='Enter'){event.preventDefault();resSendMessage();}"></textarea>
                         <button onclick="resSendMessage()" id="res-send-btn"
                             class="w-10 h-10 shrink-0 rounded-xl flex items-center justify-center transition-colors text-white"
-                            style="background:#7c3aed">
+                            style="background:rgb(var(--tw-violet-600))">
                             <i class="fas fa-paper-plane text-xs"></i>
                         </button>
                     </div>
@@ -340,7 +340,7 @@ function resRenderMessages(nb) {
         return `<div class="flex justify-start min-w-0">
             <div class="flex gap-3 max-w-[90%] min-w-0">
                 <div class="w-7 h-7 rounded-lg shrink-0 flex items-center justify-center mt-0.5" style="background:rgba(139,92,246,0.2);border:1px solid rgba(139,92,246,0.3)">
-                    <i class="fas fa-brain text-[10px]" style="color:#8b5cf6"></i>
+                    <i class="fas fa-brain text-[10px]" style="color:rgb(var(--tw-violet-500))"></i>
                 </div>
                 <div class="res-md text-slate-200 text-sm leading-relaxed min-w-0" style="overflow-wrap:anywhere">${html}</div>
             </div>
@@ -656,7 +656,7 @@ function resSendMessage() {
         bubble.className = 'flex justify-start';
         bubble.innerHTML = `<div class="flex gap-3 max-w-[90%]">
             <div class="w-7 h-7 rounded-lg shrink-0 flex items-center justify-center mt-0.5" style="background:rgba(139,92,246,0.2);border:1px solid rgba(139,92,246,0.3)">
-                <i class="fas fa-brain text-[10px]" style="color:#8b5cf6"></i>
+                <i class="fas fa-brain text-[10px]" style="color:rgb(var(--tw-violet-500))"></i>
             </div>
             <div id="res-streaming-text" class="text-slate-200 text-sm leading-relaxed"><span class="text-slate-500 text-xs italic">Thinking…</span></div>
         </div>`;
@@ -869,7 +869,7 @@ function resStartAudioPlayer(lines, files) {
     body.innerHTML = `
         <div class="w-full flex flex-col items-center gap-4">
             <div class="w-16 h-16 rounded-full flex items-center justify-center" style="background:rgba(139,92,246,0.15);border:1.5px solid rgba(139,92,246,0.35)">
-                <i class="fas fa-headphones text-2xl" style="color:#8b5cf6"></i>
+                <i class="fas fa-headphones text-2xl" style="color:rgb(var(--tw-violet-500))"></i>
             </div>
             <div id="res-audio-speaker" class="text-[10px] uppercase tracking-widest font-semibold text-violet-400">Host A</div>
             <div id="res-audio-line" class="text-slate-300 text-sm text-center leading-relaxed min-h-[60px] px-2">${resEsc(lines[0].text)}</div>

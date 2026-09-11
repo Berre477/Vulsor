@@ -1239,7 +1239,7 @@ function _showMatResult(res, label) {
         bracket.className = 'flex items-center gap-1';
         const makeBar = (left) => {
             const b = document.createElement('div');
-            b.style.cssText = `width:6px;height:100%;border:2px solid #38bdf8;${left?'border-right:none;border-radius:4px 0 0 4px':'border-left:none;border-radius:0 4px 4px 0'}`;
+            b.style.cssText = `width:6px;height:100%;border:2px solid rgb(var(--tw-sky-400));${left?'border-right:none;border-radius:4px 0 0 4px':'border-left:none;border-radius:0 4px 4px 0'}`;
             return b;
         };
         bracket.append(makeBar(true), tbl, makeBar(false));

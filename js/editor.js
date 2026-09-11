@@ -303,7 +303,7 @@ function edOpenInspector() {
 
     const ins = document.createElement('div');
     ins.id = 'ed-inspector';
-    ins.style.cssText = 'position:absolute; right:12px; bottom:218px; z-index:40; background:#111827; border:1px solid rgba(148,163,184,0.2); border-radius:12px; padding:12px; width:300px; box-shadow:0 12px 30px rgba(0,0,0,0.5)';
+    ins.style.cssText = 'position:absolute; right:12px; bottom:218px; z-index:40; background:#111827; border:1px solid rgb(var(--slate-400) / 0.2); border-radius:12px; padding:12px; width:300px; box-shadow:0 12px 30px rgba(0,0,0,0.5)';
     ins.innerHTML = `<div class="text-[10px] uppercase tracking-widest text-slate-500 font-semibold mb-2">${edSelected.type} properties</div>${html}`;
     document.getElementById('view-editor').appendChild(ins);
 

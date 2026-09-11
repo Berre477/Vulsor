@@ -363,7 +363,7 @@ function renderTodos(filterDate = null) {
         }
 
         return `
-        <div class="todo-item rounded-xl border border-transparent hover:border-slate-700/50 hover:bg-slate-800/40 transition-all group overflow-hidden" data-id="${t.id}"${P ? ` style="box-shadow:inset 3px 0 0 ${P.color}"` : ''}>
+        <div class="todo-item rounded-xl border border-slate-800/80 bg-slate-900/40 hover:border-slate-700/70 hover:bg-slate-800/40 transition-all group overflow-hidden" data-id="${t.id}"${P ? ` style="box-shadow:inset 3px 0 0 ${P.color}"` : ''}>
             <div class="flex items-center gap-3 px-4 py-3">
                 <button class="todo-check w-5 h-5 rounded-md border-2 shrink-0 flex items-center justify-center transition-all
                     ${t.done ? '' : 'border-slate-600'}"

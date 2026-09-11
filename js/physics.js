@@ -771,7 +771,7 @@ function _renderControls() {
         btn.className = 'flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-semibold transition-all whitespace-nowrap';
         btn.style.cssText = active
             ? `background:${color}33;color:${color};border:1px solid ${color}66`
-            : 'background:transparent;color:#475569;border:1px solid #1e293b';
+            : 'background:transparent;color:rgb(var(--slate-600));border:1px solid rgb(var(--slate-800))';
         btn.innerHTML = `<i class="fas ${icon}" style="font-size:8px"></i>${label}`;
         btn.onclick = () => {
             const canvas = document.getElementById('phys-canvas');
@@ -813,7 +813,7 @@ function _renderControls() {
         btn.className = 'flex items-center gap-1.5 px-2 py-1.5 rounded-lg text-[11px] font-semibold transition-all whitespace-nowrap';
         btn.style.cssText = active
             ? `background:${t.color}33;color:${t.color};border:1px solid ${t.color}66`
-            : `background:transparent;color:#475569;border:1px solid #1e293b`;
+            : `background:transparent;color:rgb(var(--slate-600));border:1px solid rgb(var(--slate-800))`;
         btn.innerHTML = `<i class="fas ${t.icon}" style="font-size:9px"></i>${t.label}`;
         btn.title = t.tip;
         btn.addEventListener('click', () => { _tool = t.id; _linkA = null; _sel = null; _renderControls(); });
@@ -828,7 +828,7 @@ function _renderControls() {
     /* Clear all */
     const cb = document.createElement('button');
     cb.className = 'flex items-center gap-1 px-2 py-1.5 rounded-lg text-[11px] font-semibold ml-auto whitespace-nowrap';
-    cb.style.cssText = 'background:#ef444422;color:#f87171;border:1px solid #ef444444';
+    cb.style.cssText = 'background:#ef444422;color:rgb(var(--tw-red-400));border:1px solid #ef444444';
     cb.innerHTML = '<i class="fas fa-trash-alt" style="font-size:9px"></i> Clear';
     cb.title = 'Remove all objects';
     cb.addEventListener('click', () => {
@@ -900,8 +900,8 @@ function _renderControls() {
                 const fb = document.createElement('button');
                 fb.className = 'px-2 py-1.5 rounded-lg text-[11px] font-semibold shrink-0';
                 fb.style.cssText = cond
-                    ? 'background:#fbbf2433;color:#fbbf24;border:1px solid #fbbf2455'
-                    : 'background:transparent;color:#475569;border:1px solid #1e293b';
+                    ? 'background:#fbbf2433;color:rgb(var(--tw-amber-400));border:1px solid #fbbf2455'
+                    : 'background:transparent;color:rgb(var(--slate-600));border:1px solid rgb(var(--slate-800))';
                 fb.innerHTML = `<i class="fas fa-thumbtack" style="font-size:9px"></i> ${cond?'Unfix':'Fix'}`;
                 fb.addEventListener('click', () => { o.fixed=!o.fixed; o.vx=0; o.vy=0; if(o.omega!==undefined)o.omega=0; _renderControls(); });
                 pRow.appendChild(fb);

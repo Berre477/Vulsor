@@ -754,8 +754,8 @@ function _netRenderPeers() {
         return `<div class="net-peer" onclick="netSelectPeer('${p.id}')"
             style="display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:12px; cursor:pointer; border:1px solid transparent; ${active}">
             <div style="position:relative; width:36px; height:36px; border-radius:10px; background:rgba(34,211,238,0.12); display:flex; align-items:center; justify-content:center; flex-shrink:0">
-                <i class="fas ${_netIcon(p.type)}" style="color:#22d3ee; font-size:15px"></i>
-                <span style="position:absolute; bottom:-2px; right:-2px; width:10px; height:10px; border-radius:50%; background:#22c55e; border:2px solid #0f172a"></span>
+                <i class="fas ${_netIcon(p.type)}" style="color:rgb(var(--tw-cyan-400)); font-size:15px"></i>
+                <span style="position:absolute; bottom:-2px; right:-2px; width:10px; height:10px; border-radius:50%; background:rgb(var(--tw-green-500)); border:2px solid rgb(var(--slate-900))"></span>
             </div>
             <div style="min-width:0; flex:1">
                 <div class="text-slate-100 text-sm font-medium truncate">${_netEsc(p.name)}</div>
@@ -805,7 +805,7 @@ function _netRenderHubServers() {
         return `<div onclick="netJoinHub('${s.id}')"
             style="display:flex; align-items:center; gap:10px; padding:9px 12px; border-radius:12px; cursor:pointer; border:1px solid transparent; ${active}">
             <div style="width:34px; height:34px; border-radius:10px; background:rgba(34,211,238,0.12); display:flex; align-items:center; justify-content:center; flex-shrink:0">
-                <i class="fas fa-globe" style="color:#22d3ee; font-size:14px"></i>
+                <i class="fas fa-globe" style="color:rgb(var(--tw-cyan-400)); font-size:14px"></i>
             </div>
             <div style="min-width:0; flex:1">
                 <div class="text-slate-100 text-sm font-medium truncate">${_netEsc(s.name)}${lock}</div>
@@ -827,12 +827,12 @@ function _netRenderHubView() {
     const mode = netHubMode[id] || 'chat';
     const tabBtn = (mm, label, icon) => `<button onclick="netHubSetMode('${mm}')" class="text-xs px-2.5 py-1 rounded-lg transition-colors ${mode === mm ? 'bg-cyan-600 text-white' : 'text-slate-400 hover:text-white hover:bg-slate-800'}"><i class="fas ${icon} mr-1"></i>${label}</button>`;
     head.innerHTML = `<div style="display:flex; align-items:center; gap:10px; width:100%">
-        <i class="fas fa-globe" style="color:#22d3ee"></i>
+        <i class="fas fa-globe" style="color:rgb(var(--tw-cyan-400))"></i>
         <div style="flex:1; min-width:0">
             <div class="text-slate-100 text-sm font-semibold truncate">${_netEsc(name)}</div>
             <div class="text-xs ${netHubConnected ? 'text-green-400' : 'text-slate-500'}">${netHubConnected ? 'public · connected' : 'reconnecting…'}</div>
         </div>
-        <div style="display:flex; gap:4px; background:rgba(15,23,42,.6); padding:3px; border-radius:10px">${tabBtn('chat', 'Chat', 'fa-comments')}${tabBtn('files', 'Files', 'fa-folder')}</div>
+        <div style="display:flex; gap:4px; background:rgb(var(--slate-900) / .6); padding:3px; border-radius:10px">${tabBtn('chat', 'Chat', 'fa-comments')}${tabBtn('files', 'Files', 'fa-folder')}</div>
         ${owner
             ? `<button onclick="netDeleteHubServer('${id}')" class="text-xs text-red-400 hover:text-red-300 px-2 py-1 rounded-lg hover:bg-slate-800 transition-colors"><i class="fas fa-trash mr-1"></i>Delete</button>`
             : `<button onclick="netLeaveHub()" class="text-xs text-slate-400 hover:text-white px-2 py-1 rounded-lg hover:bg-slate-800 transition-colors">Leave</button>`}
@@ -842,13 +842,13 @@ function _netRenderHubView() {
 
     const msgs = netHubMsgs[id] || [];
     if (!msgs.length) {
-        pane.innerHTML = `<div style="height:100%; display:flex; align-items:center; justify-content:center; color:#475569" class="text-sm">No messages yet — say hi to everyone</div>`;
+        pane.innerHTML = `<div style="height:100%; display:flex; align-items:center; justify-content:center; color:rgb(var(--slate-600))" class="text-sm">No messages yet — say hi to everyone</div>`;
         return;
     }
     pane.innerHTML = msgs.map(e => {
         const mine = e.from === netConfig.deviceId;
         const align = mine ? 'flex-end' : 'flex-start';
-        const bg = mine ? 'background:#0e7490; color:#ecfeff' : 'background:#1e293b; color:#e2e8f0';
+        const bg = mine ? 'background:rgb(var(--tw-cyan-700)); color:rgb(var(--tw-cyan-50))' : 'background:rgb(var(--slate-800)); color:rgb(var(--slate-200))';
         let body;
         if (e.kind === 'file') {
             body = `<div onclick="netDownloadHubFile('${e.fileId}','${_netAttr(e.name)}')" style="display:flex; align-items:center; gap:10px; cursor:pointer">
@@ -885,7 +885,7 @@ function _netRenderHubFiles(id) {
         </button>
     </div>`;
     if (!files.length) {
-        pane.innerHTML = header + `<div style="height:70%; display:flex; flex-direction:column; align-items:center; justify-content:center; color:#475569">
+        pane.innerHTML = header + `<div style="height:70%; display:flex; flex-direction:column; align-items:center; justify-content:center; color:rgb(var(--slate-600))">
             <i class="fas fa-folder-open text-4xl mb-3 opacity-30"></i>
             <p class="text-sm">No files yet — upload PDFs, images, anything.<br>They stay on the server for everyone here.</p>
         </div>`;
@@ -895,8 +895,8 @@ function _netRenderHubFiles(id) {
         const t = new Date(f.ts);
         const when = t.toLocaleDateString() + ' ' + t.getHours().toString().padStart(2, '0') + ':' + t.getMinutes().toString().padStart(2, '0');
         const canDelete = f.from === netConfig.deviceId || netHubOwner[id];
-        return `<div style="display:flex; align-items:center; gap:12px; padding:10px 12px; border-radius:12px; background:#1e293b; margin-bottom:8px">
-            <i class="fas ${_netFileIcon(f.name)}" style="color:#22d3ee; font-size:20px; width:24px; text-align:center"></i>
+        return `<div style="display:flex; align-items:center; gap:12px; padding:10px 12px; border-radius:12px; background:rgb(var(--slate-800)); margin-bottom:8px">
+            <i class="fas ${_netFileIcon(f.name)}" style="color:rgb(var(--tw-cyan-400)); font-size:20px; width:24px; text-align:center"></i>
             <div style="flex:1; min-width:0">
                 <div class="text-slate-100 text-sm font-medium truncate">${_netEsc(f.name)}</div>
                 <div class="text-slate-500 text-xs truncate">${_netFmtSize(f.size)} · ${_netEsc(f.fromName || '?')} · ${when}</div>
@@ -976,7 +976,7 @@ function _netRenderServers() {
         return `<div onclick="netOpenServer('${s.id}','${s.hostId}')"
             style="display:flex; align-items:center; gap:10px; padding:9px 12px; border-radius:12px; cursor:pointer; border:1px solid transparent; ${active}">
             <div style="width:34px; height:34px; border-radius:10px; background:rgba(34,211,238,0.12); display:flex; align-items:center; justify-content:center; flex-shrink:0">
-                <i class="fas fa-server" style="color:#22d3ee; font-size:14px"></i>
+                <i class="fas fa-server" style="color:rgb(var(--tw-cyan-400)); font-size:14px"></i>
             </div>
             <div style="min-width:0; flex:1">
                 <div class="text-slate-100 text-sm font-medium truncate">${_netEsc(s.name)}</div>
@@ -999,7 +999,7 @@ function _netRenderServerView() {
     const name = state.name || 'Server';
     const hostName = mineHost ? 'you' : ((netPeers[a.hostId] && netPeers[a.hostId].name) || 'host');
     head.innerHTML = `<div style="display:flex; align-items:center; gap:10px; width:100%">
-        <i class="fas fa-server" style="color:#22d3ee"></i>
+        <i class="fas fa-server" style="color:rgb(var(--tw-cyan-400))"></i>
         <div style="flex:1; min-width:0">
             <div class="text-slate-100 text-sm font-semibold truncate">${_netEsc(name)}</div>
             <div class="text-xs text-slate-500">hosted by ${_netEsc(hostName)}</div>
@@ -1011,18 +1011,18 @@ function _netRenderServerView() {
     composer.style.display = '';
 
     if (state.gone) {
-        pane.innerHTML = `<div style="height:100%; display:flex; align-items:center; justify-content:center; color:#475569" class="text-sm">This server is no longer available</div>`;
+        pane.innerHTML = `<div style="height:100%; display:flex; align-items:center; justify-content:center; color:rgb(var(--slate-600))" class="text-sm">This server is no longer available</div>`;
         return;
     }
     const msgs = state.messages || [];
     if (!msgs.length) {
-        pane.innerHTML = `<div style="height:100%; display:flex; align-items:center; justify-content:center; color:#475569" class="text-sm">No messages yet — say hi to everyone</div>`;
+        pane.innerHTML = `<div style="height:100%; display:flex; align-items:center; justify-content:center; color:rgb(var(--slate-600))" class="text-sm">No messages yet — say hi to everyone</div>`;
         return;
     }
     pane.innerHTML = msgs.map(e => {
         const mine = e.fromId === netConfig.deviceId;
         const align = mine ? 'flex-end' : 'flex-start';
-        const bg = mine ? 'background:#0e7490; color:#ecfeff' : 'background:#1e293b; color:#e2e8f0';
+        const bg = mine ? 'background:rgb(var(--tw-cyan-700)); color:rgb(var(--tw-cyan-50))' : 'background:rgb(var(--slate-800)); color:rgb(var(--slate-200))';
         let body;
         if (e.kind === 'file') {
             body = `<div onclick="netDownloadServerFile('${e.fileId}','${_netAttr(e.name)}')" style="display:flex; align-items:center; gap:10px; cursor:pointer">
@@ -1058,7 +1058,7 @@ function _netRenderConvo() {
     if (!netActivePeer) {
         head.innerHTML = '';
         composer.style.display = 'none';
-        pane.innerHTML = `<div style="height:100%; display:flex; flex-direction:column; align-items:center; justify-content:center; color:#475569">
+        pane.innerHTML = `<div style="height:100%; display:flex; flex-direction:column; align-items:center; justify-content:center; color:rgb(var(--slate-600))">
             <i class="fas fa-network-wired text-4xl mb-3 opacity-30"></i>
             <p class="text-sm">Select a device to start chatting and sharing files</p>
         </div>`;
@@ -1067,7 +1067,7 @@ function _netRenderConvo() {
 
     const offline = !peer;
     head.innerHTML = `<div style="display:flex; align-items:center; gap:10px">
-        <i class="fas ${_netIcon(peer ? peer.type : 'computer')}" style="color:#22d3ee"></i>
+        <i class="fas ${_netIcon(peer ? peer.type : 'computer')}" style="color:rgb(var(--tw-cyan-400))"></i>
         <div>
             <div class="text-slate-100 text-sm font-semibold">${_netEsc(peer ? peer.name : 'Device')}</div>
             <div class="text-xs ${offline ? 'text-slate-500' : 'text-green-400'}">${offline ? 'offline' : peer.address}</div>
@@ -1077,12 +1077,12 @@ function _netRenderConvo() {
 
     const convo = netConvos[netActivePeer] || [];
     if (!convo.length) {
-        pane.innerHTML = `<div style="height:100%; display:flex; align-items:center; justify-content:center; color:#475569" class="text-sm">No messages yet — say hi</div>`;
+        pane.innerHTML = `<div style="height:100%; display:flex; align-items:center; justify-content:center; color:rgb(var(--slate-600))" class="text-sm">No messages yet — say hi</div>`;
     } else {
         pane.innerHTML = convo.map(e => {
             const mine = e.dir === 'out';
             const align = mine ? 'flex-end' : 'flex-start';
-            const bg = mine ? 'background:#0e7490; color:#ecfeff' : 'background:#1e293b; color:#e2e8f0';
+            const bg = mine ? 'background:rgb(var(--tw-cyan-700)); color:rgb(var(--tw-cyan-50))' : 'background:rgb(var(--slate-800)); color:rgb(var(--slate-200))';
             let body;
             if (e.kind === 'file') {
                 body = `<div onclick="netOpenFile('${_netAttr(e.path)}')" style="display:flex; align-items:center; gap:10px; cursor:pointer">
@@ -1175,7 +1175,7 @@ function _netToast(msg) {
     if (!t) {
         t = document.createElement('div');
         t.id = 'net-toast';
-        t.style.cssText = 'position:fixed; bottom:24px; left:50%; transform:translateX(-50%); background:#0f172a; color:#e2e8f0; border:1px solid rgba(255,255,255,.12); padding:10px 18px; border-radius:12px; font-size:13px; z-index:9999; box-shadow:0 8px 24px rgba(0,0,0,.5)';
+        t.style.cssText = 'position:fixed; bottom:24px; left:50%; transform:translateX(-50%); background:rgb(var(--slate-900)); color:rgb(var(--slate-200)); border:1px solid rgba(255,255,255,.12); padding:10px 18px; border-radius:12px; font-size:13px; z-index:9999; box-shadow:0 8px 24px rgba(0,0,0,.5)';
         document.body.appendChild(t);
     }
     t.textContent = msg;

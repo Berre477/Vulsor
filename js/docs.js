@@ -516,7 +516,7 @@ function initVaultDocEditor() {
                     <style>body{font-family:Georgia,serif;max-width:800px;margin:40px auto;padding:0 40px;color:#111}
                     table{border-collapse:collapse;width:100%}td,th{border:1px solid #ccc;padding:6px 10px}
                     h1,h2,h3{margin:1.2em 0 0.4em}hr{border:none;border-top:2px solid #e5e7eb;margin:1.5em 0}
-                    a{color:#2563eb}img{max-width:100%}
+                    a{color:rgb(var(--tw-blue-600))}img{max-width:100%}
                     @media print{@page{margin:1.5cm}body{-webkit-print-color-adjust:exact;print-color-adjust:exact}}</style>
                     </head><body>${editor.innerHTML}</body></html>`;
                 // window.open is blocked by this app's window-open handler, so print via IPC.

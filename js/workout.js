@@ -1387,20 +1387,20 @@ ${offline ? '<link rel="manifest" href="app.webmanifest">\n' : ''}<title>Workout
 /* Kills pull-to-refresh. An accidental overscroll is the likeliest way to trigger a
    reload you didn't ask for, and a reload is the one moment this page needs luck. */
 html,body{overscroll-behavior-y:contain}
-body{margin:0;background:#0f172a;color:#e2e8f0;font-family:-apple-system,system-ui,sans-serif;padding:20px 16px 60px}
+body{margin:0;background:rgb(var(--slate-900));color:rgb(var(--slate-200));font-family:-apple-system,system-ui,sans-serif;padding:20px 16px 60px}
 h1{font-size:20px;margin:0 0 2px}
-.sub{color:#34d399;font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;margin-bottom:18px}
+.sub{color:rgb(var(--tw-emerald-400));font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;margin-bottom:18px}
 ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:10px}
-li{display:flex;align-items:center;gap:12px;background:#1e293b;border-radius:14px;padding:10px 12px}
-li img,li .ph{width:56px;height:56px;border-radius:10px;object-fit:cover;background:#0f172a;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0}
+li{display:flex;align-items:center;gap:12px;background:rgb(var(--slate-800));border-radius:14px;padding:10px 12px}
+li img,li .ph{width:56px;height:56px;border-radius:10px;object-fit:cover;background:rgb(var(--slate-900));display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0}
 li div{flex:1;min-width:0}
 li b{display:block;font-size:15px}
-li span{display:block;color:#94a3b8;font-size:12px;margin-top:2px}
-li i{color:#10b981;font-style:normal;font-size:15px;flex-shrink:0}
+li span{display:block;color:rgb(var(--slate-400));font-size:12px;margin-top:2px}
+li i{color:rgb(var(--tw-emerald-500));font-style:normal;font-size:15px;flex-shrink:0}
 li.done{opacity:.55}
 li.done b{text-decoration:line-through}
-.empty{color:#64748b;text-align:center;padding:40px 0}
-.note{color:#475569;font-size:11px;text-align:center;margin-top:26px;line-height:1.5}
+.empty{color:rgb(var(--slate-500));text-align:center;padding:40px 0}
+.note{color:rgb(var(--slate-600));font-size:11px;text-align:center;margin-top:26px;line-height:1.5}
 </style></head><body>
 <h1>${WO_WEEKDAYS[(date.getDay() + 6) % 7]}, ${WO_MONTHS[date.getMonth()]} ${date.getDate()}</h1>
 <div class="sub">${focusLabel}${exs.length ? ` · ${exs.length} exercises` : ''}</div>
@@ -1516,7 +1516,7 @@ function woToast(msg) {
         el = document.createElement('div');
         el.id = 'wo-toast';
         el.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);' +
-            'background:#064e3b;color:#d1fae5;padding:10px 18px;border-radius:12px;font-size:13px;' +
+            'background:rgb(var(--tw-emerald-900));color:rgb(var(--tw-emerald-100));padding:10px 18px;border-radius:12px;font-size:13px;' +
             'font-weight:600;z-index:99999;box-shadow:0 8px 30px rgba(0,0,0,.5);' +
             'border:1px solid rgba(16,185,129,.4);transition:opacity .3s;pointer-events:none';
         document.body.appendChild(el);

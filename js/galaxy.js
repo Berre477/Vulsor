@@ -819,7 +819,7 @@ function _showInfo(label, facts, color) {
     el.innerHTML = `
       <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:8px">
         <span style="color:${color || '#cfe0ff'}; font-size:14px; font-weight:700">${label}</span>
-        <button onclick="galaxyCloseInfo()" style="color:#94a3b8; background:none; border:none; cursor:pointer; font-size:14px; padding:0 2px">✕</button>
+        <button onclick="galaxyCloseInfo()" style="color:rgb(var(--slate-400)); background:none; border:none; cursor:pointer; font-size:14px; padding:0 2px">✕</button>
       </div>
       <div style="display:grid; grid-template-columns:auto 1fr; gap:3px 12px; font-size:11px">
         <span style="color:#7c8aa5">Diameter</span><span style="color:#dbe4f5">${facts.diameter}</span>
@@ -835,7 +835,7 @@ function _showGalaxyInfo(g) {
     el.innerHTML = `
       <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:8px">
         <span style="color:#b9c8ff; font-size:14px; font-weight:700">🌌 ${g.name}</span>
-        <button onclick="galaxyCloseInfo()" style="color:#94a3b8; background:none; border:none; cursor:pointer; font-size:14px; padding:0 2px">✕</button>
+        <button onclick="galaxyCloseInfo()" style="color:rgb(var(--slate-400)); background:none; border:none; cursor:pointer; font-size:14px; padding:0 2px">✕</button>
       </div>
       <div style="display:grid; grid-template-columns:auto 1fr; gap:3px 12px; font-size:11px">
         ${Object.entries(g.rows).map(([k, v]) =>
