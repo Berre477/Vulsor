@@ -115,7 +115,7 @@
                         x: (Math.random() - 0.5) * (W + 120) / s,
                         y: (Math.random() - 0.5) * (H + 120) / s,
                         z,
-                        vx: rand(-0.10, 0.10), vy: rand(-0.10, 0.10), vz: rand(-0.12, 0.12),
+                        vx: rand(-0.04, 0.04), vy: rand(-0.04, 0.04), vz: rand(-0.05, 0.05),
                         hue: HU[Math.floor(Math.random() * HU.length)],
                         r: 2.2 + Math.random() * 2.6,
                     };
@@ -127,8 +127,8 @@
                 const boost = isLight() ? 1 : 1.15 + 1.05 * pageDarkness();
                 // The camera wanders: a slow constant drift plus a gentle weave.
                 const tt = (t || 0) * slow;
-                cam.x = tt * 0.018 + Math.sin(tt * 0.00009) * 90;
-                cam.y = tt * 0.007 + Math.cos(tt * 0.00007) * 60;
+                cam.x = tt * 0.006 + Math.sin(tt * 0.00005) * 60;
+                cam.y = tt * 0.0025 + Math.cos(tt * 0.00004) * 40;
                 const M = 60;                                    // wrap margin
                 const proj = new Array(nodes.length);
                 for (let i = 0; i < nodes.length; i++) {
