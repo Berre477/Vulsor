@@ -85,81 +85,67 @@
     // ── Styles ─────────────────────────────────────────────────────────
     // Each has: build() to (re)seed for the current size, draw(t) to paint.
 
-    // Nodes drifting in a slowly rotating 3D volume, projected with
-    // perspective. Links fade with distance and depth.
+    // An endless field with depth. Nodes live in an unbounded space; the
+    // camera drifts through it and nodes leaving one edge re-enter from the
+    // other at their own depth, so far nodes slide slowly and near ones
+    // faster (parallax) and there is never a boundary or a shape — it goes
+    // on in every direction. Links fade with distance and depth.
     const plexus = (() => {
         const LINK = 265, DEPTH = 700, FOCAL = 950;
-        let nodes = [], rotY = 0, rotX = 0;
-        // Palette follows the accent: the accent itself, a lighter tint of it,
-        // and a few near-white highlight nodes. The old fixed purple + sky mix
-        // clashed with neutral themes and with any accent that wasn't blue.
+        let nodes = [], cam = { x: 0, y: 0 };
         const mix = (rgb, t, to = [255, 255, 255]) => rgb.split(',').map((c, i) => Math.round(+c + (to[i] - c) * t)).join(',');
+        // Palette follows the accent: the accent itself and lighter tints.
+        // Never grey — on dark themes grey nodes read as dirt.
         const hues = () => {
             const a = accentRGB();
-            const light = isLight();
-            return light
+            return isLight()
                 ? [a, a, mix(a, 0.45, [30, 41, 59]), mix(a, 0.25, [79, 70, 229]), a]
                 : [a, a, a, mix(a, 0.3), mix(a, 0.3)];
         };
-        // Project a 3D point with the current rotation → { sx, sy, s }.
-        function project(n) {
-            const sy = Math.sin(rotY), cy = Math.cos(rotY);
-            const sx = Math.sin(rotX), cx = Math.cos(rotX);
-            let x = n.x * cy + n.z * sy;
-            let z = -n.x * sy + n.z * cy;
-            let y = n.y * cx - z * sx;
-            z = n.y * sx + z * cx;
-            const s = FOCAL / (FOCAL + z + DEPTH / 2);
-            return { sx: W / 2 + x * s, sy: H / 2 + y * s, s };
-        }
-        // A node is only useful if it lands on the page: sample 3D positions
-        // until the projection is on-screen. That is what keeps the rotating
-        // field covering the whole canvas instead of clumping at the edges.
-        function seed(n, fadeIn) {
-            for (let tries = 0; tries < 40; tries++) {
-                n.x = (Math.random() - 0.5) * W * 2.2;
-                n.y = (Math.random() - 0.5) * H * 2.2;
-                n.z = (Math.random() - 0.5) * DEPTH;
-                const p = project(n);
-                if (p.sx > -10 && p.sx < W + 10 && p.sy > -10 && p.sy < H + 10) break;
-            }
-            n.fade = fadeIn ? 0 : 1;
-            return n;
-        }
+        const scaleOf = z => FOCAL / (FOCAL + z);
         return {
             id: 'plexus',
             build() {
                 const HU = hues();
                 const count = Math.max(80, Math.min(200, Math.round(W * H / 7800)));
-                nodes = Array.from({ length: count }, () => seed({
-                    vx: rand(-0.11, 0.11), vy: rand(-0.11, 0.11), vz: rand(-0.14, 0.14),
-                    hue: HU[Math.floor(Math.random() * HU.length)],
-                    r: 2.2 + Math.random() * 2.6,
-                }, false));
+                nodes = Array.from({ length: count }, () => {
+                    const z = rand(0, DEPTH), s = scaleOf(z);
+                    return {
+                        // Spread over the screen at this depth (world = screen / scale)
+                        x: (Math.random() - 0.5) * (W + 120) / s,
+                        y: (Math.random() - 0.5) * (H + 120) / s,
+                        z,
+                        vx: rand(-0.10, 0.10), vy: rand(-0.10, 0.10), vz: rand(-0.12, 0.12),
+                        hue: HU[Math.floor(Math.random() * HU.length)],
+                        r: 2.2 + Math.random() * 2.6,
+                    };
+                });
             },
             draw(t) {
                 const slow = reduceMotion() ? 0.25 : 1;
                 // Near-black pages get brighter links and nodes (up to ~2.2×).
                 const boost = isLight() ? 1 : 1.15 + 1.05 * pageDarkness();
-                // A gentle sway rather than a full turn: a volume rotating all the
-                // way round goes edge-on twice per lap and empties a strip of the
-                // page each time. Small oscillations keep the parallax without that.
+                // The camera wanders: a slow constant drift plus a gentle weave.
                 const tt = (t || 0) * slow;
-                rotY = Math.sin(tt * 0.00011) * 0.16;
-                rotX = Math.sin(tt * 0.00007 + 1.3) * 0.10;
+                cam.x = tt * 0.018 + Math.sin(tt * 0.00009) * 90;
+                cam.y = tt * 0.007 + Math.cos(tt * 0.00007) * 60;
+                const M = 60;                                    // wrap margin
                 const proj = new Array(nodes.length);
-                const M = 60;                                   // off-screen margin before re-seeding
                 for (let i = 0; i < nodes.length; i++) {
                     const n = nodes[i];
                     n.x += n.vx * slow; n.y += n.vy * slow; n.z += n.vz * slow;
-                    if (Math.abs(n.z) > DEPTH / 2) n.vz *= -1;
-                    let p = project(n);
-                    // Drifted (or rotated) out of view: come back somewhere visible,
-                    // fading in so nothing pops.
-                    if (p.sx < -M || p.sx > W + M || p.sy < -M || p.sy > H + M) { seed(n, true); p = project(n); }
-                    if (n.fade < 1) n.fade = Math.min(1, n.fade + 0.02 * slow);
-                    p.s *= n.fade;
-                    proj[i] = p;
+                    if (n.z < 0 || n.z > DEPTH) { n.vz *= -1; n.z = Math.max(0, Math.min(DEPTH, n.z)); }
+                    const s = scaleOf(n.z);
+                    let sx = W / 2 + (n.x - cam.x) * s;
+                    let sy = H / 2 + (n.y - cam.y) * s;
+                    // Torus wrap in screen space, converted back to world units at
+                    // this node's depth — the field has no edges.
+                    const spanX = (W + 2 * M) / s, spanY = (H + 2 * M) / s;
+                    while (sx < -M)     { n.x += spanX; sx += W + 2 * M; }
+                    while (sx > W + M)  { n.x -= spanX; sx -= W + 2 * M; }
+                    while (sy < -M)     { n.y += spanY; sy += H + 2 * M; }
+                    while (sy > H + M)  { n.y -= spanY; sy -= H + 2 * M; }
+                    proj[i] = { sx, sy, s };
                 }
                 ctx.lineWidth = isLight() ? 1 : 1.25;
                 const linkHue = accentRGB();
