@@ -183,7 +183,9 @@ ensureDir(RECIPES_DIR);
 const NON_CHAT_FILES = new Set(['todos.json','lists.json','commands.json','study.json','vault.json','finance.json','journal.json','lab.json','recipes.json','books.json','learn.json','studio.json','workout.json','countdowns.json','news.json','courses.json','calendar.json']);
 
 // ── AI configuration ───────────────────────────────────────────
-const MODEL = 'llama3.1:8b';
+// Default local model. qwen3 reasons out loud in <think> blocks unless asked
+// not to — providers.js sends think:false and strips any that slip through.
+const MODEL = 'qwen3:8b';
 
 const TUNING = {
     temperature: 0.7,

@@ -20,7 +20,7 @@
     function numbers() { return cfg.contacts.map(c => c.number).filter(Boolean); }
     function startPayload() {
         return {
-            model: (typeof MODEL !== 'undefined' ? MODEL : 'llama3.1:8b'),
+            model: (typeof MODEL !== 'undefined' ? MODEL : 'qwen3:8b'),
             whitelist: numbers(),
             ownerName: cfg.ownerName || '',
             instruction: cfg.instruction || '',

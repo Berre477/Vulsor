@@ -146,7 +146,9 @@ async function _aiOllama({ model, system, messages, signal, options }) {
     try {
         res = await fetch('http://localhost:11434/api/chat', {
             method: 'POST', headers: { 'Content-Type': 'application/json' }, signal,
-            body: JSON.stringify({ model, messages, system, stream: false, options }),
+            // think:false keeps qwen3-style models from returning their
+            // chain of thought; older servers ignore the field.
+            body: JSON.stringify({ model, messages, system, stream: false, think: false, options }),
         });
     } catch (e) {
         if (e && e.name === 'AbortError') throw e;
@@ -161,7 +163,11 @@ async function _aiOllama({ model, system, messages, signal, options }) {
         throw new AIError(`Ollama returned ${res.status}${detail ? ` — ${detail}` : ''}`, { retryable: res.status >= 500 });
     }
     const data = await res.json();
-    return (data.message && data.message.content) || '';
+    return _aiStripThink((data.message && data.message.content) || '');
+}
+// Reasoning models that ignore think:false still wrap it in <think> tags.
+function _aiStripThink(text) {
+    return String(text || '').replace(/<think>[\s\S]*?<\/think>\s*/gi, '').trim();
 }
 
 async function _aiAnthropic({ model, system, messages, signal, apiKey }) {
@@ -379,7 +385,7 @@ aiLoadSettings();
             if (!models.length) {
                 sel.hidden = true; custom.hidden = false;
                 custom.value = aiActiveModel('ollama');
-                custom.placeholder = 'e.g. llama3.1:8b (local model service isn\'t running — type a model)';
+                custom.placeholder = 'e.g. qwen3:8b (local model service isn\'t running — type a model)';
                 return;
             }
         }

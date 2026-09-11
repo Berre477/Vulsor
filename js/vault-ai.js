@@ -48,6 +48,7 @@ async function _vaultAIChat(messages, opts = {}) {
             body: JSON.stringify({
                 model:    localModel,
                 messages,
+                think:    false,
                 stream:   !!onToken,
                 options:  { temperature, num_ctx: VAULT_AI_NUM_CTX }
             }),
@@ -61,7 +62,7 @@ async function _vaultAIChat(messages, opts = {}) {
 
     if (!onToken) {
         const data = await res.json();
-        return (data.message?.content || '').trim();
+        return (typeof _aiStripThink === 'function' ? _aiStripThink(data.message?.content) : (data.message?.content || '')).trim();
     }
 
     // Streaming replies come back as NDJSON — one JSON object per line, and a
