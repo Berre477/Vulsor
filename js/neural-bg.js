@@ -160,14 +160,19 @@
                     // Floor the brightness: distant stars were fading to nothing,
                     // which left the field looking empty rather than deep.
                     const alpha = Math.min(0.95, 0.22 + (1 - p.z) * 0.95) * twinkle;
-                    const r = (p.big ? 2.3 : 1.35) * (0.65 + (1 - p.z) * 1.5);
+                    const light = isLight();
+                    // On white the wide accent halos read as bubbles: keep the
+                    // stars crisp and small there, with only a faint glow.
+                    const r = (p.big ? 2.3 : 1.35) * (0.65 + (1 - p.z) * 1.5) * (light ? 0.7 : 1);
                     if (p.big) {
-                        ctx.fillStyle = `rgba(${a},${(alpha * 0.20).toFixed(3)})`;
-                        ctx.beginPath(); ctx.arc(sx, sy, r * 6, 0, 6.2832); ctx.fill();
+                        ctx.fillStyle = `rgba(${a},${(alpha * (light ? 0.07 : 0.20)).toFixed(3)})`;
+                        ctx.beginPath(); ctx.arc(sx, sy, r * (light ? 3 : 6), 0, 6.2832); ctx.fill();
                     }
+                    // Light: a mix of indigo, blue and violet so the field has depth.
+                    const small = light ? (p.tw < 2.1 ? '79,70,229' : p.tw < 4.2 ? '37,99,235' : '124,58,237') : INK.star();
                     ctx.fillStyle = p.big
                         ? `rgba(${a},${alpha.toFixed(3)})`
-                        : `rgba(${INK.star()},${(alpha * 0.85).toFixed(3)})`;
+                        : `rgba(${small},${(alpha * 0.85).toFixed(3)})`;
                     ctx.beginPath(); ctx.arc(sx, sy, r, 0, 6.2832); ctx.fill();
                 }
             },
@@ -305,6 +310,7 @@
                 const slow = reduceMotion() ? 0.22 : 1;
                 const cx = W / 2, cy = H / 2;
                 const R  = Math.min(W, H) * 0.105;             // shadow radius
+                const light = isLight();
 
                 // Background stars, deflected outward near the hole. Anything
                 // that would fall inside the shadow is simply swallowed.
@@ -347,7 +353,21 @@
                     ctx.beginPath(); ctx.arc(pos.x, pos.y, size, 0, 6.2832); ctx.fill();
                 };
 
+                // A continuous glowing band under the particles, so the disk
+                // reads as a solid ring of hot gas rather than scattered dots —
+                // essential on a light page, and a richer look on dark.
                 ctx.globalCompositeOperation = INK.blend();
+                ctx.save();
+                ctx.translate(cx, cy); ctx.scale(1, TILT);
+                const band = ctx.createRadialGradient(0, 0, R * 1.05, 0, 0, R * 3.2);
+                band.addColorStop(0,    `rgba(${light ? '234,88,12' : '255,214,160'},${light ? 0.55 : 0.55})`);
+                band.addColorStop(0.18, `rgba(${light ? '245,158,11' : '255,180,90'},${light ? 0.42 : 0.38})`);
+                band.addColorStop(0.55, `rgba(${light ? '251,146,60' : '255,140,60'},${light ? 0.16 : 0.12})`);
+                band.addColorStop(1,    'rgba(255,140,60,0)');
+                ctx.fillStyle = band;
+                ctx.beginPath(); ctx.arc(0, 0, R * 3.2, 0, 6.2832); ctx.fill();
+                ctx.restore();
+
                 const near = [];
                 for (const p of disk) {
                     const pos = place(p);
@@ -356,21 +376,24 @@
                 ctx.globalCompositeOperation = 'source-over';
 
                 // The shadow itself, with a soft rim so it doesn't look cut out.
-                const g = ctx.createRadialGradient(cx, cy, R * 0.6, cx, cy, R * 1.35);
+                // On light the wide soft rim smeared into a grey halo; keep it tight there.
+                const rim = light ? 1.12 : 1.35;
+                const g = ctx.createRadialGradient(cx, cy, R * 0.6, cx, cy, R * rim);
                 g.addColorStop(0, '#000');
-                g.addColorStop(0.72, '#000');
+                g.addColorStop(light ? 0.86 : 0.72, '#000');
                 g.addColorStop(1, 'rgba(0,0,0,0)');
                 ctx.fillStyle = g;
-                ctx.beginPath(); ctx.arc(cx, cy, R * 1.35, 0, 6.2832); ctx.fill();
+                ctx.beginPath(); ctx.arc(cx, cy, R * rim, 0, 6.2832); ctx.fill();
 
-                // Photon ring.
-                ctx.globalCompositeOperation = INK.blend();
-                ctx.strokeStyle = `rgba(${INK.ring()},0.55)`;
-                ctx.lineWidth = Math.max(1, R * 0.045);
+                // Photon ring — drawn opaque (source-over) so it sits crisply on
+                // the shadow's edge on both themes.
+                ctx.strokeStyle = `rgba(${INK.ring()},${light ? 0.9 : 0.7})`;
+                ctx.lineWidth = Math.max(1.2, R * 0.05);
                 ctx.beginPath(); ctx.arc(cx, cy, R * 1.02, 0, 6.2832); ctx.stroke();
-                ctx.strokeStyle = `rgba(${INK.ringSoft()},0.16)`;
-                ctx.lineWidth = Math.max(2, R * 0.14);
-                ctx.beginPath(); ctx.arc(cx, cy, R * 1.06, 0, 6.2832); ctx.stroke();
+                ctx.globalCompositeOperation = INK.blend();
+                ctx.strokeStyle = `rgba(${INK.ringSoft()},${light ? 0.35 : 0.22})`;
+                ctx.lineWidth = Math.max(2, R * 0.16);
+                ctx.beginPath(); ctx.arc(cx, cy, R * 1.08, 0, 6.2832); ctx.stroke();
 
                 // Everything in front of the shadow, drawn last.
                 for (const [p, pos] of near) paint(p, pos);
@@ -841,6 +864,41 @@
 
         window.setHomeBackground = setStyle;
         window.homeBackgroundStyles = Object.keys(STYLES);
+        // Real thumbnail of a style for the Appearance picker: the engine is
+        // pointed at an offscreen canvas of the swatch size, the style is
+        // reseeded for it, a frame is drawn through the same dark/light
+        // pipeline the page uses, then everything is restored. Returns a data
+        // URL, or null if the style is unknown.
+        window.renderHomeBackgroundThumb = function (id, w, h) {
+            const dark = STYLES[id], lightSt = LIGHT_STYLES[id];
+            if (!dark) return null;
+            const off = document.createElement('canvas');
+            const scale = Math.min(2, window.devicePixelRatio || 1);
+            off.width = w * scale; off.height = h * scale;
+            const octx = off.getContext('2d');
+            // The scenes have minimum particle counts tuned for a full window;
+            // at swatch size that is a solid mass. Let the scene believe the
+            // canvas is 3× larger and draw it scaled down.
+            const V = 5;
+            octx.setTransform(scale / V, 0, 0, scale / V, 0, 0);
+            const saved = { canvas, ctx, W, H, dpr, layer, layerCtx, paintedLight };
+            canvas = off; ctx = octx; W = w * V; H = h * V; dpr = scale / V; layer = null; layerCtx = null;
+            try {
+                const light = isLight();
+                const base = getComputedStyle(document.documentElement).getPropertyValue('--bg-base').trim() || (light ? '#f5f5f7' : '#070b18');
+                octx.fillStyle = base; octx.fillRect(0, 0, W, H);
+                const st = light ? lightSt : dark;
+                st.build();
+                // A few seconds in, so streaks, sweeps and drifts have developed.
+                st.draw(6000);
+                return off.toDataURL('image/png');
+            } catch (e) { console.warn('[home-bg] thumb', id, e); return null; }
+            finally {
+                ({ canvas, ctx, W, H, dpr, layer, layerCtx, paintedLight } = saved);
+                // Reseed the live scene at the real size.
+                const live = activeStyle(); if (live && W && H) live.build();
+            }
+        };
         // Test/debug hook — paints one frame regardless of visibility
         window.__neuralBgDraw = (t) => {
             const st = activeStyle();

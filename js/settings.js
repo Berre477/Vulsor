@@ -162,6 +162,7 @@ function buildAccentFromHex(hex) {
 }
 
 function applyAccent(accent) {
+    if (typeof renderSettingsModal === 'function') renderSettingsModal._thumbs = null;   // swatches show the accent
     const root = document.documentElement;
     root.style.setProperty('--accent-rgb', accent.rgb);
     root.style.setProperty('--accent',     accent.hex);
@@ -288,6 +289,7 @@ function finishThemeVars(vars, t) {
 }
 
 function applyBackground(theme) {
+    if (typeof renderSettingsModal === 'function') renderSettingsModal._thumbs = null;
     const root = document.documentElement;
     const vars = buildThemeVars(theme);
     for (const [k, v] of Object.entries(vars)) root.style.setProperty(k, v);
@@ -640,10 +642,22 @@ function renderSettingsModal() {
             dots:      'radial-gradient(circle, rgba(0,0,0,.18) 0 1px, transparent 1.6px) 0 0 / 9px 9px, linear-gradient(100deg, transparent 35%, rgba(99,102,241,.35) 50%, transparent 65%), #f5f5f8',
             none:      'linear-gradient(135deg, #f5f5f7, #ececf0)',
         };
+        // Real thumbnails rendered by the engine (cached per theme); the CSS
+        // swatches are the fallback if it isn't available yet.
+        const thumbKey = lightTheme ? 'light' : 'dark';
+        renderSettingsModal._thumbs = renderSettingsModal._thumbs || {};
+        const thumbs = renderSettingsModal._thumbs[thumbKey] = renderSettingsModal._thumbs[thumbKey] || {};
+        const thumbFor = (id) => {
+            if (id === 'none' || typeof window.renderHomeBackgroundThumb !== 'function') return null;
+            if (!(id in thumbs)) { try { thumbs[id] = window.renderHomeBackgroundThumb(id, 132, 46); } catch (_) { thumbs[id] = null; } }
+            return thumbs[id];
+        };
         hbGrid.innerHTML = HOME_BGS.map(b => {
             const on = cur === b.id;
+            const thumb = thumbFor(b.id);
+            const bg = thumb ? `url(${thumb}) center / cover no-repeat` : (lightTheme ? (LIGHT_SWATCH[b.id] || b.swatch) : b.swatch);
             return `<button class="home-bg-btn flex flex-col items-center gap-1.5" data-hbg="${b.id}" title="${b.desc}">
-                <div class="w-full rounded-lg border-2 transition-all" style="height:46px;background:${lightTheme ? (LIGHT_SWATCH[b.id] || b.swatch) : b.swatch};background-color:${lightTheme ? '#f5f5f7' : '#070b18'};border-color:${on ? 'var(--accent,#dc2626)' : 'rgba(148,163,184,0.18)'}"></div>
+                <div class="w-full rounded-lg border-2 transition-all" style="height:46px;background:${bg};background-color:${lightTheme ? '#f5f5f7' : '#070b18'};border-color:${on ? 'var(--accent,#dc2626)' : 'rgba(148,163,184,0.18)'}"></div>
                 <span class="text-[10px] font-medium ${on ? '' : 'text-slate-500'}" style="${on ? 'color:var(--accent-light)' : ''}">${b.name}</span>
             </button>`;
         }).join('');
