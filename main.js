@@ -308,6 +308,24 @@ if (!app.requestSingleInstanceLock()) {
 
 app.on('open-url', (e, url) => { e.preventDefault(); _routeOpenUrl(url); });
 
+// The window's native background is what shows before the page paints and
+// in any strip the renderer hasn't covered yet (window resizes, view swaps).
+// It used to be a fixed near-black, which flashed as a black band on light
+// themes. Read the saved theme's page colour so it matches from the first
+// frame; the renderer keeps it in sync afterwards via 'window:set-bg'.
+let _windowBg = '#020617';
+try {
+    const sf = path.join(os.homedir(), 'Documents', 'Vulsor_Memories', 'settings.json');
+    const st = JSON.parse(fs.readFileSync(sf, 'utf8'));
+    const bg = st && st.themeVars && st.themeVars['--bg-base'];
+    if (typeof bg === 'string' && /^#[0-9a-f]{6}$/i.test(bg)) _windowBg = bg;
+} catch (_) {}
+ipcMain.on('window:set-bg', (e, hex) => {
+    if (typeof hex !== 'string' || !/^#[0-9a-f]{6}$/i.test(hex)) return;
+    _windowBg = hex;
+    for (const w of BrowserWindow.getAllWindows()) { try { w.setBackgroundColor(hex); } catch (_) {} }
+});
+
 function createWindow() {
     const iconPath = path.join(__dirname, 'icon.icns');
 
@@ -319,7 +337,7 @@ function createWindow() {
         width: 1100, height: 850,
         title: 'Vulsor Browser',
         show: false,   
-        backgroundColor: '#020617',  
+        backgroundColor: _windowBg,
         ...(process.platform === 'darwin' ? { titleBarStyle: 'hiddenInset', trafficLightPosition: { x: 14, y: 14 } } : { frame: true }),
         ...(fs.existsSync(iconPath) ? { icon: iconPath } : {}),
         webPreferences: {
@@ -558,7 +576,7 @@ function _spawnDetachedWindow(payload, screenX, screenY, grabOffsetX) {
         x: winX, y: winY,
         title: 'Vulsor Browser',
         show: false,
-        backgroundColor: '#020617',
+        backgroundColor: _windowBg,
         ...(process.platform === 'darwin' ? { titleBarStyle: 'hiddenInset', trafficLightPosition: { x: 14, y: 14 } } : { frame: true }),
         ...(fs.existsSync(iconPath) ? { icon: iconPath } : {}),
         webPreferences: { nodeIntegration: true, contextIsolation: false, webSecurity: false, webviewTag: true },

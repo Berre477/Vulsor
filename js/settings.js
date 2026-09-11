@@ -288,6 +288,8 @@ function applyBackground(theme) {
     root.dataset.bg    = theme.id;
     root.dataset.theme = theme.dark ? 'dark' : 'light';
     root.style.colorScheme = theme.dark ? 'dark' : 'light';
+    // Native window background = page colour, so resizes never flash black.
+    try { ipcRenderer.send('window:set-bg', theme.base); } catch (_) {}
 
     // Persist the computed variables so the inline <head> script can apply
     // them before first paint next launch (it must not depend on this file).

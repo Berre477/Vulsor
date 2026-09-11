@@ -554,7 +554,7 @@
                     ax: rand(0.08, 0.22), ay: rand(0.06, 0.18),
                     sp: rand(0.00004, 0.00009) * (i % 2 ? -1 : 1),
                     ph: rand(0, 6.28),
-                    a: 0.28 + (i === 0 ? 0.07 : 0),
+                    a: 0.34 + (i === 0 ? 0.08 : 0),
                 }));
                 const mode = LIGHT_BOKEH[id];
                 const count = mode ? Math.max(14, Math.min(34, Math.round(W * H / 26000))) : 0;
@@ -616,6 +616,14 @@
         if (!rect.width || !rect.height) return;
         dpr = Math.min(2, window.devicePixelRatio || 1);
         W = rect.width; H = rect.height;
+        // A <canvas> is a replaced element: `inset:0` does not stretch it, so
+        // the CSS box must be set explicitly to the view's rectangle. Without
+        // this the canvas sat at the top of the window at its buffer size,
+        // leaving the bottom of the home page unpainted.
+        canvas.style.top    = `${rect.top}px`;
+        canvas.style.left   = `${rect.left}px`;
+        canvas.style.width  = `${W}px`;
+        canvas.style.height = `${H}px`;
         canvas.width  = W * dpr;
         canvas.height = H * dpr;
         ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
@@ -659,7 +667,7 @@
         if (!home) return;
         canvas = document.createElement('canvas');
         canvas.id = 'home-neural-bg';
-        canvas.style.cssText = 'position:fixed;inset:0;z-index:-1;pointer-events:none';
+        canvas.style.cssText = 'position:fixed;top:0;left:0;z-index:-1;pointer-events:none';
         home.prepend(canvas);
         ctx = canvas.getContext('2d');
 
@@ -671,7 +679,12 @@
 
         // rAF-wrapped: resizing the canvas inside the RO callback would
         // trigger the benign "ResizeObserver loop" warning.
-        new ResizeObserver(() => requestAnimationFrame(resize)).observe(home);
+        new ResizeObserver(() => requestAnimationFrame(() => {
+            resize();
+            // Paint straight away so a window resize never shows a bare strip.
+            try { const st = activeStyle(); if (st && ctx) { ctx.clearRect(0, 0, W, H); st.draw(performance.now() - t0); } } catch (_) {}
+        })).observe(home);
+        window.addEventListener('resize', () => requestAnimationFrame(resize));
 
         requestAnimationFrame(frame);
 
