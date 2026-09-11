@@ -4686,6 +4686,19 @@
                         <i class="fas fa-circle text-slate-300" style="font-size:12px"></i>
                     </div>
                     <p class="text-slate-600 text-[10px] mt-1.5">How strongly the background is drawn — fade it back, or push it past 100% for more.</p>
+                    <div class="flex items-center justify-between mt-4 mb-2">
+                        <p class="text-slate-400 text-[10px] uppercase tracking-widest font-semibold">Speed</p>
+                        <span class="flex items-center gap-2">
+                            <span id="home-bg-speed-val" class="text-slate-500 text-[11px] tabular-nums">100%</span>
+                            <button id="home-bg-speed-reset" type="button" class="home-size-preset" style="padding:2px 8px">Reset</button>
+                        </span>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <i class="fas fa-hourglass-half text-slate-500" style="font-size:10px"></i>
+                        <input id="home-bg-speed" type="range" min="25" max="300" step="5" value="100" class="flex-1 accent-slider" aria-label="Background speed">
+                        <i class="fas fa-forward text-slate-400" style="font-size:12px"></i>
+                    </div>
+                    <p class="text-slate-600 text-[10px] mt-1.5">How fast the background moves.</p>
                 </div>
 
                 <!-- Wallpaper -->

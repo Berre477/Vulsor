@@ -47,7 +47,7 @@ const BG_THEMES = [
 // custom light colour still works — they are just no longer offered here.
 
 
-let settingsData = { accentIndex: 0, customAccent: null, bgTheme: 'slate', customBg: null, wallpaper: null, wallpaperFit: 'fill', homeBg: 'plexus', homeBgIntensity: 1, homeIconSize: 60, categoryColors: {}, categoryIcons: {}, categoryTileColor: null, homeItems: null, homeSites: [], archived: [] };
+let settingsData = { accentIndex: 0, customAccent: null, bgTheme: 'slate', customBg: null, wallpaper: null, wallpaperFit: 'fill', homeBg: 'plexus', homeBgIntensity: 1, homeBgSpeed: 1, homeIconSize: 60, categoryColors: {}, categoryIcons: {}, categoryTileColor: null, homeItems: null, homeSites: [], archived: [] };
 
 // ── Home icon size (Appearance → Home icon size) ─────────────────────
 const HOME_ICON_MIN = 40, HOME_ICON_MAX = 96, HOME_ICON_DEFAULT = 60;
@@ -97,6 +97,7 @@ const HOME_BGS = [
 function applyHomeBackground() {
     try {
         if (typeof window.setHomeBackgroundIntensity === 'function') window.setHomeBackgroundIntensity(settingsData.homeBgIntensity ?? 1);
+        if (typeof window.setHomeBackgroundSpeed === 'function') window.setHomeBackgroundSpeed(settingsData.homeBgSpeed ?? 1);
         if (typeof window.setHomeBackground === 'function') window.setHomeBackground(settingsData.homeBg || 'plexus');
     }
     catch (e) { console.error('[settings] home background:', e); }
@@ -756,6 +757,28 @@ function renderSettingsModal() {
         intInput.addEventListener('change', () => commit(intInput.value, true));
         document.getElementById('home-bg-intensity-reset')?.addEventListener('click', () => commit(100, true));
         paint(settingsData.homeBgIntensity ?? 1);
+    }
+
+    // ── Home background speed ──
+    const spdInput = document.getElementById('home-bg-speed');
+    if (spdInput && !spdInput._wired) {
+        spdInput._wired = true;
+        const val = document.getElementById('home-bg-speed-val');
+        const paint = k => {
+            spdInput.value = Math.round(k * 100);
+            spdInput.style.setProperty('--fill', ((k - 0.25) / (3 - 0.25) * 100).toFixed(1) + '%');
+            if (val) val.textContent = Math.round(k * 100) + '%';
+        };
+        const commit = (pct, save) => {
+            settingsData.homeBgSpeed = Math.max(0.25, Math.min(3, (Number(pct) || 100) / 100));
+            paint(settingsData.homeBgSpeed);
+            if (typeof window.setHomeBackgroundSpeed === 'function') window.setHomeBackgroundSpeed(settingsData.homeBgSpeed);
+            if (save) saveSettingsData();
+        };
+        spdInput.addEventListener('input',  () => commit(spdInput.value, false));
+        spdInput.addEventListener('change', () => commit(spdInput.value, true));
+        document.getElementById('home-bg-speed-reset')?.addEventListener('click', () => commit(100, true));
+        paint(settingsData.homeBgSpeed ?? 1);
     }
 
     // ── Home icon size ──

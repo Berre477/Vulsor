@@ -16,9 +16,16 @@
     let styleId = 'plexus';
     let style   = null;          // the active style object
     let lastFrame = 0, t0 = performance.now();
+    let vClock = 0, vLast = 0;          // virtual time, advanced at `speed`
+    function vTime(now) { if (vLast) vClock += (now - vLast) * speed; vLast = now; return vClock; }
 
     const reduceMotion = () => window.matchMedia
         && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    // User-adjustable speed (Appearance → Background speed). Every style
+    // scales its per-frame motion by motion(x) and reads a virtual clock that
+    // runs at this rate, so one setting slows or hurries all of them.
+    let speed = 1;
+    const motion = base => (reduceMotion() ? base : 1) * speed;
 
     // The accent, as "r,g,b". Falls back to indigo before settings load.
     function accentRGB() {
@@ -128,7 +135,7 @@
                 }
             },
             draw(t) {
-                const slow = reduceMotion() ? 0.25 : 1;
+                const slow = motion(0.25);
                 // Near-black pages get brighter links and nodes (up to ~2.2×).
                 const boost = isLight() ? 1 : 1.15 + 1.05 * pageDarkness();
                 // The camera wanders: a slow constant drift plus a gentle weave.
@@ -198,7 +205,7 @@
                 }));
             },
             draw(t) {
-                const slow = reduceMotion() ? 0.2 : 1;
+                const slow = motion(0.2);
                 const a = accentRGB();
                 for (const p of pts) {
                     p.z -= 0.00035 * slow;
@@ -248,7 +255,7 @@
                 }));
             },
             draw(t) {
-                const slow = reduceMotion() ? 0.25 : 1;
+                const slow = motion(0.25);
                 ctx.globalCompositeOperation = INK.blend();
                 for (const b of blobs) {
                     const k = t * b.sp * slow + b.ph;
@@ -271,7 +278,7 @@
         id: 'waves',
         build() {},
         draw(t) {
-            const slow = reduceMotion() ? 0.25 : 1;
+            const slow = motion(0.25);
             const a = accentRGB();
             const LAYERS = 5;
             for (let L = 0; L < LAYERS; L++) {
@@ -316,7 +323,7 @@
                 }));
             },
             draw(t) {
-                const slow = reduceMotion() ? 0.25 : 1;
+                const slow = motion(0.25);
                 for (const p of ps) {
                     p.y += p.vy * slow;
                     p.x += Math.sin(t * 0.0007 + p.ph) * p.drift * slow;
@@ -358,7 +365,7 @@
                 });
             },
             draw(t) {
-                const slow = reduceMotion() ? 0.22 : 1;
+                const slow = motion(0.22);
                 const cx = W / 2, cy = H / 2;
                 const R  = Math.min(W, H) * 0.105;             // shadow radius
                 const light = isLight();
@@ -475,7 +482,7 @@
                 });
             },
             draw(t) {
-                const slow = reduceMotion() ? 0.2 : 1;
+                const slow = motion(0.2);
                 const cx = W / 2, cy = H / 2;
                 const maxR = Math.min(W, H) * 0.46;
                 const acc = accentRGB();
@@ -534,7 +541,7 @@
                 }));
             },
             draw(t) {
-                const slow = reduceMotion() ? 0.25 : 1;
+                const slow = motion(0.25);
                 ctx.globalCompositeOperation = INK.blend();
                 for (const c of clouds) {
                     const k = t * c.sp * slow + c.ph;
@@ -571,7 +578,7 @@
                 ps = Array.from({ length: n }, () => { const p = {}; reseed(p); p.z = Math.random(); return p; });
             },
             draw() {
-                const slow = reduceMotion() ? 0.18 : 1;
+                const slow = motion(0.18);
                 const cx = W / 2, cy = H / 2;
                 const span = Math.hypot(W, H) * 0.62;
                 const acc = accentRGB();
@@ -616,7 +623,7 @@
                 }));
             },
             draw(t) {
-                const slow = reduceMotion() ? 0.25 : 1;
+                const slow = motion(0.25);
                 const light = isLight();
                 ctx.globalCompositeOperation = light ? 'multiply' : 'lighter';
                 for (const f of fields) {
@@ -651,7 +658,7 @@
                 }));
             },
             draw(t) {
-                const slow = reduceMotion() ? 0.25 : 1;
+                const slow = motion(0.25);
                 const light = isLight();
                 for (const p of ps) {
                     const ang = Math.atan2(p.vy, p.vx) + p.turn * slow;
@@ -676,7 +683,7 @@
         id: 'dots',
         build() {},
         draw(t) {
-            const slow = reduceMotion() ? 0.25 : 1;
+            const slow = motion(0.25);
             const light = isLight();
             const a = accentRGB();
             const STEP = 26;
@@ -749,7 +756,7 @@
                 }));
             },
             draw(t) {
-                const slow = reduceMotion() ? 0.25 : 1;
+                const slow = motion(0.25);
                 ctx.globalCompositeOperation = 'multiply';
                 for (const b of blobs) {
                     const k = t * b.sp * slow + b.ph;
@@ -873,7 +880,7 @@
         if (t - lastFrame >= 1000 / FPS) {
             lastFrame = t;
             ctx.clearRect(0, 0, W, H);
-            try { const st = activeStyle(); if (st) drawWithIntensity(st, t - t0); } catch (_) {}
+            try { const st = activeStyle(); if (st) drawWithIntensity(st, vTime(t)); } catch (_) {}
         }
         requestAnimationFrame(frame);
     }
@@ -932,7 +939,7 @@
         new ResizeObserver(() => requestAnimationFrame(() => {
             resize();
             // Paint straight away so a window resize never shows a bare strip.
-            try { const st = activeStyle(); if (st && ctx) { ctx.clearRect(0, 0, W, H); st.draw(performance.now() - t0); } } catch (_) {}
+            try { const st = activeStyle(); if (st && ctx) { ctx.clearRect(0, 0, W, H); st.draw(vClock); } } catch (_) {}
         })).observe(home);
         window.addEventListener('resize', () => requestAnimationFrame(resize));
 
@@ -940,6 +947,7 @@
 
         window.setHomeBackground = setStyle;
         window.setHomeBackgroundIntensity = k => { intensity = Math.max(0.25, Math.min(2.5, Number(k) || 1)); };
+        window.setHomeBackgroundSpeed = k => { speed = Math.max(0.25, Math.min(3, Number(k) || 1)); };
         window.homeBackgroundStyles = Object.keys(STYLES);
         // Real thumbnail of a style for the Appearance picker: the engine is
         // pointed at an offscreen canvas of the swatch size, the style is
