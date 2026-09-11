@@ -516,7 +516,108 @@
         };
     })();
 
-    const STYLES = { plexus, stars, blackhole, galaxy, nebula, warp, aurora, waves, embers };
+    // Flowing mesh gradient — four large colour fields whose centres orbit
+    // slowly, blended additively (dark) or multiplied (light). Reads as a
+    // macOS wallpaper on either theme, so the light rendition is the same.
+    const mesh = (() => {
+        let fields = [];
+        return {
+            id: 'mesh',
+            build() {
+                const a = accentRGB();
+                const pal = [a, '56,189,248', '167,139,250', '244,114,182'];
+                fields = pal.map((hue, i) => ({
+                    hue, r: Math.max(W, H) * rand(0.55, 0.85),
+                    cx: rand(0.15, 0.85), cy: rand(0.15, 0.85),
+                    ax: rand(0.12, 0.28), ay: rand(0.10, 0.24),
+                    sp: rand(0.00005, 0.00011) * (i % 2 ? -1 : 1), ph: rand(0, 6.28),
+                }));
+            },
+            draw(t) {
+                const slow = reduceMotion() ? 0.25 : 1;
+                const light = isLight();
+                ctx.globalCompositeOperation = light ? 'multiply' : 'lighter';
+                for (const f of fields) {
+                    const k = t * f.sp * slow + f.ph;
+                    const x = (f.cx + Math.cos(k) * f.ax) * W, y = (f.cy + Math.sin(k * 1.4) * f.ay) * H;
+                    const g = ctx.createRadialGradient(x, y, 0, x, y, f.r);
+                    g.addColorStop(0,   `rgba(${f.hue},${light ? 0.30 : 0.22})`);
+                    g.addColorStop(0.5, `rgba(${f.hue},${light ? 0.12 : 0.08})`);
+                    g.addColorStop(1,   `rgba(${f.hue},0)`);
+                    ctx.fillStyle = g;
+                    ctx.beginPath(); ctx.arc(x, y, f.r, 0, 6.2832); ctx.fill();
+                }
+                ctx.globalCompositeOperation = 'source-over';
+            },
+        };
+    })();
+
+    // Fireflies — a few dozen soft points wandering with gentle pulses.
+    const fireflies = (() => {
+        let ps = [];
+        return {
+            id: 'fireflies',
+            build() {
+                const a = accentRGB();
+                const pal = [a, '253,224,71', '134,239,172', '125,211,252'];
+                const count = Math.max(24, Math.min(70, Math.round(W * H / 16000)));
+                ps = Array.from({ length: count }, () => ({
+                    x: Math.random() * W, y: Math.random() * H,
+                    vx: rand(-0.12, 0.12), vy: rand(-0.12, 0.12), turn: rand(-0.002, 0.002),
+                    r: rand(1.7, 3.4), hue: pal[Math.floor(Math.random() * pal.length)],
+                    ph: rand(0, 6.28), speed: rand(0.0008, 0.0016),
+                }));
+            },
+            draw(t) {
+                const slow = reduceMotion() ? 0.25 : 1;
+                const light = isLight();
+                for (const p of ps) {
+                    const ang = Math.atan2(p.vy, p.vx) + p.turn * slow;
+                    const sp = Math.hypot(p.vx, p.vy);
+                    p.vx = Math.cos(ang) * sp; p.vy = Math.sin(ang) * sp;
+                    p.x += p.vx * slow; p.y += p.vy * slow;
+                    if (p.x < -20) p.x = W + 20; else if (p.x > W + 20) p.x = -20;
+                    if (p.y < -20) p.y = H + 20; else if (p.y > H + 20) p.y = -20;
+                    const pulse = 0.5 + 0.5 * Math.sin(t * p.speed + p.ph);
+                    const a = (light ? 0.7 : 0.6) * (0.35 + 0.65 * pulse);
+                    ctx.fillStyle = `rgba(${p.hue},${(a * 0.18).toFixed(3)})`;
+                    ctx.beginPath(); ctx.arc(p.x, p.y, p.r * 7, 0, 6.2832); ctx.fill();
+                    ctx.fillStyle = `rgba(${p.hue},${a.toFixed(3)})`;
+                    ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, 6.2832); ctx.fill();
+                }
+            },
+        };
+    })();
+
+    // Dots — a quiet lattice with a soft band of light sweeping across it.
+    const dots = {
+        id: 'dots',
+        build() {},
+        draw(t) {
+            const slow = reduceMotion() ? 0.25 : 1;
+            const light = isLight();
+            const a = accentRGB();
+            const STEP = 26;
+            const sweep = ((t * 0.00009 * slow) % 1.6) - 0.3;     // −0.3 … 1.3 across the width
+            for (let y = STEP / 2; y < H; y += STEP) {
+                for (let x = STEP / 2; x < W; x += STEP) {
+                    const dx = x / W - sweep, dy = (y / H - 0.5) * 0.35;
+                    const d = Math.sqrt(dx * dx + dy * dy);
+                    const glow = Math.max(0, 1 - d / 0.28);
+                    const baseA = light ? 0.16 : 0.10;
+                    if (glow > 0.02) {
+                        ctx.fillStyle = `rgba(${a},${(0.16 + glow * (light ? 0.7 : 0.75)).toFixed(3)})`;
+                        ctx.beginPath(); ctx.arc(x, y, 1.2 + glow * 1.6, 0, 6.2832); ctx.fill();
+                    } else {
+                        ctx.fillStyle = light ? `rgba(0,0,0,${baseA})` : `rgba(255,255,255,${baseA})`;
+                        ctx.beginPath(); ctx.arc(x, y, 1.2, 0, 6.2832); ctx.fill();
+                    }
+                }
+            }
+        },
+    };
+
+    const STYLES = { plexus, stars, blackhole, galaxy, nebula, warp, aurora, waves, embers, mesh, fireflies, dots };
 
     // ── Light-theme renditions ──────────────────────────────────────────
     // The scenes above are night skies; drawn as dark specks on a white page
@@ -596,7 +697,8 @@
         };
     }
     const LIGHT_STYLES = {};
-    for (const id of Object.keys(STYLES)) LIGHT_STYLES[id] = makeLightScene(id);
+    const SELF_THEMED = new Set(['mesh', 'fireflies', 'dots']);   // draw correctly on both
+    for (const id of Object.keys(STYLES)) LIGHT_STYLES[id] = SELF_THEMED.has(id) ? STYLES[id] : makeLightScene(id);
 
     // The theme can change while the home page is open; pick the right
     // rendition each frame and reseed when it flips.

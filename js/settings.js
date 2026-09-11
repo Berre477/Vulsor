@@ -85,6 +85,12 @@ const HOME_BGS = [
       swatch: 'linear-gradient(180deg, #060a16 45%, rgba(99,102,241,.35) 65%, rgba(99,102,241,.12) 100%)' },
     { id: 'embers', name: 'Embers', desc: 'Warm rising sparks',
       swatch: 'radial-gradient(circle at 30% 70%, rgba(251,146,60,.9) 0 2px, transparent 4px), radial-gradient(circle at 62% 40%, rgba(253,205,140,.85) 0 1.5px, transparent 3px), #0a0705' },
+    { id: 'mesh', name: 'Mesh', desc: 'Flowing gradient fields',
+      swatch: 'radial-gradient(60% 80% at 25% 30%, rgba(56,189,248,.55), transparent), radial-gradient(60% 80% at 75% 65%, rgba(244,114,182,.5), transparent), radial-gradient(50% 60% at 60% 20%, rgba(167,139,250,.5), transparent), #070b18' },
+    { id: 'fireflies', name: 'Fireflies', desc: 'Wandering glow points',
+      swatch: 'radial-gradient(circle at 25% 60%, rgba(253,224,71,.95) 0 1.5px, rgba(253,224,71,.25) 4px, transparent 7px), radial-gradient(circle at 65% 35%, rgba(134,239,172,.9) 0 1.5px, rgba(134,239,172,.25) 4px, transparent 7px), radial-gradient(circle at 80% 70%, rgba(125,211,252,.9) 0 1.5px, transparent 5px), #06090f' },
+    { id: 'dots', name: 'Dots', desc: 'Lattice with a light sweep',
+      swatch: 'radial-gradient(circle, rgba(255,255,255,.35) 0 1px, transparent 1.6px) 0 0 / 9px 9px, linear-gradient(100deg, transparent 35%, rgba(99,102,241,.45) 50%, transparent 65%), #070b18' },
     { id: 'none',   name: 'None', desc: 'Plain background',
       swatch: 'linear-gradient(135deg, #0b1020, #05070f)' },
 ];
@@ -629,6 +635,9 @@ function renderSettingsModal() {
             aurora:    'radial-gradient(60% 80% at 25% 30%, rgba(139,92,246,.32), transparent), radial-gradient(60% 80% at 75% 65%, rgba(16,185,129,.28), transparent), #f5f5f8',
             waves:     'radial-gradient(60% 70% at 30% 70%, rgba(99,102,241,.30), transparent), radial-gradient(55% 65% at 72% 30%, rgba(56,189,248,.28), transparent), #f4f6fa',
             embers:    'radial-gradient(60% 70% at 30% 65%, rgba(251,146,60,.32), transparent), radial-gradient(55% 65% at 72% 30%, rgba(244,114,182,.26), transparent), #faf6f2',
+            mesh:      'radial-gradient(60% 80% at 25% 30%, rgba(56,189,248,.35), transparent), radial-gradient(60% 80% at 75% 65%, rgba(244,114,182,.32), transparent), #f5f5f8',
+            fireflies: 'radial-gradient(circle at 25% 60%, rgba(202,138,4,.8) 0 1.5px, rgba(202,138,4,.2) 4px, transparent 7px), radial-gradient(circle at 65% 35%, rgba(22,163,74,.7) 0 1.5px, transparent 5px), radial-gradient(circle at 80% 70%, rgba(2,132,199,.7) 0 1.5px, transparent 5px), #f6f6f8',
+            dots:      'radial-gradient(circle, rgba(0,0,0,.18) 0 1px, transparent 1.6px) 0 0 / 9px 9px, linear-gradient(100deg, transparent 35%, rgba(99,102,241,.35) 50%, transparent 65%), #f5f5f8',
             none:      'linear-gradient(135deg, #f5f5f7, #ececf0)',
         };
         hbGrid.innerHTML = HOME_BGS.map(b => {
