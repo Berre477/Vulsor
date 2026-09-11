@@ -107,19 +107,25 @@
             id: 'plexus',
             build() {
                 const HU = hues();
-                const count = Math.max(80, Math.min(200, Math.round(W * H / 7800)));
-                nodes = Array.from({ length: count }, () => {
+                const count = Math.max(90, Math.min(230, Math.round(W * H / 6600)));
+                // Jittered grid in screen space, then lifted to each node's depth
+                // (world = screen / scale): even coverage everywhere from the first
+                // frame, with no clumps and no blank patches. Individual wander is
+                // tiny so the coverage stays even; the camera provides the motion.
+                const cols = Math.max(2, Math.round(Math.sqrt(count * W / H))), rows = Math.max(2, Math.ceil(count / cols));
+                nodes = [];
+                for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) {
+                    if (nodes.length >= count) break;
                     const z = rand(0, DEPTH), s = scaleOf(z);
-                    return {
-                        // Spread over the screen at this depth (world = screen / scale)
-                        x: (Math.random() - 0.5) * (W + 120) / s,
-                        y: (Math.random() - 0.5) * (H + 120) / s,
-                        z,
-                        vx: rand(-0.04, 0.04), vy: rand(-0.04, 0.04), vz: rand(-0.05, 0.05),
+                    const sx = (c + rand(0.12, 0.88)) * (W + 120) / cols - (W + 120) / 2;
+                    const sy = (r + rand(0.12, 0.88)) * (H + 120) / rows - (H + 120) / 2;
+                    nodes.push({
+                        x: sx / s, y: sy / s, z,
+                        vx: rand(-0.02, 0.02), vy: rand(-0.02, 0.02), vz: rand(-0.03, 0.03),
                         hue: HU[Math.floor(Math.random() * HU.length)],
                         r: 2.2 + Math.random() * 2.6,
-                    };
-                });
+                    });
+                }
             },
             draw(t) {
                 const slow = reduceMotion() ? 0.25 : 1;
