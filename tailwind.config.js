@@ -35,7 +35,7 @@ module.exports = {
             colors,
             // Apple's card radii: 18px cards, 12px controls. Utilities keep
             // their names so the markup doesn't change.
-            borderRadius: { xl: '12px', '2xl': '18px', '3xl': '22px' },
+            borderRadius: { lg: '10px', xl: '12px', '2xl': '18px', '3xl': '22px' },
         },
     },
     plugins: [],

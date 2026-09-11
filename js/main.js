@@ -1923,6 +1923,18 @@ document.addEventListener('DOMContentLoaded', () => {
             }, { passive: true });
         })();
 
+        // ── Connectivity pill ─────────────────────────────────
+        // Everything local keeps working offline; this only tells the user
+        // why web pages, weather, news and downloads are waiting.
+        (function wireOfflinePill() {
+            const pill = document.getElementById('net-offline-pill');
+            if (!pill) return;
+            const sync = () => { pill.hidden = navigator.onLine !== false; document.documentElement.toggleAttribute('data-offline', navigator.onLine === false); };
+            window.addEventListener('online', sync);
+            window.addEventListener('offline', sync);
+            sync();
+        })();
+
         // ── Global clock ───────────────────────────────────────
         (function startGlobalClock() {
             const DAYS = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];

@@ -3832,3 +3832,17 @@ html[data-theme="light"] .chat-empty-chip { box-shadow: 0 1px 8px rgba(0,0,0,0.0
     color: #fff; background: var(--accent); border: none;
 }
 .ui-unavailable-action:hover { background: var(--accent-hover); }
+
+/* ── Offline pill in the toolbar (toggled by the online/offline events) ── */
+.net-offline-pill {
+    display: inline-flex; align-items: center; gap: 5px; margin-right: 8px;
+    font-size: 10px; font-weight: 600; letter-spacing: 0.02em; padding: 2px 8px; border-radius: 100px;
+    color: rgb(var(--tw-amber-300)); background: rgb(var(--tw-amber-500) / 0.14); border: 1px solid rgb(var(--tw-amber-500) / 0.3);
+    -webkit-app-region: no-drag;
+}
+.net-offline-pill[hidden] { display: none; }
+.net-offline-pill i { font-size: 9px; position: relative; }
+.net-offline-pill i::after {   /* diagonal strike through the wifi glyph */
+    content: ''; position: absolute; left: -1px; right: -1px; top: 50%; height: 1.5px;
+    background: currentColor; transform: rotate(-40deg);
+}

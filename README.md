@@ -38,6 +38,7 @@ npm start
 | `npm run build` | Package for macOS arm64 → `Vulsor Browser-darwin-arm64/` |
 | `npm run build:win` | Package for Windows x64 |
 | `npm run build:linux` | Package for Linux x64 |
+| `npm run build:css` | Regenerate `css/palette.css` and `css/tailwind.css` after changing markup or the theme config |
 | `npm run build:wasm` | Recompile `cpp/*.cpp` → `js/wasm/*.wasm` (needs emscripten) |
 | `npm run deploy` | Copy the packaged macOS app into `/Applications` |
 
@@ -65,7 +66,7 @@ bundler, no framework, no build step for the UI.
 ┌──────────────────────────┴──────────────────────────────────┐
 │  index.html         one document, one <script> per feature  │
 │  js/*.js            ~50 classic scripts, shared global scope│
-│  css/styles.css     styling (Tailwind is vendored, not built)│
+│  css/styles.css     tokens + styling; tailwind.css is prebuilt │
 └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -89,6 +90,37 @@ Two consequences worth internalising:
 Self-contained modules — the simulations, the 3D scenes, `globals.js` — wrap
 themselves in an IIFE and expose only a few named entry points on `window`.
 That is the preferred pattern for anything new.
+
+### Theming is a palette, not a list of overrides
+
+Every colour utility in the UI (`bg-slate-900`, `text-red-400`, …) is compiled
+by `tailwind.config.js` against CSS variables — `--slate-N` for the grey scale
+and `--tw-<family>-N` for the rest — so a background theme is a handful of
+numbers on `<html>`, and a view added later is themed automatically:
+
+- `js/settings.js` → `buildThemeVars()` derives the eleven grey stops along the
+  theme's own hue (mirrored for light themes) and persists them, so the inline
+  `<head>` script in `index.html` can apply them before first paint.
+- `build-extras/gen-palette.js` writes `css/palette.css`: the other colour
+  families, with the pastel/deep stops swapped for light themes so
+  `text-green-400` and `bg-red-950/40` read correctly on a light page.
+- Hand-written CSS and inline styles reference the same tokens
+  (`rgb(var(--slate-400) / .5)`, `var(--bg-surface)`, `rgb(var(--ink-rgb) / .06)`
+  for hover washes). Don't add new hex greys; use a token.
+- Deliberate exceptions (chess boards, Sudoku's paper island) pin their own
+  palette locally with the same variables.
+
+`npm run build:css` regenerates both `css/palette.css` and `css/tailwind.css`;
+run it after touching Tailwind classes in markup.
+
+### Failure paths
+
+`js/globals.js` owns the safety net: the data folder falls back to `~/.vulsor`
+if Documents isn't writable, `readJsonStrict` / `writeJsonSafe` set corrupt
+files aside and write atomically, and renderer errors are appended to
+`Vulsor_Memories/renderer.log` (main-process ones to `userData/logs/main.log`).
+Use `uiUnavailable()` / `uiCreateWebGLRenderer()` from `js/ui.js` for anything
+that depends on a capability the machine may lack.
 
 ### Where state lives
 
