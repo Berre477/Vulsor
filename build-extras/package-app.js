@@ -11,6 +11,7 @@
 'use strict';
 
 const path = require('path');
+const fs = require('fs');
 const { packager } = require('@electron/packager');
 
 const ROOT = path.join(__dirname, '..');
@@ -51,11 +52,29 @@ const IGNORE = [
     '^/[^/]+\\.zip$',
 ];
 
+// The icon chosen in Appearance, so a rebuild doesn't hand back the default
+// one. The app repairs this on its next launch either way, but building it in
+// means the rebuilt app is right the moment it appears in Finder.
+function chosenIcon(fallback) {
+    try {
+        const os = require('os');
+        const settings = path.join(os.homedir(), 'Documents', 'Vulsor_Memories', 'settings.json');
+        const choice = JSON.parse(fs.readFileSync(settings, 'utf8')).appIcon;
+        if (choice === 'black' || choice === 'white') {
+            const p = path.join(__dirname, 'icons', `${choice}.icns`);
+            if (fs.existsSync(p)) return p;
+        } else if (typeof choice === 'string' && /\.icns$/i.test(choice) && fs.existsSync(choice)) {
+            return choice;
+        }
+    } catch (_) {}
+    return fallback;
+}
+
 // Options that differ per target. Everything else is shared.
 const TARGETS = {
     darwin: {
         arch: 'arm64',
-        icon: 'icon.icns',
+        icon: chosenIcon('icon.icns'),
         // Registers vulsor:// and the http/https handler entries.
         extendInfo: 'build-extras/url-types.plist',
     },

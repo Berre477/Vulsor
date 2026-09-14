@@ -14,8 +14,11 @@ let _saveTimer = null;
 let _graphs = [];          // array of { id, expr, color, visible, label }
 let _view2d = { xMin:-10, xMax:10, yMin:-8, yMax:8, panX:0, panY:0, zoom:1 };
 let _view3d = { rotX:0.45, rotY:0.5, zoom:0.72 };
+let _paper   = true;       // white plot background (saved per file); false = app theme
+let _cursor  = null;       // {x, y} in graph units while the pointer is over the 2D plot
 let _pan     = null;       // {startX, startY, origMin/Max…}
 let _orb3d   = null;       // {x0,y0,rx0,ry0}
+let _eventsMounted = false;
 
 // Matrix calculator state
 let _mats = [];            // [{ id, name, rows, cols, data }]  data = flat row-major array
@@ -39,6 +42,17 @@ function _isLight() {
 }
 function _bgBase() {
     return getComputedStyle(document.documentElement).getPropertyValue('--bg-base').trim() || '#0a0f1a';
+}
+/* Plot surface colours. Paper mode is a white sheet with dark ink regardless
+   of the app theme; otherwise the plot follows the background theme. */
+function _plotLight() { return _paper || _isLight(); }
+function _plotBg()    { return _paper ? '#ffffff' : _bgBase(); }
+
+/* Number formatting for tick labels and readouts: short, no float noise. */
+function _fmtNum(n, sig) {
+    if (!isFinite(n)) return String(n);
+    const s = parseFloat(n.toPrecision(sig || 4));
+    return Math.abs(s) < 1e-12 ? '0' : String(s);
 }
 
 /* ══════════════════════════════════════════════════
@@ -131,116 +145,218 @@ function _draw2d() {
     ctx.scale(dpr, dpr);
 
     // Background
-    const light2d = _isLight();
-    ctx.fillStyle = _bgBase();
+    const light = _plotLight();
+    ctx.fillStyle = _plotBg();
     ctx.fillRect(0, 0, w, h);
 
     const v = _view2d;
     const xRange = v.xMax - v.xMin, yRange = v.yMax - v.yMin;
+    if (!(xRange > 0) || !(yRange > 0)) { ctx.restore(); return; }
     const toCanvasX = x => (x - v.xMin) / xRange * w;
     const toCanvasY = y => h - (y - v.yMin) / yRange * h;
-    const fromCanvasX = cx => v.xMin + cx / w * xRange;
-    const fromCanvasY = cy => v.yMin + (h - cy) / h * yRange;
 
-    // Grid
-    const gridColor = light2d ? 'rgba(0,0,0,0.08)' : 'rgba(255,255,255,0.07)';
-    const axisColor = light2d ? 'rgba(0,0,0,0.30)' : 'rgba(255,255,255,0.25)';
+    // Ink
+    const ink = light ? '0,0,0' : '255,255,255';
+    const minorColor = `rgba(${ink},${light ? 0.05 : 0.04})`;
+    const majorColor = `rgba(${ink},${light ? 0.13 : 0.09})`;
+    const axisColor  = `rgba(${ink},${light ? 0.65 : 0.45})`;
+    const labelColor = `rgba(${ink},${light ? 0.70 : 0.55})`;
+    const faintColor = `rgba(${ink},${light ? 0.40 : 0.30})`;
 
+    // Major step: 1/2/5 × 10^n, and the minor subdivision that goes with it
     function niceStep(range, targetLines) {
         const raw = range / targetLines;
         const mag = Math.pow(10, Math.floor(Math.log10(raw)));
         const norm = raw / mag;
-        if (norm < 1.5) return mag;
-        if (norm < 3.5) return 2 * mag;
-        if (norm < 7.5) return 5 * mag;
-        return 10 * mag;
+        if (norm < 1.5) return { step: mag,      sub: 5 };
+        if (norm < 3.5) return { step: 2 * mag,  sub: 4 };
+        if (norm < 7.5) return { step: 5 * mag,  sub: 5 };
+        return               { step: 10 * mag, sub: 5 };
     }
+    const xs = niceStep(xRange, Math.max(6, w / 90));
+    const ys = niceStep(yRange, Math.max(5, h / 70));
+    const xStep = xs.step, yStep = ys.step;
+    const xMinor = xStep / xs.sub, yMinor = yStep / ys.sub;
+    const eps = 1e-9;
 
-    const xStep = niceStep(xRange, 10);
-    const yStep = niceStep(yRange, 8);
-
-    // Vertical grid lines
+    // Minor grid
     ctx.lineWidth = 1;
-    const xStart = Math.ceil(v.xMin / xStep) * xStep;
-    for (let x = xStart; x <= v.xMax + xStep * 0.01; x += xStep) {
-        const cx = toCanvasX(x);
-        ctx.strokeStyle = Math.abs(x) < xStep * 0.01 ? axisColor : gridColor;
-        ctx.beginPath(); ctx.moveTo(cx, 0); ctx.lineTo(cx, h); ctx.stroke();
+    ctx.strokeStyle = minorColor;
+    ctx.beginPath();
+    for (let x = Math.ceil(v.xMin / xMinor) * xMinor; x <= v.xMax + eps; x += xMinor) {
+        const cx = Math.round(toCanvasX(x)) + 0.5;
+        ctx.moveTo(cx, 0); ctx.lineTo(cx, h);
     }
-    // Horizontal grid lines
-    const yStart = Math.ceil(v.yMin / yStep) * yStep;
-    for (let y = yStart; y <= v.yMax + yStep * 0.01; y += yStep) {
-        const cy = toCanvasY(y);
-        ctx.strokeStyle = Math.abs(y) < yStep * 0.01 ? axisColor : gridColor;
-        ctx.beginPath(); ctx.moveTo(0, cy); ctx.lineTo(w, cy); ctx.stroke();
+    for (let y = Math.ceil(v.yMin / yMinor) * yMinor; y <= v.yMax + eps; y += yMinor) {
+        const cy = Math.round(toCanvasY(y)) + 0.5;
+        ctx.moveTo(0, cy); ctx.lineTo(w, cy);
     }
+    ctx.stroke();
 
-    // Tick labels
-    const labelColor  = light2d ? 'rgba(0,0,0,0.55)'   : 'rgba(148,163,184,0.7)';
-    const labelColor2 = light2d ? 'rgba(0,0,0,0.35)'   : 'rgba(148,163,184,0.5)';
+    // Major grid
+    ctx.strokeStyle = majorColor;
+    ctx.beginPath();
+    const xStart = Math.ceil(v.xMin / xStep) * xStep;
+    const yStart = Math.ceil(v.yMin / yStep) * yStep;
+    for (let x = xStart; x <= v.xMax + eps; x += xStep) {
+        const cx = Math.round(toCanvasX(x)) + 0.5;
+        ctx.moveTo(cx, 0); ctx.lineTo(cx, h);
+    }
+    for (let y = yStart; y <= v.yMax + eps; y += yStep) {
+        const cy = Math.round(toCanvasY(y)) + 0.5;
+        ctx.moveTo(0, cy); ctx.lineTo(w, cy);
+    }
+    ctx.stroke();
+
+    // Axes — drawn where they are, or pinned to the nearest edge when the
+    // origin is scrolled out of view so the tick labels stay readable.
+    const xAxisOn = v.yMin <= 0 && v.yMax >= 0;
+    const yAxisOn = v.xMin <= 0 && v.xMax >= 0;
+    const axisY = Math.min(Math.max(toCanvasY(0), 1), h - 1);   // y-pixel of the x axis
+    const axisX = Math.min(Math.max(toCanvasX(0), 1), w - 1);   // x-pixel of the y axis
+    ctx.strokeStyle = axisColor;
+    ctx.lineWidth = xAxisOn ? 1.5 : 1;
+    ctx.setLineDash(xAxisOn ? [] : [4, 4]);
+    ctx.beginPath(); ctx.moveTo(0, axisY); ctx.lineTo(w, axisY); ctx.stroke();
+    ctx.lineWidth = yAxisOn ? 1.5 : 1;
+    ctx.setLineDash(yAxisOn ? [] : [4, 4]);
+    ctx.beginPath(); ctx.moveTo(axisX, 0); ctx.lineTo(axisX, h); ctx.stroke();
+    ctx.setLineDash([]);
+
+    // Arrowheads on the positive ends
+    ctx.fillStyle = axisColor;
+    if (xAxisOn) { ctx.beginPath(); ctx.moveTo(w, axisY); ctx.lineTo(w - 9, axisY - 4); ctx.lineTo(w - 9, axisY + 4); ctx.closePath(); ctx.fill(); }
+    if (yAxisOn) { ctx.beginPath(); ctx.moveTo(axisX, 0); ctx.lineTo(axisX - 4, 9); ctx.lineTo(axisX + 4, 9); ctx.closePath(); ctx.fill(); }
+
+    // Tick marks + labels on both axes
+    const fontPx = Math.max(10, Math.min(12, w / 80));
+    ctx.font = `${fontPx}px monospace`;
     ctx.fillStyle = labelColor;
-    ctx.font = `${Math.max(9, Math.min(11, w / 70))}px monospace`;
-    ctx.textBaseline = 'top';
-    const originY = Math.min(Math.max(toCanvasY(0), 2), h - 14);
-    const originX = Math.min(Math.max(toCanvasX(0), 2), w - 30);
-    for (let x = xStart; x <= v.xMax; x += xStep) {
-        if (Math.abs(x) < xStep * 0.01) continue;
-        const lbl = Number(x.toPrecision(4)).toString();
-        ctx.textAlign = 'center';
-        ctx.fillText(lbl, toCanvasX(x), originY + 3);
+    ctx.strokeStyle = axisColor;
+    ctx.lineWidth = 1;
+    const labelsBelow = axisY < h - 18;         // room under the x axis?
+    const labelsLeft  = axisX > 34;             // room left of the y axis?
+    ctx.textBaseline = labelsBelow ? 'top' : 'bottom';
+    ctx.textAlign = 'center';
+    for (let x = xStart; x <= v.xMax + eps; x += xStep) {
+        if (Math.abs(x) < xStep * 1e-6) continue;
+        const cx = toCanvasX(x);
+        ctx.beginPath(); ctx.moveTo(cx, axisY - 4); ctx.lineTo(cx, axisY + 4); ctx.stroke();
+        if (cx < 14 || cx > w - 14) continue;            // would be cut off at the edge
+        ctx.fillText(_fmtNum(x), cx, labelsBelow ? axisY + 6 : axisY - 6);
     }
     ctx.textBaseline = 'middle';
-    for (let y = yStart; y <= v.yMax; y += yStep) {
-        if (Math.abs(y) < yStep * 0.01) continue;
-        const lbl = Number(y.toPrecision(4)).toString();
-        ctx.textAlign = 'right';
-        ctx.fillText(lbl, originX - 4, toCanvasY(y));
+    ctx.textAlign = labelsLeft ? 'right' : 'left';
+    for (let y = yStart; y <= v.yMax + eps; y += yStep) {
+        if (Math.abs(y) < yStep * 1e-6) continue;
+        const cy = toCanvasY(y);
+        ctx.beginPath(); ctx.moveTo(axisX - 4, cy); ctx.lineTo(axisX + 4, cy); ctx.stroke();
+        if (cy < 8 || cy > h - 8) continue;
+        ctx.fillText(_fmtNum(y), labelsLeft ? axisX - 7 : axisX + 7, cy);
+    }
+    // Origin
+    if (xAxisOn && yAxisOn) {
+        ctx.textAlign = 'right'; ctx.textBaseline = 'top';
+        ctx.fillText('0', axisX - 5, axisY + 5);
     }
 
-    // Axis labels
-    ctx.fillStyle = labelColor2;
-    ctx.font = '10px monospace';
+    // Axis names
+    ctx.fillStyle = faintColor;
+    ctx.font = `italic ${fontPx + 1}px serif`;
     ctx.textAlign = 'right'; ctx.textBaseline = 'bottom';
-    ctx.fillText('x', w - 4, originY - 2);
-    ctx.textAlign = 'left'; ctx.textBaseline = 'top';
-    ctx.fillText('y', originX + 4, 4);
+    ctx.fillText('x', w - 12, axisY - 5);
+    ctx.textAlign = 'left';  ctx.textBaseline = 'top';
+    ctx.fillText('y', axisX + 8, 10);
 
-    // Plot each graph
-    _graphs.forEach(g => {
-        if (!g.visible || !g.expr.trim()) return;
-        const fn = _makeEval(g.expr);
-        const steps = Math.ceil(w * 1.5);
+    // Plot each graph — two samples per pixel, pen lifted across gaps and
+    // asymptotes so a 1/x doesn't get a vertical stroke through the origin.
+    const compiled = _graphs.map(g => (g.visible && g.expr.trim()) ? { g, fn: _makeEval(g.expr) } : null).filter(Boolean);
+    const steps = Math.ceil(w * 2);
+    const yLimit = yRange * 20;
+    compiled.forEach(({ g, fn }) => {
         ctx.beginPath();
         ctx.strokeStyle = g.color;
         ctx.lineWidth = 2;
         ctx.lineJoin = 'round';
-        let pen = false;
+        ctx.lineCap  = 'round';
+        let pen = false, prevY = NaN;
         for (let i = 0; i <= steps; i++) {
             const x = v.xMin + (i / steps) * xRange;
             let y;
             try { y = fn(x, 0); } catch { y = NaN; }
-            if (!isFinite(y) || isNaN(y) || Math.abs(y) > yRange * 20) { pen = false; continue; }
+            if (typeof y !== 'number' || !isFinite(y) || Math.abs(y) > yLimit) { pen = false; prevY = NaN; continue; }
+            // A jump larger than the whole window between neighbouring samples
+            // is an asymptote, not a line.
+            if (pen && Math.abs(y - prevY) > yRange * 2) pen = false;
             const cx = toCanvasX(x), cy = toCanvasY(y);
             if (!pen) { ctx.moveTo(cx, cy); pen = true; }
             else       ctx.lineTo(cx, cy);
+            prevY = y;
         }
         ctx.stroke();
     });
 
-    // Legend
-    const visible = _graphs.filter(g => g.visible && g.expr.trim());
-    if (visible.length) {
-        let ly = 10;
-        visible.forEach(g => {
-            ctx.fillStyle = g.color + 'cc';
-            ctx.fillRect(10, ly, 16, 3);
-            ctx.fillStyle = light2d ? 'rgba(0,0,0,0.75)' : 'rgba(255,255,255,0.7)';
-            ctx.font = '10px monospace';
+    // Cursor readout: crosshair through the pointer, a marker on every curve
+    // at that x, and the values written next to them.
+    if (_cursor && compiled.length + 1) {
+        const cx = toCanvasX(_cursor.x), cy = toCanvasY(_cursor.y);
+        ctx.strokeStyle = `rgba(${ink},0.35)`;
+        ctx.lineWidth = 1;
+        ctx.setLineDash([3, 4]);
+        ctx.beginPath(); ctx.moveTo(cx, 0); ctx.lineTo(cx, h); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(0, cy); ctx.lineTo(w, cy); ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.font = `${fontPx}px monospace`;
+        compiled.forEach(({ g, fn }) => {
+            let y; try { y = fn(_cursor.x, 0); } catch { y = NaN; }
+            if (typeof y !== 'number' || !isFinite(y) || y < v.yMin || y > v.yMax) return;
+            const py = toCanvasY(y);
+            ctx.fillStyle = g.color;
+            ctx.beginPath(); ctx.arc(cx, py, 4, 0, Math.PI * 2); ctx.fill();
+            ctx.strokeStyle = _plotBg(); ctx.lineWidth = 1.5; ctx.stroke();
+            const txt = `(${_fmtNum(_cursor.x)}, ${_fmtNum(y)})`;
+            const tw = ctx.measureText(txt).width;
+            const tx = cx + 10 + tw > w ? cx - 10 - tw : cx + 10;
+            ctx.fillStyle = _plotBg();
+            ctx.globalAlpha = 0.85;
+            ctx.fillRect(tx - 3, py - 16, tw + 6, 14);
+            ctx.globalAlpha = 1;
+            ctx.fillStyle = g.color;
             ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
-            ctx.fillText(g.label || g.expr.substring(0, 24), 32, ly + 1);
-            ly += 16;
+            ctx.fillText(txt, tx, py - 9);
         });
     }
+
+    // Legend
+    if (compiled.length) {
+        ctx.font = `${fontPx}px monospace`;
+        const rows = compiled.map(({ g }) => g.label || g.expr.substring(0, 28));
+        const boxW = Math.max(...rows.map(t => ctx.measureText(t).width)) + 40;
+        const boxH = rows.length * 17 + 8;
+        ctx.fillStyle = _plotBg();
+        ctx.globalAlpha = 0.85;
+        ctx.fillRect(8, 8, boxW, boxH);
+        ctx.globalAlpha = 1;
+        ctx.strokeStyle = majorColor; ctx.lineWidth = 1;
+        ctx.strokeRect(8.5, 8.5, boxW, boxH);
+        let ly = 8 + 12;
+        compiled.forEach(({ g }, i) => {
+            ctx.strokeStyle = g.color; ctx.lineWidth = 2.5;
+            ctx.beginPath(); ctx.moveTo(16, ly); ctx.lineTo(34, ly); ctx.stroke();
+            ctx.fillStyle = `rgba(${ink},${light ? 0.8 : 0.75})`;
+            ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+            ctx.fillText(rows[i], 40, ly);
+            ly += 17;
+        });
+    }
+
+    // Scale readout (bottom-right): what one big square and one small square measure
+    ctx.font = `${fontPx - 1}px monospace`;
+    ctx.fillStyle = faintColor;
+    ctx.textAlign = 'right'; ctx.textBaseline = 'bottom';
+    ctx.fillText(`grid ${_fmtNum(xStep)} × ${_fmtNum(yStep)}  ·  minor ${_fmtNum(xMinor)} × ${_fmtNum(yMinor)}`, w - 8, h - 6);
+    ctx.textAlign = 'left';
+    ctx.fillText(`x ∈ [${_fmtNum(v.xMin)}, ${_fmtNum(v.xMax)}]   y ∈ [${_fmtNum(v.yMin)}, ${_fmtNum(v.yMax)}]`, 8, h - 6);
 
     ctx.restore();
 }
@@ -258,8 +374,8 @@ function _draw3d() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.save();
     ctx.scale(dpr, dpr);
-    const light3d = _isLight();
-    ctx.fillStyle = _bgBase();
+    const light3d = _plotLight();
+    ctx.fillStyle = _plotBg();
     ctx.fillRect(0, 0, W, H);
 
     const v = _view3d;
@@ -283,8 +399,9 @@ function _draw3d() {
         return { sx: cx + rx * scale * d, sy: cy - ry * scale * d, d };
     }
 
-    // Draw grid axes
-    const RANGE = 2.2;
+    // Draw grid axes. The scene spans x,y ∈ [-RANGE, RANGE]; the surface
+    // height is scaled by Y_SCALE so tall functions stay in frame.
+    const RANGE = 2.5, Y_SCALE = 0.4;
     ctx.lineWidth = 1;
 
     // Axis lines
@@ -300,15 +417,27 @@ function _draw3d() {
         ctx.fillText(lbl, p1.sx + (dx-dz)*8, p1.sy - dy*8);
     });
 
-    // Grid on XZ plane (y=0)
-    ctx.strokeStyle = light3d ? 'rgba(0,0,0,0.08)' : 'rgba(255,255,255,0.06)'; ctx.lineWidth = 0.8;
-    const gSteps = 5;
-    for (let i = -gSteps; i <= gSteps; i++) {
-        const t = i / gSteps * RANGE;
+    // Grid on the ground plane (y=0): a line every 0.5, a darker one every 1
+    const ink3 = light3d ? '0,0,0' : '255,255,255';
+    for (let i = -RANGE * 2; i <= RANGE * 2; i++) {
+        const t = i / 2;
+        const major = Number.isInteger(t);
+        ctx.strokeStyle = `rgba(${ink3},${major ? (light3d ? 0.14 : 0.10) : (light3d ? 0.06 : 0.04)})`;
+        ctx.lineWidth = major ? 1 : 0.6;
         const a = project(t, 0, -RANGE), b = project(t, 0, RANGE);
         ctx.beginPath(); ctx.moveTo(a.sx,a.sy); ctx.lineTo(b.sx,b.sy); ctx.stroke();
         const c = project(-RANGE, 0, t), d2 = project(RANGE, 0, t);
         ctx.beginPath(); ctx.moveTo(c.sx,c.sy); ctx.lineTo(d2.sx,d2.sy); ctx.stroke();
+    }
+
+    // Tick labels along each axis, in the units the function actually sees
+    ctx.font = '10px monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillStyle = `rgba(${ink3},${light3d ? 0.55 : 0.45})`;
+    for (let t = -2; t <= 2; t++) {
+        if (t === 0) continue;
+        const px = project(t, 0, 0); ctx.fillText(_fmtNum(t), px.sx, px.sy + 10);
+        const pz = project(0, 0, t); ctx.fillText(_fmtNum(t), pz.sx + 12, pz.sy);
+        const py = project(0, t, 0); ctx.fillText(_fmtNum(t / Y_SCALE), py.sx - 14, py.sy);
     }
 
     // Plot surfaces
@@ -327,7 +456,7 @@ function _draw3d() {
             for (let j = 0; j <= SURF_STEPS; j++) {
                 const x = -RANGE + i / SURF_STEPS * RANGE * 2;
                 const z = -RANGE + j / SURF_STEPS * RANGE * 2;
-                let y; try { y = fn(x, z) * 0.4; } catch { y = NaN; }
+                let y; try { y = fn(x, z) * Y_SCALE; } catch { y = NaN; }
                 if (!isFinite(y) || isNaN(y)) y = 0;
                 y = Math.max(-RANGE * 1.2, Math.min(RANGE * 1.2, y));
                 pts[i].push(project(x, y, z));
@@ -380,9 +509,11 @@ function _draw3d() {
         });
     }
 
-    ctx.fillStyle = light3d ? 'rgba(0,0,0,0.30)' : 'rgba(255,255,255,0.18)';
-    ctx.font = '10px sans-serif'; ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+    ctx.fillStyle = light3d ? 'rgba(0,0,0,0.35)' : 'rgba(255,255,255,0.22)';
+    ctx.font = '10px monospace'; ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
     ctx.fillText('Drag to rotate · scroll to zoom', 10, H - 8);
+    ctx.textAlign = 'right';
+    ctx.fillText(`x, y ∈ [${-RANGE}, ${RANGE}]  ·  z shown at ×${Y_SCALE}`, W - 10, H - 8);
     ctx.restore();
 }
 
@@ -728,6 +859,9 @@ function _renderWindow() {
    CANVAS INTERACTION
 ══════════════════════════════════════════════════ */
 function _mountCanvasEvents() {
+    // The window-level listeners below must not pile up once per open.
+    if (_eventsMounted) return;
+    _eventsMounted = true;
     const c2 = document.getElementById('graph-canvas-2d');
     const c3 = document.getElementById('graph-canvas-3d');
 
@@ -740,6 +874,18 @@ function _mountCanvasEvents() {
             _pan = { startX:mx, startY:my, xMin:_view2d.xMin, xMax:_view2d.xMax, yMin:_view2d.yMin, yMax:_view2d.yMax };
             e.preventDefault();
         };
+        // Cursor readout (crosshair + values) while hovering
+        c2.onmousemove = e => {
+            const r = c2.getBoundingClientRect();
+            if (!r.width || !r.height) return;
+            const v = _view2d;
+            _cursor = {
+                x: v.xMin + (e.clientX - r.left) / r.width  * (v.xMax - v.xMin),
+                y: v.yMax - (e.clientY - r.top)  / r.height * (v.yMax - v.yMin),
+            };
+            if (!_pan) _redraw();
+        };
+        c2.onmouseleave = () => { _cursor = null; _redraw(); };
         window.addEventListener('mousemove', e => {
             if (!_pan || _mode !== '2d') return;
             const r = c2.getBoundingClientRect();
@@ -1293,6 +1439,9 @@ function _switchMode(m) {
         btn.style.background = active ? 'rgba(var(--accent-rgb),0.15)' : '';
         btn.style.color      = active ? 'var(--accent-light, #38bdf8)' : '';
         btn.style.opacity    = active ? '1' : '';
+        btn.classList.toggle('bg-sky-500/20', active);
+        btn.classList.toggle('text-sky-300',  active);
+        btn.classList.toggle('text-slate-500', !active);
     });
 
     if (m === 'matrix') {
@@ -1311,7 +1460,7 @@ function _scheduleSave() {
     clearTimeout(_saveTimer);
     _saveTimer = setTimeout(() => {
         if (typeof _sciWriteFile === 'function') {
-            _sciWriteFile(_file, { mode:_mode, graphs:_graphs, view2d:_view2d, view3d:_view3d, mats:_mats });
+            _sciWriteFile(_file, { mode:_mode, graphs:_graphs, view2d:_view2d, view3d:_view3d, mats:_mats, paper:_paper });
         }
     }, 500);
 }
@@ -1324,14 +1473,20 @@ window.openVaultGraphEditor = function(file) {
     const saved = (typeof _sciReadFile === 'function' ? _sciReadFile(file) : null) || {};
 
     _mode   = saved.mode   || '2d';
-    _graphs = saved.graphs || [
-        { id:_nid(), expr:'sin(x)',  color:'#38bdf8', visible:true, label:'' },
-        { id:_nid(), expr:'cos(x)',  color:'#f87171', visible:true, label:'' },
-        { id:_nid(), expr:'x^2/10', color:'#4ade80', visible:true, label:'' },
-    ];
+    // A file this editor has never saved (the "New Graph" template carries an
+    // empty list and no `mats` key) starts with sample functions, so a new
+    // graph is never an empty sheet. A file the user emptied on purpose stays empty.
+    const fresh = !Array.isArray(saved.graphs) || (!saved.graphs.length && !('mats' in saved));
+    _graphs = fresh ? [
+        { id:_nid(), expr:'sin(x)',  color:'#2563eb', visible:true, label:'' },
+        { id:_nid(), expr:'cos(x)',  color:'#dc2626', visible:true, label:'' },
+        { id:_nid(), expr:'x^2/10', color:'#16a34a', visible:true, label:'' },
+    ] : saved.graphs;
     _view2d = Object.assign({ xMin:-10, xMax:10, yMin:-8, yMax:8 }, saved.view2d || {});
     _view3d = Object.assign({ rotX:0.45, rotY:0.5, zoom:0.72 }, saved.view3d || {});
     _mats   = saved.mats || [];
+    _paper  = saved.paper !== undefined ? !!saved.paper : true;
+    _cursor = null;
 
     const area = document.getElementById('vault-graph-area');
     if (area) area.style.display = 'flex';
@@ -1348,6 +1503,10 @@ window.openVaultGraphEditor = function(file) {
     if (b2) b2.onclick = () => _switchMode('2d');
     if (b3) b3.onclick = () => _switchMode('3d');
     if (bM) bM.onclick = () => _switchMode('matrix');
+
+    // Paper / theme background toggle
+    const bp = document.getElementById('graph-paper-btn');
+    if (bp) { bp.onclick = () => { _paper = !_paper; _syncPaperBtn(); _redraw(); _scheduleSave(); }; _syncPaperBtn(); }
 
     // Wire header add-expr button
     const addBtn = document.getElementById('graph-add-expr');
@@ -1367,10 +1526,21 @@ window.openVaultGraphEditor = function(file) {
     const wrap = document.getElementById('graph-canvas-wrap');
     if (wrap) { _resObs = new ResizeObserver(_resizeCanvases); _resObs.observe(wrap); }
 
-    // Defer until browser has reflowed the newly-visible area —
-    // otherwise getBoundingClientRect() returns 0×0 on first open
-    requestAnimationFrame(() => requestAnimationFrame(() => _switchMode(_mode)));
+    // Lay out now — reading getBoundingClientRect() forces a synchronous
+    // reflow of the newly-visible area, so this works even while the window
+    // is hidden, where requestAnimationFrame would never fire. The deferred
+    // pass catches anything the first paint moves (fonts, scrollbars).
+    _switchMode(_mode);
+    requestAnimationFrame(() => requestAnimationFrame(() => { if (_file) _resizeCanvases(); }));
 };
+
+function _syncPaperBtn() {
+    const bp = document.getElementById('graph-paper-btn');
+    if (!bp) return;
+    bp.title = _paper ? 'White plot background (click for theme colour)' : 'Theme plot background (click for white)';
+    bp.classList.toggle('text-sky-300',   _paper);
+    bp.classList.toggle('text-slate-500', !_paper);
+}
 
 window.closeVaultGraphEditor = function() {
     const area = document.getElementById('vault-graph-area');
@@ -1381,9 +1551,10 @@ window.closeVaultGraphEditor = function() {
     if (_resObs) { _resObs.disconnect(); _resObs = null; }
     clearTimeout(_saveTimer);
     if (_file && typeof _sciWriteFile === 'function') {
-        _sciWriteFile(_file, { mode:_mode, graphs:_graphs, view2d:_view2d, view3d:_view3d });
+        _sciWriteFile(_file, { mode:_mode, graphs:_graphs, view2d:_view2d, view3d:_view3d, mats:_mats, paper:_paper });
     }
     _file = null;
+    _cursor = null;
 };
 
 })();

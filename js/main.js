@@ -723,6 +723,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (tab.key === 'vault') _restoreVaultTabState(tab);
 
             _renderTabStrip();
+            _navSync();
         }
 
         // Open or navigate to an app.
@@ -744,6 +745,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (key === 'vault') _restoreVaultTabState(activeTab);
                 _activateView(key);
                 _renderTabStrip();
+                _navSync();
                 return;
             }
 
@@ -759,6 +761,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 _activateView(key);
                 if (key === 'vault') _restoreVaultTabState(_tabs.find(t => t.id === id));
                 _renderTabStrip();
+                _navSync();
                 return;
             }
 
@@ -770,6 +773,7 @@ document.addEventListener('DOMContentLoaded', () => {
             _activeId = id;
             _activateView(key);
             _renderTabStrip();
+            _navSync();
         }
 
         function _closeTab(id) {
@@ -794,6 +798,167 @@ document.addEventListener('DOMContentLoaded', () => {
                 _renderTabStrip();
             }
         }
+
+        // ══════════════════════════════════════════════════════
+        // ── App-wide back / forward ──────────────────────────
+        // ══════════════════════════════════════════════════════
+        // One history for the whole window, so back/forward mean the same thing
+        // wherever you are: a step back to wherever you were before, whether
+        // that's another app, another tab, or the folder the Vault was showing
+        // a moment ago. Per-tab stacks were tried first and are the wrong shape
+        // here — opening an app usually opens a NEW tab, so a per-tab stack is
+        // empty exactly when you most want to go back.
+        //
+        // Websites are the one place that defers: inside a web tab the page's
+        // own history comes first, and only once it runs out does back step out
+        // to whatever you were doing before you opened the site.
+        //
+        // Nothing calls "push" explicitly. The current location is reduced to a
+        // short signature and compared against the top of the stack, so anything
+        // that moves somewhere new is recorded without the app having to know
+        // the history exists — and a new app gets back/forward for free.
+        const NAV_MAX  = 100;
+        const _navHist = { entries: [], idx: -1 };
+        let _navApplying = false;
+        // Restoring a location can settle a frame or two after _navApply returns
+        // (a Vault file loads its viewer asynchronously). A check landing in that
+        // gap would read the half-restored location as somewhere new and record
+        // it, throwing away the forward history — so nothing is recorded until
+        // things have had a moment to settle.
+        let _navQuietUntil = 0;
+
+        const _navStep = dir => (dir < 0 ? -1 : 1);
+        const _navTab  = id  => _tabs.find(t => t.id === id);
+
+        function _navSig(tab) {
+            if (!tab) return '';
+            if (tab.key === 'vault')
+                return `${tab.id}|vault|${vaultActiveFolderId || ''}|${vaultOpenFileId || ''}`;
+            return `${tab.id}|${tab.key}`;
+        }
+
+        function _navCapture(tab) {
+            if (tab.key === 'vault') _saveVaultTabState(tab);
+            return { ...(tab.instanceData || {}) };
+        }
+
+        // The page history of the active web tab, when there is one.
+        function _navWeb(dir, act) {
+            const tab = _navTab(_activeId);
+            if (!tab || tab.key !== 'browser' || !window.bwNav) return false;
+            const bwId = tab.instanceData && tab.instanceData.bwId;
+            if (!bwId) return false;
+            const can = dir < 0 ? window.bwNav.canBack(bwId) : window.bwNav.canForward(bwId);
+            if (!can) return false;
+            if (act) { if (dir < 0) window.bwNav.back(bwId); else window.bwNav.forward(bwId); }
+            return true;
+        }
+
+        // Record where we are, if it has changed since the last check.
+        function _navSync() {
+            const tab = _navTab(_activeId);
+            if (!tab) return;
+            const h   = _navHist;
+            const sig = _navSig(tab);
+            const cur = h.entries[h.idx];
+
+            if (cur && cur.sig === sig) {
+                // Same place — refresh the stored state so scroll position and
+                // page number come back with it when we return here.
+                cur.data  = _navCapture(tab);
+                cur.label = tab.label || null;
+            } else if (!_navApplying && Date.now() >= _navQuietUntil) {
+                h.entries.length = h.idx + 1;          // drop any forward history
+                h.entries.push({
+                    tabId: tab.id, key: tab.key, sig,
+                    label: tab.label || null, data: _navCapture(tab),
+                });
+                if (h.entries.length > NAV_MAX) h.entries.shift();
+                h.idx = h.entries.length - 1;
+            }
+            _navUpdateButtons();
+        }
+
+        // Put the window back into a recorded location. Returns false if the tab
+        // it belongs to has since been closed, so the caller can keep walking.
+        function _navApply(entry) {
+            const tab = _navTab(entry.tabId);
+            if (!tab) return false;
+            _navApplying = true;
+            try {
+                const prev = _navTab(_activeId);
+                if (prev && prev !== tab && prev.key === 'vault') _saveVaultTabState(prev);
+                _activeId = tab.id;
+                tab.key   = entry.key;
+                tab.label = entry.label || null;
+                // A web tab's instanceData holds the live <webview> id — restoring
+                // a copy of it is fine, but never for a tab that has since become
+                // something else.
+                tab.instanceData = { ...(entry.data || {}) };
+                _activateView(tab.key);
+                if (tab.key === 'vault')   _restoreVaultTabState(tab);
+                if (tab.key === 'browser' && tab.instanceData.bwId && window.bwActivate)
+                    window.bwActivate(tab.instanceData.bwId);
+                _renderTabStrip();
+            } finally {
+                _navApplying   = false;
+                _navQuietUntil = Date.now() + 500;
+            }
+            return true;
+        }
+
+        function _navCanGo(dir) {
+            if (_navWeb(dir, false)) return true;
+            const h = _navHist, step = _navStep(dir);
+            for (let i = h.idx + step; i >= 0 && i < h.entries.length; i += step)
+                if (_navTab(h.entries[i].tabId)) return true;
+            return false;
+        }
+
+        function _navGo(dir) {
+            if (_navWeb(dir, true)) { setTimeout(_navUpdateButtons, 150); return; }
+
+            const h = _navHist, step = _navStep(dir);
+            const tab = _navTab(_activeId);
+            // Keep the entry we're leaving up to date so the return trip lands on
+            // the same scroll position.
+            const cur = h.entries[h.idx];
+            if (tab && cur && cur.tabId === tab.id) cur.data = _navCapture(tab);
+
+            for (let i = h.idx + step; i >= 0 && i < h.entries.length; i += step) {
+                if (_navApply(h.entries[i])) { h.idx = i; _navUpdateButtons(); return; }
+            }
+        }
+
+        function _navUpdateButtons() {
+            const b = document.getElementById('app-nav-back');
+            const f = document.getElementById('app-nav-fwd');
+            if (b) b.disabled = !_navCanGo(-1);
+            if (f) f.disabled = !_navCanGo(1);
+        }
+
+        document.getElementById('app-nav-back')?.addEventListener('click', () => _navGo(-1));
+        document.getElementById('app-nav-fwd') ?.addEventListener('click', () => _navGo(1));
+
+        // ⌘[ / ⌘] and the mouse's thumb buttons, the same as any browser.
+        window.addEventListener('keydown', e => {
+            if (!(e.metaKey || e.ctrlKey) || e.altKey) return;
+            if (e.key === '[') { e.preventDefault(); _navGo(-1); }
+            if (e.key === ']') { e.preventDefault(); _navGo(1); }
+        });
+        window.addEventListener('mouseup', e => {
+            if (e.button === 3) { e.preventDefault(); _navGo(-1); }
+            if (e.button === 4) { e.preventDefault(); _navGo(1); }
+        });
+
+        // Most moves happen on a click or a key press, but some land a frame or
+        // two later (opening a Vault file loads asynchronously), so check again
+        // shortly after. The slow interval is the safety net for anything that
+        // moves without either.
+        const _navPoke = () => { setTimeout(_navSync, 0); setTimeout(_navSync, 200); };
+        document.addEventListener('click', _navPoke, true);
+        document.addEventListener('keyup', _navPoke, true);
+        setInterval(_navSync, 700);
 
         // ── Web tabs as top-level tabs ─────────────────────────
         // Open a website as its own top-level app tab. The <webview> is owned
@@ -867,6 +1032,7 @@ document.addEventListener('DOMContentLoaded', () => {
             _activateView('vault');
             _restoreVaultTabState(tab);
             _renderTabStrip();
+            _navSync();
         };
 
         // ⌘W from the app menu (works even while a <webview> has focus).
@@ -1727,7 +1893,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (tab) {
                 if (tab.key === 'vault') _saveVaultTabState(tab);
                 tab.key = 'home'; tab.label = null; tab.instanceData = {};
-                _activateView('home'); _renderTabStrip();
+                _activateView('home'); _renderTabStrip(); _navSync();
             }
         });
 

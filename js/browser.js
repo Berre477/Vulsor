@@ -147,6 +147,28 @@ window.bwMeta = function (id) {
     return { title: t.title, favicon: t.favicon, loading: t.loading, private: t.private, url: t.url };
 };
 
+// Back/forward for a web tab, driven by the app-wide nav buttons in the
+// toolbar. canGoBack()/canGoForward() throw until the <webview> is dom-ready,
+// so every call is guarded the same way _bwScheduleUi() guards its own.
+window.bwNav = {
+    canBack(id) {
+        const t = _bwTabs.find(x => x.id === id);
+        try { return !!(t && t.wv && t.wv._domReady && t.wv.canGoBack()); } catch (_) { return false; }
+    },
+    canForward(id) {
+        const t = _bwTabs.find(x => x.id === id);
+        try { return !!(t && t.wv && t.wv._domReady && t.wv.canGoForward()); } catch (_) { return false; }
+    },
+    back(id) {
+        const t = _bwTabs.find(x => x.id === id);
+        try { if (t && t.wv) t.wv.goBack(); } catch (_) {}
+    },
+    forward(id) {
+        const t = _bwTabs.find(x => x.id === id);
+        try { if (t && t.wv) t.wv.goForward(); } catch (_) {}
+    },
+};
+
 // Snapshot enough state to re-create this web tab in another window. The live
 // <webview> can't cross renderers, so a moved/torn browser tab is rebuilt from
 // its URL on the other side. Falls back to a not-yet-loaded pendingUrl.

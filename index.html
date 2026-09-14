@@ -173,7 +173,9 @@
 
             <!-- Row 2: Browser toolbar — drag-region inherited; buttons/inputs declare no-drag themselves -->
             <div id="browser-toolbar" class="flex items-center gap-2" style="padding:4px 10px 6px 10px">
-                <!-- Nav buttons -->
+                <!-- Nav buttons — back/forward work in every app, not just web tabs -->
+                <button id="app-nav-back" title="Back (⌘[)" class="browser-tool-btn app-nav-btn" disabled><i class="fas fa-arrow-left" style="font-size:11px"></i></button>
+                <button id="app-nav-fwd" title="Forward (⌘])" class="browser-tool-btn app-nav-btn" disabled><i class="fas fa-arrow-right" style="font-size:11px"></i></button>
                 <button id="browser-home-btn" title="Home" class="browser-tool-btn"><i class="fas fa-home" style="font-size:11px"></i></button>
 
                 <!-- Address / breadcrumb bar — drag this to move the window -->
@@ -972,11 +974,24 @@
                             <div class="w-px h-4 bg-slate-700/80 shrink-0"></div>
                             <!-- Word wrap -->
                             <button id="vault-code-wrap-btn" class="text-slate-500 hover:text-slate-300 text-[10px] px-2 py-1 rounded hover:bg-slate-800 transition-colors" title="Toggle word wrap">Wrap</button>
+                            <!-- Divider -->
+                            <div class="w-px h-4 bg-slate-700/80 shrink-0"></div>
+                            <!-- Text size — also ⌘-scroll or trackpad pinch over the editor -->
+                            <div class="flex items-center gap-0.5 shrink-0">
+                                <button id="vault-code-zoom-out" class="w-6 h-6 flex items-center justify-center rounded text-slate-500 hover:text-slate-200 hover:bg-slate-800 transition-colors" title="Smaller text"><i class="fas fa-minus text-[9px]"></i></button>
+                                <button id="vault-code-zoom-label" class="text-slate-500 hover:text-slate-200 text-[10px] px-1 py-1 rounded hover:bg-slate-800 transition-colors tabular-nums min-w-[34px]" title="Reset text size">100%</button>
+                                <button id="vault-code-zoom-in" class="w-6 h-6 flex items-center justify-center rounded text-slate-500 hover:text-slate-200 hover:bg-slate-800 transition-colors" title="Bigger text"><i class="fas fa-plus text-[9px]"></i></button>
+                            </div>
                             <!-- Right side -->
                             <div class="flex items-center gap-1 ml-auto">
                                 <!-- Theme picker -->
                                 <button id="vault-code-theme-btn" class="w-7 h-7 flex items-center justify-center rounded-lg text-slate-500 hover:text-slate-200 hover:bg-slate-800 transition-colors" title="Change editor theme">
                                     <i class="fas fa-palette text-[11px]"></i>
+                                </button>
+                                <!-- Output toggle — hidden for languages that don't run -->
+                                <button id="vault-code-output-btn" class="flex items-center gap-1.5 text-slate-500 hover:text-slate-200 text-[10px] px-2 py-1 rounded-lg hover:bg-slate-800 transition-colors" title="Show/hide the output panel">
+                                    <i class="fas fa-rectangle-list text-[10px]"></i>
+                                    <span>Output</span>
                                 </button>
                                 <!-- Terminal toggle -->
                                 <button id="vault-code-terminal-btn" class="flex items-center gap-1.5 text-slate-500 hover:text-slate-200 text-[10px] px-2 py-1 rounded-lg hover:bg-slate-800 transition-colors" title="Toggle terminal (⌘J)">
@@ -1298,9 +1313,14 @@
                                             <i class="fas fa-terminal text-green-400 text-[10px]"></i>
                                             <span class="text-slate-300 text-xs font-semibold">Output</span>
                                         </div>
-                                        <button id="vault-code-clear-btn" class="text-slate-600 hover:text-slate-300 text-[11px] px-2 py-1 rounded transition-colors" title="Clear output">
-                                            <i class="fas fa-trash-alt"></i>
-                                        </button>
+                                        <div class="flex items-center gap-1">
+                                            <button id="vault-code-clear-btn" class="text-slate-600 hover:text-slate-300 text-[11px] px-2 py-1 rounded transition-colors" title="Clear output">
+                                                <i class="fas fa-trash-alt"></i>
+                                            </button>
+                                            <button id="vault-code-output-close" class="text-slate-600 hover:text-slate-300 text-[11px] px-2 py-1 rounded transition-colors" title="Hide the output panel">
+                                                <i class="fas fa-times"></i>
+                                            </button>
+                                        </div>
                                     </div>
                                     <div id="vault-code-output" class="flex-1 overflow-y-auto chat-scroll p-3 font-mono text-xs leading-relaxed select-text"></div>
                                     <div class="border-t border-slate-800/60 px-3 py-2 flex items-center gap-2 shrink-0">
@@ -1697,10 +1717,12 @@
                                 </div>
                                 <!-- 2D / 3D / Matrix mode toggle -->
                                 <div class="flex items-center gap-0.5 bg-slate-800/60 rounded-lg p-0.5 shrink-0" style="-webkit-app-region:no-drag">
-                                    <button id="graph-mode-2d" class="px-2.5 py-1 rounded-md text-[10px] font-semibold transition-all bg-sky-500/20 text-sky-300">2D</button>
+                                    <button id="graph-mode-2d" class="px-2.5 py-1 rounded-md text-[10px] font-semibold transition-all text-slate-500 hover:text-slate-300">2D</button>
                                     <button id="graph-mode-3d" class="px-2.5 py-1 rounded-md text-[10px] font-semibold transition-all text-slate-500 hover:text-slate-300">3D</button>
                                     <button id="graph-mode-matrix" class="px-2.5 py-1 rounded-md text-[10px] font-semibold transition-all text-slate-500 hover:text-slate-300">Matrix</button>
                                 </div>
+                                <!-- White paper / theme background for the plot -->
+                                <button id="graph-paper-btn" class="w-7 h-7 flex items-center justify-center rounded-lg bg-slate-800/60 hover:bg-slate-700 text-sky-300 transition-colors shrink-0" style="-webkit-app-region:no-drag" title="White plot background"><i class="fas fa-file text-[11px]"></i></button>
                             </div>
 
                             <!-- Main body: sidebar + canvas -->
@@ -1801,7 +1823,12 @@
                             <i class="fas fa-times text-xs"></i>
                         </button>
                     </div>
-                    <div class="p-4 grid grid-cols-3 gap-2" id="vault-code-lang-grid"></div>
+                    <div class="px-4 pt-3 shrink-0">
+                        <input id="vault-code-lang-search" type="text" placeholder="Search languages…" autocomplete="off"
+                            class="w-full bg-slate-900/70 text-slate-200 text-xs border border-slate-700/60 rounded-lg px-3 py-2 outline-none focus:border-cyan-600/60 transition-colors placeholder-slate-600">
+                    </div>
+                    <div class="p-4 grid grid-cols-3 gap-2 chat-scroll" id="vault-code-lang-grid"></div>
+                    <p id="vault-code-lang-empty" class="px-4 pb-4 text-slate-600 text-xs text-center" style="display:none">No language matches that.</p>
                 </div>
             </div>
 

@@ -366,27 +366,133 @@ async function _icnsFor(choice) {
     fs.rmSync(dir, { recursive: true, force: true });
     return icns;
 }
-async function applyAppIcon(choice, { writeBundle = true } = {}) {
+// Replacing the .icns inside the bundle changes what the file *contains*, but
+// LaunchServices and the Dock both cache the icon they were shown first, so the
+// old one keeps coming back once the app quits and its tile falls back to the
+// bundle. Attaching the image as a custom icon through NSWorkspace is what
+// actually invalidates those caches; re-registering the bundle brings Finder
+// along. Driven through osascript's JavaScript bridge so it needs no toolchain
+// installed. Returns false if macOS wouldn't take it — the .icns is written
+// either way, so this is a partial failure, not a fatal one.
+async function _refreshBundleIcon(bundle, icnsPath) {
+    if (process.platform !== 'darwin') return false;
+    const { execFile } = require('child_process');
+    const run = (cmd, args) => new Promise((res, rej) =>
+        execFile(cmd, args, (err, _out, stderr) => err ? rej(new Error(String(stderr || err.message).trim())) : res()));
+    try {
+        // Written out rather than passed with -e so the paths travel as argv and
+        // never have to be escaped into a script body.
+        const script = path.join(app.getPath('userData'), 'set-app-icon.js');
+        fs.writeFileSync(script, [
+            "ObjC.import('Cocoa');",
+            'function run(argv) {',
+            '    var img = $.NSImage.alloc.initWithContentsOfFile(argv[0]);',
+            "    if (img.isNil()) throw new Error('the icon file could not be read');",
+            '    if (!$.NSWorkspace.sharedWorkspace.setIconForFileOptions(img, argv[1], 0))',
+            "        throw new Error('macOS refused the icon');",
+            "    return 'ok';",
+            '}',
+        ].join('\n'), 'utf8');
+        await run('/usr/bin/osascript', ['-l', 'JavaScript', script, icnsPath, bundle]);
+    } catch (e) {
+        console.error('[app-icon] custom icon failed:', e.message);
+        // A custom icon left over from a previous choice would outrank the .icns
+        // we just wrote, so a failure here has to clear it rather than leave the
+        // wrong icon winning.
+        try { fs.rmSync(path.join(bundle, 'Icon\r'), { force: true }); } catch (_) {}
+        return false;
+    }
+    const lsregister = '/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister';
+    try { if (fs.existsSync(lsregister)) await run(lsregister, ['-f', bundle]); } catch (_) {}
+    return true;
+}
+
+// Where the bundle keeps its icon, per Info.plist.
+function _bundleIconDest() {
+    const plist = path.join(process.resourcesPath, '..', 'Info.plist');
+    let iconFile = 'electron.icns';
+    try {
+        const m = fs.readFileSync(plist, 'utf8').match(/<key>CFBundleIconFile<\/key>\s*<string>([^<]+)<\/string>/);
+        if (m) iconFile = m[1].endsWith('.icns') ? m[1] : m[1] + '.icns';
+    } catch (_) {}
+    return path.join(process.resourcesPath, iconFile);
+}
+
+// Rebuilding the app — or an update — replaces the whole .app, and the fresh
+// bundle carries the shipped default icon. The choice was only ever written
+// when it was picked in Appearance, so every rebuild silently put the old icon
+// back: the Dock still showed the right one while the app ran (dock.setIcon
+// reads the saved choice at launch) and fell back to the bundle's the moment it
+// quit. Re-asserting it on launch makes that self-healing. It compares first,
+// so the usual launch writes nothing.
+let _iconChecked = false;
+async function ensureAppIconApplied() {
+    if (_iconChecked) return;
+    _iconChecked = true;
+    if (process.platform !== 'darwin' || !app.isPackaged) return;
+    const saved = _savedAppIcon();
+    if (!saved) return;
+    try {
+        const dest = _bundleIconDest();
+        const icns = await _icnsFor(saved);
+        const same = fs.existsSync(dest) && fs.existsSync(icns)
+            && fs.statSync(dest).size === fs.statSync(icns).size;
+        // The custom icon is what the Dock and Finder actually read; without it
+        // a matching .icns still isn't enough.
+        const hasCustom = fs.existsSync(path.join(path.resolve(process.resourcesPath, '..', '..'), 'Icon\r'));
+        if (same && hasCustom) return;
+        // Only reached when the bundle actually lost the choice — after a
+        // rebuild or an update — where the Dock has likewise just built its tile
+        // from the wrong icon and needs the same nudge.
+        await applyAppIcon(saved, { refreshDock: true });
+    } catch (e) {
+        console.error('[app-icon] could not re-apply the saved icon:', e.message);
+    }
+}
+
+// The Dock renders an app's tile when it creates it, so a bundle icon replaced
+// while the app is running goes unnoticed — on quit the tile falls back to the
+// icon cached at launch, and only the *next* launch picks up the new one. That
+// one-launch lag is what this removes. The Dock relaunches itself straight
+// away; its icon cache is dropped first so the tile is re-rendered rather than
+// read back from the stale copy.
+function _restartDock() {
+    return new Promise(resolve => {
+        try {
+            const cache = path.join(app.getPath('temp'), '..', 'C', 'com.apple.dock.iconcache');
+            fs.rmSync(cache, { force: true });
+        } catch (_) {}
+        try {
+            require('child_process').execFile('/usr/bin/killall', ['Dock'], () => resolve());
+        } catch (_) { resolve(); }
+    });
+}
+
+async function applyAppIcon(choice, { writeBundle = true, refreshDock = false } = {}) {
     const png = _iconPngFor(choice);
     if (!png) return { ok: false, error: 'That image could not be used as an icon.' };
     try { if (process.platform === 'darwin') app.dock.setIcon(png); } catch (e) { return { ok: false, error: e.message }; }
     if (!writeBundle || process.platform !== 'darwin' || !app.isPackaged) return { ok: true, bundle: false };
     try {
         const icns = await _icnsFor(choice);
-        const plist = path.join(process.resourcesPath, '..', 'Info.plist');
-        let iconFile = 'electron.icns';
-        try { const m = fs.readFileSync(plist, 'utf8').match(/<key>CFBundleIconFile<\/key>\s*<string>([^<]+)<\/string>/); if (m) iconFile = m[1].endsWith('.icns') ? m[1] : m[1] + '.icns'; } catch (_) {}
-        const dest = path.join(process.resourcesPath, iconFile);
+        const dest = _bundleIconDest();
         fs.copyFileSync(icns, dest);
         // Finder caches icons by bundle mtime — bump it so the new one shows.
         const bundle = path.resolve(process.resourcesPath, '..', '..');
         const now = new Date(); fs.utimesSync(bundle, now, now);
-        return { ok: true, bundle: true };
+        // …but the mtime alone doesn't reach the Dock, which keeps its own copy
+        // of the tile and falls back to it the moment the app quits — which is
+        // why the old icon came back on every close. Pass `dest` and not the
+        // source .icns: that one lives inside app.asar, which osascript can't
+        // see into.
+        const refreshed = await _refreshBundleIcon(bundle, dest);
+        if (refreshDock) await _restartDock();
+        return { ok: true, bundle: true, ...(refreshed ? {} : { error: 'The icon was replaced, but macOS may keep showing the old one until you restart the Dock.' }) };
     } catch (e) {
         return { ok: true, bundle: false, error: `Dock updated; the app file itself could not be changed (${e.message}).` };
     }
 }
-ipcMain.handle('app-icon:set', (e, choice) => applyAppIcon(choice));
+ipcMain.handle('app-icon:set', (e, choice) => applyAppIcon(choice, { refreshDock: true }));
 ipcMain.handle('app-icon:pick', async () => {
     const r = await dialog.showOpenDialog({ title: 'Choose an app icon', properties: ['openFile'], filters: [{ name: 'Images', extensions: ['png', 'jpg', 'jpeg', 'icns'] }] });
     if (r.canceled || !r.filePaths[0]) return { ok: false, canceled: true };
@@ -400,6 +506,10 @@ function createWindow() {
     if (process.platform === 'darwin' && fs.existsSync(iconPath)) {
         try { app.dock.setIcon(iconPath); } catch (e) {}
     }
+    // Setting the Dock icon only lasts while the app runs. Put the choice back
+    // into the bundle too, so it survives the app being closed — off the
+    // startup path, since it may have to convert an image.
+    setTimeout(() => { ensureAppIconApplied(); }, 1500);
 
     const win = new BrowserWindow({
         width: 1100, height: 850,

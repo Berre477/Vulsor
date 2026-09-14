@@ -348,6 +348,8 @@ code  { font-family: 'Fira Code', 'JetBrains Mono', monospace; }
 }
 .browser-tool-btn:hover { background: rgb(var(--ink-rgb) / 0.09); color: rgb(var(--slate-400)); border-color: rgb(var(--ink-rgb) / 0.12); }
 
+.app-nav-btn[disabled] { opacity: 0.3; pointer-events: none; }
+
 #browser-address-bar {
     -webkit-app-region: no-drag;
     flex: 1;
@@ -834,6 +836,21 @@ code  { font-family: 'Fira Code', 'JetBrains Mono', monospace; }
     flex-direction: column;
     box-shadow: 0 25px 50px rgba(0,0,0,0.55);
     overflow: hidden;
+    /* Without a ceiling a tall modal (the language picker, with twenty-odd
+       entries) runs off the bottom of the window, and `overflow: hidden` means
+       the entries down there can't be reached at all. */
+    max-height: calc(100% - 48px);
+}
+
+/* Prose mode: plain-text files get line spacing meant for reading sentences
+   rather than scanning code. Ace re-measures after this is toggled (see
+   _applyCodeProseMode), so the caret stays on the text. */
+#vault-code-ace.code-prose { line-height: 1.65; }
+
+/* Language picker: the header stays put, the cards scroll. */
+#vault-code-lang-grid {
+    overflow-y: auto;
+    min-height: 0;
 }
 
 

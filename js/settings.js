@@ -757,7 +757,7 @@ function renderSettingsModal() {
                 try { r = await ipcRenderer.invoke('app-icon:set', choice); } catch (e) { r = { ok: false, error: e.message }; }
                 if (hint) {
                     if (!r || !r.ok) hint.textContent = (r && r.error) || 'Could not change the icon.';
-                    else if (r.bundle) hint.textContent = 'Dock updated. Finder shows the new icon after it refreshes (relaunching the app helps).';
+                    else if (r.bundle) hint.textContent = 'Icon changed. The Dock restarts for a moment so it takes effect straight away.';
                     else hint.textContent = r.error || 'Dock updated. The Finder icon changes in the packaged app.';
                 }
                 renderSettingsModal();

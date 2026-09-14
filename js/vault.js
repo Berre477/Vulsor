@@ -1099,7 +1099,12 @@ function saveVaultDocTitle() {
     if (!vaultOpenFileId) return;
     const file = vaultData.files.find(f => f.id === vaultOpenFileId);
     if (!file) return;
-    const val = document.getElementById('vault-doc-title-input').value.trim();
+    const input = document.getElementById('vault-doc-title-input');
+    // Editors that show the plain title span (the graph plotter, for one)
+    // never fill this input — reading it would rename the file to whatever
+    // the previous document left behind, or to "New Document".
+    if (!input || input.classList.contains('hidden')) return;
+    const val = input.value.trim();
     file.originalName = val || (file.isCustomNote ? 'New Note' : (vaultIsNotebook ? 'New Notebook' : 'New Document'));
     saveVaultData();
     renderVaultGrid();
@@ -4755,6 +4760,14 @@ function initVault() {
         if (vaultIsMd && vaultMdEditMode) {
             clearTimeout(vaultMdSaveTimer);
             try { _saveVaultMdContent(); } catch(e) { console.error('[unload] md save:', e); }
+        }
+        if (vaultIsCode) {
+            clearTimeout(vaultCodeSaveTimer);
+            try { saveVaultCodeFile(); } catch(e) { console.error('[unload] code save:', e); }
+        }
+        if (vaultIsNotebook) {
+            clearTimeout(notebookSaveTimer);
+            try { notebookSave(); } catch(e) { console.error('[unload] notebook save:', e); }
         }
         if (vaultNotesTimer) {
             clearTimeout(vaultNotesTimer);

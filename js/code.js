@@ -1074,8 +1074,16 @@ let vaultAceEditor     = null;
 let vaultCodeSaveTimer = null;
 let vaultCodeProcess   = null;  // current run process
 let vaultCodeFilePath  = null;
+// True only once the open file's contents are actually in Ace. Saving reads
+// whatever the editor holds, so until this is set a save would overwrite the
+// file on disk with an empty (or a previous file's) buffer.
+let vaultCodeLoaded    = false;
 let vaultCodeLang      = 'python';
 let vaultCodeWrap      = false;
+// Wrapping is remembered separately for prose and for code: a .txt should wrap
+// by default, a .py shouldn't, and toggling one shouldn't change the other.
+let vaultCodeWrapCode  = false;
+let vaultCodeWrapProse = true;
 let vaultCodeThemeId   = localStorage.getItem('vulsor_code_theme') || 'monokai';
 
 // ── Terminal state ────────────────────────────────────────────────
@@ -1088,6 +1096,20 @@ let vaultTermHistIdx   = -1;
 let vaultTermLine      = '';    // current input line
 let vaultTermRunning   = false; // is a command currently executing?
 let vaultTermOpen      = false;
+let vaultCodeOutputOpen = true;  // user's choice, for languages that can run
+
+// ── Text size ─────────────────────────────────────────────────────
+// One zoom factor for the editor, applied on top of a base size that differs
+// by mode — prose starts larger than code, and zooming keeps that relationship.
+const CODE_FONT_BASE  = 13;
+const PROSE_FONT_BASE = 16;
+const CODE_ZOOM_STEPS = [0.6, 0.7, 0.8, 0.9, 1, 1.1, 1.25, 1.4, 1.6, 1.8, 2, 2.4, 3];
+let vaultCodeZoom = (() => {
+    const saved = parseFloat(localStorage.getItem('vulsor_code_zoom'));
+    if (!saved || !isFinite(saved)) return 1;
+    // Snap to the nearest step so the +/- buttons always have somewhere to go.
+    return CODE_ZOOM_STEPS.reduce((a, b) => Math.abs(b - saved) < Math.abs(a - saved) ? b : a);
+})();
 
 // ──────────────────────────────────────────────────────────────────
 // INIT  (buttons only — Ace is lazy-inited when editor first opens)
@@ -1097,20 +1119,37 @@ function initVaultCodeEditor() {
     document.getElementById('vault-code-run-btn').addEventListener('click',  runVaultCode);
     document.getElementById('vault-code-kill-btn').addEventListener('click', killVaultCode);
     document.getElementById('vault-code-clear-btn').addEventListener('click',clearCodeOutput);
-
-    document.getElementById('vault-code-wrap-btn').addEventListener('click', () => {
-        vaultCodeWrap = !vaultCodeWrap;
-        if (vaultAceEditor) vaultAceEditor.session.setUseWrapMode(vaultCodeWrap);
-        const btn = document.getElementById('vault-code-wrap-btn');
-        btn.classList.toggle('text-cyan-400',  vaultCodeWrap);
-        btn.classList.toggle('text-slate-500', !vaultCodeWrap);
+    document.getElementById('vault-code-output-btn').addEventListener('click', toggleCodeOutput);
+    document.getElementById('vault-code-output-close').addEventListener('click', () => {
+        vaultCodeOutputOpen = false;
+        _setCodeOutputVisible(false);
     });
+
+    document.getElementById('vault-code-wrap-btn').addEventListener('click', () => _setCodeWrap(!vaultCodeWrap));
+
+    document.getElementById('vault-code-zoom-in').addEventListener('click',  () => codeZoomBy(1));
+    document.getElementById('vault-code-zoom-out').addEventListener('click', () => codeZoomBy(-1));
+    document.getElementById('vault-code-zoom-label').addEventListener('click', codeZoomReset);
+
+    // ⌘-scroll and trackpad pinch (which arrives as a wheel event with ctrlKey).
+    // Throttled, or one flick of the wheel runs the whole scale.
+    let _zoomAt = 0;
+    document.getElementById('vault-code-ace-wrap').addEventListener('wheel', e => {
+        if (!e.ctrlKey && !e.metaKey) return;
+        e.preventDefault();
+        const now = Date.now();
+        if (now - _zoomAt < 70) return;
+        _zoomAt = now;
+        codeZoomBy(e.deltaY < 0 ? 1 : -1);
+    }, { passive: false });
 
     document.getElementById('vault-code-lang-select').addEventListener('change', e => {
         vaultCodeLang = e.target.value;
         const info = VAULT_CODE_LANGS[vaultCodeLang];
         if (vaultAceEditor && info) vaultAceEditor.session.setMode(`ace/mode/${info.mode}`);
         document.getElementById('vault-code-run-btn').style.display = info?.cmd ? '' : 'none';
+        _syncCodeOutputPanel();
+        _applyCodeProseMode();
     });
 
     document.getElementById('vault-code-theme-btn').addEventListener('click', e => {
@@ -1144,6 +1183,10 @@ function initVaultCodeEditor() {
     });
     document.getElementById('vault-new-code-btn').addEventListener('click', () => {
         document.getElementById('vault-code-lang-modal').classList.add('open');
+        const search = document.getElementById('vault-code-lang-search');
+        const grid   = document.getElementById('vault-code-lang-grid');
+        if (grid) grid.scrollTop = 0;
+        if (search) { search.value = ''; _filterLangGrid(''); setTimeout(() => search.focus(), 30); }
     });
 }
 
@@ -1196,6 +1239,7 @@ function _ensureAceInit(onReady) {
     _registerAceCompleter();
 
     _applyAceTheme(vaultCodeThemeId);
+    _applyCodeProseMode();
 
     // Auto-save on change
     vaultAceEditor.session.on('change', () => {
@@ -1212,6 +1256,11 @@ function _ensureAceInit(onReady) {
             if (vaultAceEditor) vaultAceEditor.resize(true);
         }).observe(wrap);
     }
+
+    // The editor exists now — hand back to the caller so it can load the file.
+    // Without this the first open of a session showed an empty editor, and
+    // closing it saved that emptiness over the real file.
+    if (onReady) onReady();
 }
 
 // ──────────────────────────────────────────────────────────────────
@@ -1273,6 +1322,76 @@ function vaultCodeShowThemePicker(anchor) {
         }
     };
     setTimeout(() => document.addEventListener('mousedown', close), 0);
+}
+
+// ──────────────────────────────────────────────────────────────────
+// TEXT SIZE & PROSE MODE
+// ──────────────────────────────────────────────────────────────────
+// A .txt is prose, not code, so the editor drops its code-editor habits for
+// one: no gutter or line numbers to write around, no autocomplete popping up
+// mid-sentence, no snippet expansion stealing the Tab key, a readable
+// proportional face and room to breathe down the side.
+function _codeIsProse() { return vaultCodeLang === 'text'; }
+
+function _applyCodeZoom() {
+    const lbl = document.getElementById('vault-code-zoom-label');
+    if (lbl) lbl.textContent = Math.round(vaultCodeZoom * 100) + '%';
+    if (!vaultAceEditor) return;
+    const base = _codeIsProse() ? PROSE_FONT_BASE : CODE_FONT_BASE;
+    vaultAceEditor.setFontSize(Math.round(base * vaultCodeZoom) + 'px');
+}
+
+function codeZoomBy(dir) {
+    const i = CODE_ZOOM_STEPS.indexOf(vaultCodeZoom);
+    const next = i === -1 ? 1
+        : CODE_ZOOM_STEPS[Math.min(CODE_ZOOM_STEPS.length - 1, Math.max(0, i + (dir > 0 ? 1 : -1)))];
+    if (next === vaultCodeZoom) return;
+    vaultCodeZoom = next;
+    localStorage.setItem('vulsor_code_zoom', String(vaultCodeZoom));
+    _applyCodeZoom();
+}
+
+function codeZoomReset() {
+    vaultCodeZoom = 1;
+    localStorage.setItem('vulsor_code_zoom', '1');
+    _applyCodeZoom();
+}
+
+function _setCodeWrap(on) {
+    vaultCodeWrap = on;
+    if (_codeIsProse()) vaultCodeWrapProse = on; else vaultCodeWrapCode = on;
+    if (vaultAceEditor) vaultAceEditor.session.setUseWrapMode(on);
+    const btn = document.getElementById('vault-code-wrap-btn');
+    if (btn) {
+        btn.classList.toggle('text-cyan-400',  on);
+        btn.classList.toggle('text-slate-500', !on);
+    }
+}
+
+function _applyCodeProseMode() {
+    if (!vaultAceEditor) return;
+    const prose = _codeIsProse();
+    vaultAceEditor.setOptions({
+        fontFamily: prose
+            ? "-apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', Helvetica, sans-serif"
+            : "'Fira Code', 'JetBrains Mono', Menlo, Consolas, monospace",
+        showLineNumbers:           !prose,
+        showGutter:                !prose,
+        displayIndentGuides:       !prose,
+        highlightActiveLine:       !prose,
+        enableBasicAutocompletion: !prose,
+        enableLiveAutocompletion:  !prose,
+        enableSnippets:            !prose,
+    });
+    // Without a gutter there's nothing holding the first character off the
+    // window edge, so give prose its own margin.
+    try { vaultAceEditor.renderer.setPadding(prose ? 22 : 0); } catch (_) {}
+    document.getElementById('vault-code-ace')?.classList.toggle('code-prose', prose);
+    _setCodeWrap(prose ? vaultCodeWrapProse : vaultCodeWrapCode);
+    _applyCodeZoom();
+    // Line height comes from CSS in prose mode — Ace has to re-measure or the
+    // caret sits off the text.
+    try { vaultAceEditor.renderer.updateFontSize(); vaultAceEditor.resize(true); } catch (_) {}
 }
 
 function _applyAceTheme(themeId) {
@@ -1617,18 +1736,18 @@ function _buildLangGrid() {
     const RUNNABLE = Object.entries(VAULT_CODE_LANGS).filter(([,v]) =>  v.cmd);
     const MARKUP   = Object.entries(VAULT_CODE_LANGS).filter(([,v]) => !v.cmd);
 
-    const card = ([key, info]) =>
-        `<button class="vault-code-lang-pick flex flex-col items-center gap-1.5 p-3 rounded-xl bg-slate-800/60 hover:bg-slate-700/80 border border-slate-700/60 hover:border-cyan-500/50 transition-all text-center" data-lang="${key}">
+    const card = section => ([key, info]) =>
+        `<button class="vault-code-lang-pick flex flex-col items-center gap-1.5 p-3 rounded-xl bg-slate-800/60 hover:bg-slate-700/80 border border-slate-700/60 hover:border-cyan-500/50 transition-all text-center" data-lang="${key}" data-section="${section}">
             <span class="text-xl leading-none">${info.icon}</span>
             <span class="text-slate-200 text-[11px] font-medium leading-tight">${info.label}</span>
             <span class="text-slate-600 text-[9px]">.${info.ext[0]}</span>
         </button>`;
 
     grid.innerHTML =
-        `<p class="col-span-3 text-slate-500 text-[10px] uppercase tracking-widest font-semibold mb-1">Runnable</p>`
-        + RUNNABLE.map(card).join('')
-        + `<p class="col-span-3 text-slate-500 text-[10px] uppercase tracking-widest font-semibold mt-3 mb-1">Markup / Data</p>`
-        + MARKUP.map(card).join('');
+        `<p data-lang-heading="run" class="col-span-3 text-slate-500 text-[10px] uppercase tracking-widest font-semibold mb-1">Runnable</p>`
+        + RUNNABLE.map(card('run')).join('')
+        + `<p data-lang-heading="markup" class="col-span-3 text-slate-500 text-[10px] uppercase tracking-widest font-semibold mt-3 mb-1">Markup / Data</p>`
+        + MARKUP.map(card('markup')).join('');
 
     grid.querySelectorAll('.vault-code-lang-pick').forEach(btn => {
         btn.addEventListener('click', () => {
@@ -1636,6 +1755,36 @@ function _buildLangGrid() {
             createVaultCodeFile(btn.dataset.lang);
         });
     });
+
+    const search = document.getElementById('vault-code-lang-search');
+    if (search) search.addEventListener('input', () => _filterLangGrid(search.value));
+}
+
+// Narrow the picker by name or extension, hiding a section heading once every
+// card under it is filtered out.
+function _filterLangGrid(query) {
+    const grid = document.getElementById('vault-code-lang-grid');
+    if (!grid) return;
+    const q = (query || '').trim().toLowerCase();
+    let shown = 0;
+
+    grid.querySelectorAll('.vault-code-lang-pick').forEach(btn => {
+        const info  = VAULT_CODE_LANGS[btn.dataset.lang] || {};
+        const match = !q
+            || info.label?.toLowerCase().includes(q)
+            || (info.ext || []).some(e => e.toLowerCase().includes(q));
+        btn.style.display = match ? '' : 'none';
+        if (match) shown++;
+    });
+
+    grid.querySelectorAll('[data-lang-heading]').forEach(h => {
+        const any = [...grid.querySelectorAll(`.vault-code-lang-pick[data-section="${h.dataset.langHeading}"]`)]
+            .some(b => b.style.display !== 'none');
+        h.style.display = any ? '' : 'none';
+    });
+
+    const empty = document.getElementById('vault-code-lang-empty');
+    if (empty) empty.style.display = shown ? 'none' : '';
 }
 
 // ──────────────────────────────────────────────────────────────────
@@ -1683,7 +1832,14 @@ function createVaultCodeFile(lang) {
 // OPEN / CLOSE
 // ──────────────────────────────────────────────────────────────────
 function openVaultCodeEditor(file, storedPath) {
+    // Flush the previous file first: switching straight from one code file to
+    // another never passes through closeVaultCodeEditor.
+    if (vaultCodeFilePath && vaultCodeFilePath !== storedPath) {
+        clearTimeout(vaultCodeSaveTimer);
+        saveVaultCodeFile();
+    }
     vaultCodeFilePath = storedPath;
+    vaultCodeLoaded   = false;
 
     const ext  = (file.originalName.split('.').pop() || '').toLowerCase();
     vaultCodeLang = vaultCodeExtToLang(ext);
@@ -1709,6 +1865,7 @@ function openVaultCodeEditor(file, storedPath) {
 
     document.getElementById('vault-code-run-btn').style.display  = info.cmd ? '' : 'none';
     document.getElementById('vault-code-kill-btn').style.display = 'none';
+    _syncCodeOutputPanel();
 
     clearCodeOutput();
     const statusEl = document.getElementById('vault-code-status');
@@ -1719,10 +1876,17 @@ function openVaultCodeEditor(file, storedPath) {
     //        loaded in the callback because the first open also has to fetch Ace.
     _ensureAceInit(() => {
         if (!vaultAceEditor) return;
+        // Ace took a while to load and a different file (or none) was opened
+        // in the meantime — this content no longer belongs in the editor.
+        if (vaultCodeFilePath !== storedPath) return;
         vaultAceEditor.session.setMode(`ace/mode/${info.mode}`);
         const content = fs.existsSync(storedPath) ? fs.readFileSync(storedPath, 'utf8') : '';
         vaultAceEditor.setValue(content, -1);
         vaultAceEditor.clearSelection();
+        // setValue fires 'change', which queued a save; that is fine now that
+        // the editor holds the real file.
+        vaultCodeLoaded = true;
+        _applyCodeProseMode();
         vaultAceEditor.resize(true);
     });
 
@@ -1759,6 +1923,7 @@ function closeVaultCodeEditor() {
     _setTerminalVisible(false);
 
     vaultCodeFilePath = null;
+    vaultCodeLoaded   = false;
 }
 
 // ──────────────────────────────────────────────────────────────────
@@ -1766,9 +1931,14 @@ function closeVaultCodeEditor() {
 // ──────────────────────────────────────────────────────────────────
 function saveVaultCodeFile() {
     if (!vaultCodeFilePath || !vaultAceEditor) return;
+    // Never write before the file has been read into the editor — the buffer
+    // would be empty or still showing the previously open file.
+    if (!vaultCodeLoaded) return;
     try {
         const content = vaultAceEditor.getValue();
-        fs.writeFileSync(vaultCodeFilePath, content, 'utf8');
+        // Temp file + rename, so a crash mid-write can't leave a truncated file.
+        if (typeof vaultWriteFile === 'function') vaultWriteFile(vaultCodeFilePath, content);
+        else fs.writeFileSync(vaultCodeFilePath, content, 'utf8');
         const file = vaultData.files.find(f => f.id === vaultOpenFileId);
         if (file) { file.size = Buffer.byteLength(content, 'utf8'); file.updatedAt = Date.now(); saveVaultData(); }
         const el = document.getElementById('vault-code-status');
@@ -1785,6 +1955,37 @@ function saveVaultCodeFile() {
 function clearCodeOutput() {
     const out = document.getElementById('vault-code-output');
     if (out) out.innerHTML = '';
+}
+
+// ── Output panel visibility ───────────────────────────────────────
+// JSON, Markdown, plain text and the other markup formats have nothing to
+// print, so the panel and its toggle stay out of the way entirely. For
+// languages that do run, the panel can still be closed and stays closed until
+// it's asked for again — or until a run produces something to show.
+function _setCodeOutputVisible(visible) {
+    const panel = document.getElementById('vault-code-output-panel');
+    const res   = document.getElementById('vault-code-resizer');
+    const btn   = document.getElementById('vault-code-output-btn');
+    if (panel) panel.style.display = visible ? 'flex' : 'none';
+    if (res)   res.style.display   = visible ? ''     : 'none';
+    if (btn) {
+        btn.classList.toggle('text-green-400',  visible);
+        btn.classList.toggle('text-slate-500', !visible);
+    }
+    if (vaultAceEditor) setTimeout(() => vaultAceEditor.resize(), 50);
+}
+
+function _syncCodeOutputPanel() {
+    const runnable = !!VAULT_CODE_LANGS[vaultCodeLang]?.cmd;
+    const btn = document.getElementById('vault-code-output-btn');
+    if (btn) btn.style.display = runnable ? '' : 'none';
+    _setCodeOutputVisible(runnable && vaultCodeOutputOpen);
+}
+
+function toggleCodeOutput() {
+    if (!VAULT_CODE_LANGS[vaultCodeLang]?.cmd) return;
+    vaultCodeOutputOpen = !vaultCodeOutputOpen;
+    _setCodeOutputVisible(vaultCodeOutputOpen);
 }
 
 function appendCodeOutput(text, cls) {
@@ -1817,6 +2018,10 @@ function runVaultCode() {
     if (!info?.cmd) { appendCodeOutput('No run command for this language.\n', 'code-out-warn'); return; }
 
     saveVaultCodeFile();
+    // Running is a request to see the output, so bring the panel back if it
+    // was closed.
+    vaultCodeOutputOpen = true;
+    _setCodeOutputVisible(true);
     clearCodeOutput();
 
     const fp  = vaultCodeFilePath;
